@@ -5,6 +5,7 @@ export type WsStatus = 'connecting' | 'open' | 'closed'
 
 type MessageListener = (msg: MessageVO) => void
 type StatusListener = (status: WsStatus) => void
+type OpenListener = () => void
 
 // 心跳间隔(后端读空闲 60s,这里 25s 发一次 ping 足够保活)
 const PING_INTERVAL = 25_000
@@ -30,6 +31,7 @@ class WsClient {
   private subscriptions = new Set<string>()
   private messageListeners = new Set<MessageListener>()
   private statusListeners = new Set<StatusListener>()
+  private openListeners = new Set<OpenListener>()
   private status: WsStatus = 'closed'
 
   /** 建立连接(已连同一 token 则忽略);token 变更会重连 */
@@ -59,6 +61,8 @@ class WsClient {
       this.startPing()
       // 重连补订阅
       this.subscriptions.forEach((cid) => this.send({ type: 'subscribe', conversationId: Number(cid) }))
+      // 通知上层做"重连补漏":每次 open(首连/重连)都触发,上层据此对当前会话 sync 对账
+      this.openListeners.forEach((fn) => fn())
     }
 
     ws.onmessage = (ev) => {
@@ -159,6 +163,12 @@ class WsClient {
     this.statusListeners.add(fn)
     fn(this.status)
     return () => this.statusListeners.delete(fn)
+  }
+
+  /** 注册"连接 open(含重连)"监听,返回取消函数。用于断线重连后的补漏对账 */
+  onOpen(fn: OpenListener): () => void {
+    this.openListeners.add(fn)
+    return () => this.openListeners.delete(fn)
   }
 
   getStatus(): WsStatus {

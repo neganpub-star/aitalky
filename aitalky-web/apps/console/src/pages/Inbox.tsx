@@ -32,6 +32,15 @@ function fmtMsgTime(ms: number): string {
   return `${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
+// 合并消息:按 seq 去重(seq 会话内唯一)+ 升序插入。补漏拉回的旧 seq 会落到正确位置,而非追加到底。
+function mergeMessages(prev: MessageVO[], incoming: MessageVO[]): MessageVO[] {
+  if (incoming.length === 0) return prev
+  const bySeq = new Map<number, MessageVO>()
+  for (const m of prev) bySeq.set(m.seq, m)
+  for (const m of incoming) bySeq.set(m.seq, m)
+  return Array.from(bySeq.values()).sort((a, b) => a.seq - b.seq)
+}
+
 // 列表时间:今天显示 HH:mm,否则 MM-DD HH:mm
 function fmtListTime(iso: string | null): string {
   if (!iso) return ''
@@ -75,6 +84,12 @@ export default function Inbox() {
   const selectedRef = useRef<string | null>(null)
   selectedRef.current = selectedId
   const msgEndRef = useRef<HTMLDivElement>(null)
+  // 当前会话「本地已收到的最大 seq」——补漏对账基准(§3 铁律:以实际 max(seq) 前进,容忍空洞)
+  const localMaxSeqRef = useRef(0)
+  const syncingRef = useRef(false)
+  // 给 WS/window 回调引用最新的函数(闭包只注册一次,内部走 ref 取最新)
+  const syncCurrentRef = useRef<() => void>(() => {})
+  const loadListRef = useRef<() => void>(() => {})
 
   // 分类(权限控制:未分配/全部需对应功能权限)
   const categories = useMemo(
@@ -88,17 +103,46 @@ export default function Inbox() {
   )
   const activeLabel = categories.find((c) => c.key === active)?.label ?? t('inbox.all')
 
+  // 把消息并入当前会话(去重+有序+单调推进 localMaxSeq);空 incoming 不动
+  const applyIncoming = useCallback((incoming: MessageVO[]) => {
+    if (incoming.length === 0) return
+    setMessages((prev) => mergeMessages(prev, incoming))
+    const maxIn = incoming.reduce((m, x) => Math.max(m, x.seq), 0)
+    if (maxIn > localMaxSeqRef.current) localMaxSeqRef.current = maxIn
+  }, [])
+
+  // 补漏:拉 localMaxSeq 之后的消息并入(去重)。并发去抖:同一时刻只跑一次。
+  const syncCurrent = useCallback(async () => {
+    const cid = selectedRef.current
+    if (!cid || syncingRef.current) return
+    syncingRef.current = true
+    try {
+      applyIncoming(await listMessages(cid, localMaxSeqRef.current))
+    } finally {
+      syncingRef.current = false
+    }
+  }, [applyIncoming])
+  syncCurrentRef.current = syncCurrent
+
   // ===== 列表加载(切视图/切 tab 时 + 轮询兜底新会话)=====
   const loadList = useCallback(async () => {
     setLoadingList(true)
     try {
       const res = await listConversations({ view: active, status: statusOf(active, tab), page: 1, size: 50 })
-      setList(res.records)
+      // 未读以服务端 DB 为权威;但当前打开会话强制显示 0(避免轮询把"边看边来的消息"算成未读)
+      const cur = selectedRef.current
+      setList(res.records.map((c) => (c.id === cur ? { ...c, unreadCount: 0 } : c)))
       setTotal(res.total)
+      // serverLastSeq 对账:当前会话服务端 last_seq 超过本地 → 自动补拉(覆盖"静默期最后一帧丢失")
+      const curConv = res.records.find((c) => c.id === cur)
+      if (curConv && curConv.lastSeq != null && curConv.lastSeq > localMaxSeqRef.current) {
+        syncCurrentRef.current()
+      }
     } finally {
       setLoadingList(false)
     }
   }, [active, tab])
+  loadListRef.current = loadList
 
   useEffect(() => {
     loadList()
@@ -110,12 +154,16 @@ export default function Inbox() {
   // ===== WS 状态订阅 =====
   useEffect(() => wsClient.onStatus(setWsStatus), [])
 
-  // ===== WS 消息分发:更新列表预览/未读;命中当前会话则追加 =====
+  // ===== WS 消息分发:命中当前会话→网②gap检测+并入;更新列表预览/未读 =====
   useEffect(() => {
     return wsClient.onMessage((msg) => {
       const isCurrent = selectedRef.current === msg.conversationId
       if (isCurrent) {
-        setMessages((prev) => (prev.some((m) => m.msgId === msg.msgId) ? prev : [...prev, msg]))
+        // 网②:seq 跳号(> localMax+1)说明中间漏帧 → 触发补拉;这条本身也并入(去重)
+        if (msg.seq > localMaxSeqRef.current + 1) {
+          syncCurrentRef.current()
+        }
+        applyIncoming([msg])
       }
       setList((prev) =>
         prev.map((c) =>
@@ -131,6 +179,27 @@ export default function Inbox() {
         ),
       )
     })
+  }, [applyIncoming])
+
+  // ===== 网①:WS 重连(含首连)→ 刷列表 + 补当前会话;网③:窗口聚焦/可见 → 补当前会话 =====
+  useEffect(() => {
+    const offOpen = wsClient.onOpen(() => {
+      loadListRef.current()
+      if (selectedRef.current) syncCurrentRef.current()
+    })
+    const onFocus = () => {
+      if (selectedRef.current) syncCurrentRef.current()
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && selectedRef.current) syncCurrentRef.current()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      offOpen()
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
 
   // 新消息滚到底
@@ -148,6 +217,7 @@ export default function Inbox() {
       setInput('')
       setDetail(null)
       setMessages([])
+      localMaxSeqRef.current = 0
       wsClient.subscribe(conv.id)
       // 本地先清未读(后端拉消息时也会 resetUnread)
       setList((prev) => prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)))
@@ -155,7 +225,10 @@ export default function Inbox() {
       try {
         const [d, msgs] = await Promise.all([getConversation(conv.id), listMessages(conv.id)])
         setDetail(d)
-        setMessages(msgs)
+        const sorted = mergeMessages([], msgs)
+        setMessages(sorted)
+        // localMaxSeq = 首屏最新 seq;首屏只取最近 50 条,更早的是历史(翻页另说),不影响实时补漏基准
+        localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
       } finally {
         setLoadingMsgs(false)
       }
@@ -179,8 +252,8 @@ export default function Inbox() {
       const internal = replyTab === 'internal'
       const vo = await replyConversation(selectedId, { content, type: 'text', internal })
       setInput('')
-      // 立即上屏(WS 回声按 msgId 去重)
-      setMessages((prev) => (prev.some((m) => m.msgId === vo.msgId) ? prev : [...prev, vo]))
+      // 立即上屏(WS 回声/补拉按 seq 去重 + 有序插入 + 推进 localMaxSeq)
+      applyIncoming([vo])
       setList((prev) =>
         prev.map((c) =>
           c.id === selectedId
@@ -191,7 +264,7 @@ export default function Inbox() {
     } finally {
       setSending(false)
     }
-  }, [input, selectedId, sending, replyTab])
+  }, [input, selectedId, sending, replyTab, applyIncoming])
 
   const onInputKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
