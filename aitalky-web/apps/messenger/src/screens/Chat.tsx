@@ -13,8 +13,9 @@ interface Props {
   onBack: () => void
 }
 
-function fmtTime(ms: number): string {
-  const d = new Date(ms)
+// 时间戳是 Long→String 序列化的字符串,需 Number() 转换,否则 new Date(字符串) → NaN:NaN
+function fmtTime(ms: number | string): string {
+  const d = new Date(Number(ms))
   const p = (n: number) => String(n).padStart(2, '0')
   return `${p(d.getHours())}:${p(d.getMinutes())}`
 }

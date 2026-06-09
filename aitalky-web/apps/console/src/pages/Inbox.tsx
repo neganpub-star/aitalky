@@ -19,15 +19,15 @@ import type { ConversationDetailVO, ConversationVO, MessageVO } from '../types'
 type CategoryKey = 'mine' | 'mention' | 'unassigned' | 'all'
 type TabKey = 'open' | 'closed'
 
-// 进行中/已结束 → 后端 status(0等待 1进行中 2已结束)。
-// 未分配的进行中为「等待(0)」,其余视图进行中为「进行中(1)」;已结束统一 2。
-function statusOf(view: CategoryKey, tab: TabKey): number {
-  if (tab === 'closed') return 2
-  return view === 'unassigned' ? 0 : 1
+// 进行中/已结束 → 后端 status。实测新会话(含未分配)均为 status=1(进行中),0(等待)暂未使用;
+// 未分配视图后端已 isNull(assignee).ne(2),此处再限定进行中即可。故统一:进行中=1,已结束=2。
+function statusOf(tab: TabKey): number {
+  return tab === 'closed' ? 2 : 1
 }
 
-function fmtMsgTime(ms: number): string {
-  const d = new Date(ms)
+// 消息时间戳是 Long→String 序列化的字符串,需 Number() 转换,否则 new Date(字符串) → NaN
+function fmtMsgTime(ms: number | string): string {
+  const d = new Date(Number(ms))
   const p = (n: number) => String(n).padStart(2, '0')
   return `${p(d.getHours())}:${p(d.getMinutes())}`
 }
@@ -128,7 +128,7 @@ export default function Inbox() {
   const loadList = useCallback(async () => {
     setLoadingList(true)
     try {
-      const res = await listConversations({ view: active, status: statusOf(active, tab), page: 1, size: 50 })
+      const res = await listConversations({ view: active, status: statusOf(tab), page: 1, size: 50 })
       // 未读以服务端 DB 为权威;但当前打开会话强制显示 0(避免轮询把"边看边来的消息"算成未读)
       const cur = selectedRef.current
       setList(res.records.map((c) => (c.id === cur ? { ...c, unreadCount: 0 } : c)))
@@ -308,7 +308,8 @@ export default function Inbox() {
       <div key={c.key} className="at-row" style={{ ...styles.catItem, ...(on ? styles.catActive : {}) }} onClick={() => { setActive(c.key); setSelectedId(null) }}>
         <span style={{ width: 18, textAlign: 'center' }}>{c.icon}</span>
         <span>{c.label}</span>
-        <span style={styles.count}>{on ? total : 0}</span>
+        {/* 仅当前激活分类显示真实数量;各视图独立计数待后端 counts 接口(避免非激活恒显 0 误导) */}
+        {on && <span style={styles.count}>{total}</span>}
       </div>
     )
   }
