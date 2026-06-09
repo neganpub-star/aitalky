@@ -18,6 +18,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-framework</artifactId>
         </dependency>
+        <!-- 会话归属客户:列表展示需客户名/头像 -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-customer</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

@@ -1,6 +1,7 @@
 package com.aitalky.identity.service;
 
 import com.aitalky.common.api.PageResult;
+import com.aitalky.identity.dto.MemberBrief;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
 
@@ -27,4 +28,7 @@ public interface MemberService {
 
     /** 删除成员(逻辑删除) */
     void delete(Long memberId);
+
+    /** 成员轻量信息(昵称/头像),用于消息发送者快照 */
+    MemberBrief brief(Long memberId);
 }

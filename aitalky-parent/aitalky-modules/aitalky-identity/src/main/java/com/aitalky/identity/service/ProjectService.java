@@ -19,4 +19,7 @@ public interface ProjectService {
      * 进入项目:校验账号是该项目成员,签发「项目级」令牌(含 projectId/memberId/roleId/functions)。
      */
     EnterResult enter(Long accountId, Long projectId);
+
+    /** 按 appId 查项目(信使接入校验);不存在/停用返回 null */
+    com.aitalky.identity.entity.IdProject findByAppId(String appId);
 }

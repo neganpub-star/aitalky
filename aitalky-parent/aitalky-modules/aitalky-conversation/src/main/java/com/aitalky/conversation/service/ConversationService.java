@@ -1,0 +1,37 @@
+package com.aitalky.conversation.service;
+
+import com.aitalky.common.api.PageResult;
+import com.aitalky.conversation.dto.ConversationListQuery;
+import com.aitalky.conversation.dto.ConversationVO;
+import com.aitalky.conversation.entity.CnvConversation;
+
+import java.time.LocalDateTime;
+
+/** 会话服务 */
+public interface ConversationService {
+
+    /** 建或取该客户的活跃会话(进行中/等待队列);已结束则新建 */
+    CnvConversation openOrCreate(com.aitalky.conversation.dto.OpenConversationCmd cmd);
+
+    /** 收件箱列表(view: mine/unassigned/all/mention) */
+    PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll);
+
+    /** 取会话 */
+    CnvConversation getById(Long conversationId);
+
+    /** 认领(分配给自己) */
+    void claim(Long conversationId, Long memberId);
+
+    /** 结束会话 */
+    void close(Long conversationId);
+
+    /** 清零坐席侧未读(打开会话时) */
+    void resetUnread(Long conversationId);
+
+    /**
+     * 新消息落地后更新会话冗余字段(列表展示用)。
+     *
+     * @param fromCustomer 是否客户发来(是则坐席侧未读+1)
+     */
+    void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time, boolean fromCustomer);
+}

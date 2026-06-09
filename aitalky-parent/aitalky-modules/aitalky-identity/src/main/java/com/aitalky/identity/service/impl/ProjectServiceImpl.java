@@ -124,6 +124,14 @@ public class ProjectServiceImpl implements ProjectService {
                 role == null ? null : role.getName(), functions);
     }
 
+    @Override
+    public IdProject findByAppId(String appId) {
+        return projectMapper.selectOne(Wrappers.<IdProject>lambdaQuery()
+                .eq(IdProject::getAppId, appId)
+                .eq(IdProject::getStatus, 1)
+                .last("limit 1"));
+    }
+
     /** 解析角色权限 JSON 取 functions;解析失败返回空集合(不影响进入,只是无功能权限) */
     private Set<String> parseFunctions(IdRole role) {
         if (role == null || role.getPermissions() == null) {

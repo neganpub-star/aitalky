@@ -109,6 +109,12 @@ public class MemberServiceImpl implements MemberService {
         memberMapper.deleteById(memberId);
     }
 
+    @Override
+    public com.aitalky.identity.dto.MemberBrief brief(Long memberId) {
+        IdMember m = memberMapper.selectById(memberId);
+        return m == null ? null : new com.aitalky.identity.dto.MemberBrief(m.getId(), m.getNickname(), m.getAvatar());
+    }
+
     /** 取成员(自动按当前项目隔离),不存在抛错 */
     private IdMember requireMember(Long memberId) {
         IdMember member = memberMapper.selectById(memberId);

@@ -1,0 +1,114 @@
+package com.aitalky.app.controller;
+
+import com.aitalky.app.dto.AgentReplyReq;
+import com.aitalky.app.dto.ConversationDetailVO;
+import com.aitalky.common.api.PageResult;
+import com.aitalky.common.api.R;
+import com.aitalky.conversation.dto.ConversationListQuery;
+import com.aitalky.conversation.dto.ConversationVO;
+import com.aitalky.conversation.entity.CnvConversation;
+import com.aitalky.conversation.service.ConversationService;
+import com.aitalky.customer.entity.CusCustomer;
+import com.aitalky.customer.service.CustomerService;
+import com.aitalky.framework.tenant.TenantContext;
+import com.aitalky.identity.dto.MemberBrief;
+import com.aitalky.identity.service.MemberService;
+import com.aitalky.message.document.Message;
+import com.aitalky.message.dto.MessageVO;
+import com.aitalky.message.dto.SendMessageCmd;
+import com.aitalky.message.service.MessageService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.List;
+
+/**
+ * 坐席端会话接口(项目级令牌)。收件箱列表/详情/消息/回复/认领/结束。
+ * <p>会话可见性由 view + 权限控制:all 视图需 inbox.viewAll;否则只看分给自己的(mine)。
+ */
+@RestController
+@RequestMapping("/api/conversations")
+@RequiredArgsConstructor
+public class ConversationController {
+
+    private final ConversationService conversationService;
+    private final MessageService messageService;
+    private final MemberService memberService;
+    private final CustomerService customerService;
+
+    /** 收件箱列表 */
+    @GetMapping
+    public R<PageResult<ConversationVO>> list(ConversationListQuery query) {
+        boolean canViewAll = TenantContext.hasFunction("inbox.viewAll");
+        return R.ok(conversationService.list(query, TenantContext.getMemberId(), canViewAll));
+    }
+
+    /** 会话详情(含客户信息) */
+    @GetMapping("/{id}")
+    public R<ConversationDetailVO> detail(@PathVariable Long id) {
+        CnvConversation c = conversationService.getById(id);
+        CusCustomer cu = customerService.getById(c.getCustomerId());
+        return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
+                c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
+                cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
+                cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
+                cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
+                cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
+                cu == null ? null : cu.getCustomAttrs()));
+    }
+
+    /** 会话消息(afterSeq 增量;不传取最近 50 条);打开即清未读。坐席可见内部消息 */
+    @GetMapping("/{id}/messages")
+    public R<List<MessageVO>> messages(@PathVariable Long id, @RequestParam(required = false) Long afterSeq) {
+        conversationService.getById(id);
+        conversationService.resetUnread(id);
+        List<Message> list = afterSeq == null
+                ? messageService.loadLatest(id, 50)
+                : messageService.sync(id, afterSeq);
+        return R.ok(list.stream().map(PublicMessengerController::toVO).toList());
+    }
+
+    /** 坐席回复(代发归属=真实发送成员;未分配则自动认领) */
+    @PostMapping("/{id}/messages")
+    public R<MessageVO> reply(@PathVariable Long id, @Valid @RequestBody AgentReplyReq req) {
+        CnvConversation conv = conversationService.getById(id);
+        MemberBrief me = memberService.brief(TenantContext.getMemberId());
+        boolean internal = Boolean.TRUE.equals(req.internal());
+        Message m = messageService.send(new SendMessageCmd(
+                conv.getProjectId(), id, conv.getCustomerId(),
+                "agent", me.id(), me.nickname(), me.avatar(),
+                req.type(), req.content(), internal, req.mentions()));
+        conversationService.onNewMessage(id, m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), false);
+        if (conv.getAssigneeMemberId() == null && !internal) {
+            conversationService.claim(id, me.id()); // 直接回复未分配会话即认领
+        }
+        // TODO P2: WS 推送给 客户 + assignee全部连接 + 会话订阅者(代看/代发)
+        return R.ok(PublicMessengerController.toVO(m));
+    }
+
+    /** 认领 */
+    @PostMapping("/{id}/claim")
+    public R<Void> claim(@PathVariable Long id) {
+        conversationService.claim(id, TenantContext.getMemberId());
+        return R.ok();
+    }
+
+    /** 结束会话 */
+    @PostMapping("/{id}/close")
+    public R<Void> close(@PathVariable Long id) {
+        conversationService.close(id);
+        return R.ok();
+    }
+
+    private static LocalDateTime toLdt(Long ts) {
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(ts), ZoneId.systemDefault());
+    }
+
+    private static String preview(String content) {
+        return content == null ? "" : (content.length() > 50 ? content.substring(0, 50) : content);
+    }
+}
