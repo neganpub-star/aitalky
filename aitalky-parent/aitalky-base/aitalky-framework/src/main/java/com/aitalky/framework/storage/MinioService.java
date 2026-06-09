@@ -6,6 +6,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.SetBucketPolicyArgs;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -100,13 +101,19 @@ public class MinioService {
         return url;
     }
 
-    /** 确保桶存在,不存在则创建 */
+    /** 确保桶存在(不存在则创建),并设为匿名只读(头像/图片需 &lt;img&gt; 直接访问;桶默认私有会 403) */
     private void ensureBucket() throws Exception {
         boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(props.bucket()).build());
         if (!exists) {
             client.makeBucket(MakeBucketArgs.builder().bucket(props.bucket()).build());
             log.info("MinIO 自动创建桶: {}", props.bucket());
         }
+        // 设置匿名只读策略(幂等,每次启动设置);只读不可写,上传仍需密钥
+        String policy = """
+                {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},\
+                "Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/*"]}]}""".formatted(props.bucket());
+        client.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(props.bucket()).config(policy).build());
+        log.info("MinIO 桶 {} 已设为匿名只读", props.bucket());
     }
 
     /** 对象 key:按日期分目录 + uuid + 原扩展名,避免重名 */
