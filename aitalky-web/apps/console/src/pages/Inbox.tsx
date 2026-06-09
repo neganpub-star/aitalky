@@ -171,7 +171,7 @@ export default function Inbox() {
             ? {
                 ...c,
                 lastMessagePreview: msg.content,
-                lastMessageAt: new Date(msg.timestamp).toISOString(),
+                lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
                 // 当前会话已打开 → 不累加未读;仅客户发来的才记未读
                 unreadCount: isCurrent || msg.senderType !== 'customer' ? c.unreadCount : c.unreadCount + 1,
               }
@@ -257,7 +257,7 @@ export default function Inbox() {
       setList((prev) =>
         prev.map((c) =>
           c.id === selectedId
-            ? { ...c, lastMessagePreview: content, lastMessageAt: new Date(vo.timestamp).toISOString() }
+            ? { ...c, lastMessagePreview: content, lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
             : c,
         ),
       )
