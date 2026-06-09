@@ -1,4 +1,5 @@
 import type { MessageVO } from './types'
+import { normMessage } from './normalize'
 
 // 信使端 WS:客户令牌连 /ws?token,后端按 identity(cust:{id})推送其全部连接——无需订阅会话。
 // 同样遵守"WS 只当通知、seq 当真相":断连/弱网漏帧由 onOpen 重连补漏 + 周期对账兜底(见 App)。
@@ -50,9 +51,10 @@ class MessengerWs {
       } catch {
         return
       }
-      // 控制帧(connected/pong)忽略;含 msgId 的为消息帧
+      // 控制帧(connected/pong)忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
       if (typeof data.msgId !== 'undefined') {
-        this.msgFns.forEach((fn) => fn(data as unknown as MessageVO))
+        const msg = normMessage(data as unknown as MessageVO)
+        this.msgFns.forEach((fn) => fn(msg))
       }
     }
     ws.onclose = () => {

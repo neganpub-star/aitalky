@@ -1,4 +1,5 @@
 import type { MessageVO } from '../types'
+import { normMessage } from '../normalize'
 
 // WS 连接状态:供 UI 展示在线/重连中
 export type WsStatus = 'connecting' | 'open' | 'closed'
@@ -72,9 +73,9 @@ class WsClient {
       } catch {
         return
       }
-      // 控制帧:connected / pong 直接忽略;含 msgId 的为消息帧
+      // 控制帧:connected / pong 直接忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
       if (typeof data.msgId !== 'undefined') {
-        const msg = data as unknown as MessageVO
+        const msg = normMessage(data as unknown as MessageVO)
         this.messageListeners.forEach((fn) => fn(msg))
       }
     }
