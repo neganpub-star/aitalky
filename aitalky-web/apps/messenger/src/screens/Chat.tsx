@@ -65,17 +65,21 @@ export default function Chat({ data, messages, status, sending, onSend, onBack }
       <div className="msg-list">
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
-          const initial = (m.senderName || (mine ? 'U' : 'S')).charAt(0).toUpperCase()
+          const initial = (m.senderName || 'S').charAt(0).toUpperCase()
           return (
             <div key={m.msgId} className={`msg-row ${mine ? 'mine' : ''}`}>
-              {m.senderAvatar ? (
-                <img className="avatar" src={m.senderAvatar} alt="" />
-              ) : (
-                <div className="avatar" style={mine ? undefined : { background: '#ff7a45' }}>
-                  {initial}
-                </div>
-              )}
+              {/* 对齐 ByteTrack:客户(自己)消息不显头像,仅客服侧显头像 */}
+              {!mine &&
+                (m.senderAvatar ? (
+                  <img className="avatar" src={m.senderAvatar} alt="" />
+                ) : (
+                  <div className="avatar" style={{ background: '#ff7a45' }}>
+                    {initial}
+                  </div>
+                ))}
               <div className="msg-body">
+                {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
+                {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
                 <div className="msg-time">{fmtTime(m.timestamp)}</div>
               </div>
