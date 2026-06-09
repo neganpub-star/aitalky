@@ -1,0 +1,32 @@
+# ===== 构建产物 =====
+target/
+build/
+dist/
+*.jar
+*.war
+!**/src/**/*.jar
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+
+# ===== 本地配置 / 敏感信息（禁止提交） =====
+application-dev.yml
+application-local.yml
+*-secret.yml
+.env
+.env.*
+
+# ===== 前端（后续 web/ 目录用） =====
+node_modules/
+.pnpm-store/
+*.local
+
+# ===== 系统 =====
+.DS_Store
+logs/
+*.log

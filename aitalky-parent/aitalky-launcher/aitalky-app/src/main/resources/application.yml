@@ -1,0 +1,79 @@
+# ⚠ 本地开发配置:连接信息/密钥均为明文,仅供本地;上线前改为环境变量/配置中心注入
+server:
+  port: 8080
+
+spring:
+  application:
+    name: aitalky-app
+  # 虚拟线程（Java 21）：高并发 IO 场景吞吐更好
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/aitalky?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    username: root
+    password: negan123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+    mongodb:
+      uri: mongodb://localhost:27017/aitalky
+  # 邮件(验证码发送;复用 cicada SMTP,明文仅本地)
+  mail:
+    host: mail.devnew.top
+    port: 587
+    username: noreply@devnew.top
+    password: x6FCrRjpGeh0Yvyp
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+
+# RocketMQ（异步 + 顺序消息）
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: aitalky-app-producer
+    send-message-timeout: 3000
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: delFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: input   # 用雪花ID手动注入，不用数据库自增
+
+# 自定义
+aitalky:
+  jwt:
+    secret: aitalky_dev_secret_key_please_change_in_prod_0123456789abcdef
+    expire-hours: 12
+    header: Authorization
+    prefix: "Bearer "
+  id:
+    # ★ 横向扩展：每个实例必须不同(上线多实例时改这里)
+    datacenter-id: 0
+    worker-id: 0
+  verify-code:
+    master-enabled: true          # 开发期开启万能验证码;上线置 false
+    master-code: "888888"         # 万能验证码:可直接用它注册/登录
+    ttl-minutes: 5
+    send-interval-seconds: 60
+    code-length: 6
+    from: noreply@devnew.top
+  job:
+    close-idle:
+      cron: "0 * * * * ?"
+
+logging:
+  level:
+    com.aitalky: info

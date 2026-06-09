@@ -1,0 +1,33 @@
+# ⚠ 本地开发配置:连接信息/密钥均为明文,仅供本地;上线前改为环境变量/配置中心注入
+spring:
+  application:
+    name: aitalky-ws
+  # ws 入口不起 Tomcat（main 中设为 NONE）；仍需 Redis 做连接路由
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: aitalky-ws-producer
+
+aitalky:
+  jwt:
+    secret: aitalky_dev_secret_key_please_change_in_prod_0123456789abcdef
+    expire-hours: 12
+  id:
+    datacenter-id: 2
+    worker-id: 0
+  ws:
+    port: 9000
+    path: /ws
+    reader-idle-seconds: 60
+    # ★ 横向扩展：每个 ws 实例必须唯一(上线多实例时改这里)
+    instance-id: ws-0
+
+logging:
+  level:
+    com.aitalky: info

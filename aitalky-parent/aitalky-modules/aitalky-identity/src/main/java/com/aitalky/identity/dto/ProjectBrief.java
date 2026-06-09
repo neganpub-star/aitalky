@@ -1,0 +1,5 @@
+package com.aitalky.identity.dto;
+
+/** 项目简要信息(登录后列出账号可进入的项目) */
+public record ProjectBrief(Long id, String name, String appId) {
+}

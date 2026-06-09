@@ -1,0 +1,42 @@
+# ⚠ 本地开发配置:连接信息/密钥均为明文,仅供本地;上线前改为环境变量/配置中心注入
+server:
+  port: 8090
+
+spring:
+  application:
+    name: aitalky-admin
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/aitalky?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    username: root
+    password: negan123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: delFlag
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+      id-type: input
+
+aitalky:
+  jwt:
+    secret: aitalky_dev_secret_key_please_change_in_prod_0123456789abcdef
+    expire-hours: 12
+  id:
+    datacenter-id: 1
+    worker-id: 0
+
+logging:
+  level:
+    com.aitalky: info

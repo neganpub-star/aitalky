@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.aitalky</groupId>
+        <artifactId>aitalky-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <artifactId>aitalky-ws</artifactId>
+    <name>aitalky-ws</name>
+    <description>实时网关（Netty WS）：长连接/多端推送/心跳，横向扩展 + Redis 路由</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-framework</artifactId>
+        </dependency>
+        <!-- 鉴权/会话/消息服务（推送时校验与取数） -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-identity</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-conversation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-message</artifactId>
+        </dependency>
+        <!-- Netty -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
+        <!-- RocketMQ：跨实例推送广播（订阅消费） -->
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>aitalky-ws</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.aitalky.ws.AitalkyWsApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

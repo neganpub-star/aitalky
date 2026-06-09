@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.aitalky</groupId>
+        <artifactId>aitalky-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <artifactId>aitalky-admin</artifactId>
+    <name>aitalky-admin</name>
+    <description>平台运营后台 API 入口（独立部署=安全隔离，god 权限不与租户 API 同进程）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <!-- 平台后管模块 -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-platform</artifactId>
+        </dependency>
+        <!-- 只读引用其他模块的查询（订阅/订单/项目视图） -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-billing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-identity</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>aitalky-admin</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.aitalky.admin.AitalkyAdminApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
