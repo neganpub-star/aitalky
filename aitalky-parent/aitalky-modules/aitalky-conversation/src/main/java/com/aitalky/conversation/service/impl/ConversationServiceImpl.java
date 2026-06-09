@@ -96,7 +96,7 @@ public class ConversationServiceImpl implements ConversationService {
             return new ConversationVO(c.getId(), c.getCustomerId(),
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                     c.getAssigneeMemberId(), c.getStatus(),
-                    c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount());
+                    c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
     }

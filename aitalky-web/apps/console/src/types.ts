@@ -68,6 +68,7 @@ export interface ConversationVO {
   lastMessagePreview: string | null
   lastMessageAt: string | null
   unreadCount: number
+  lastSeq: number | null
 }
 
 // 会话详情(会话 + 客户信息,供详情面板用)
@@ -89,6 +90,7 @@ export interface ConversationDetailVO {
   contact: string | null
   email: string | null
   customAttrs: string | null
+  lastSeq: number | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

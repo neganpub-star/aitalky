@@ -63,7 +63,7 @@ public class ConversationController {
                 cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
-                cu == null ? null : cu.getCustomAttrs()));
+                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq()));
     }
 
     /** 会话消息(afterSeq 增量;不传取最近 50 条);打开即清未读。坐席可见内部消息 */
