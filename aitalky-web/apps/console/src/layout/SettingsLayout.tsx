@@ -5,11 +5,15 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import type { MenuProps } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
+import { useAppStore } from '../store/useAppStore'
 
 // 设置区左侧分组导航(参照 ByteTrack);按功能权限过滤,空分组自动隐藏(菜单隔离)
 export default function SettingsLayout() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const isDark = useAppStore((s) => s.themeMode) === 'dark'
+  const panelGray = isDark ? token.colorBgLayout : '#f7f7f7'
+  const splitBorder = `0.5px solid ${isDark ? token.colorSplit : 'rgba(0,0,0,0.1)'}`
   const nav = useNavigate()
   const loc = useLocation()
 
@@ -47,9 +51,9 @@ export default function SettingsLayout() {
   const styles: Record<string, CSSProperties> = {
     // 与收件箱第2栏(分类视图)一致:宽 216、淡灰底、淡分隔线 —— 切换页面时不跳变
     root: { display: 'flex', height: '100%' },
-    side: { width: 216, flexShrink: 0, background: token.colorBgLayout, borderRight: `1px solid ${token.colorSplit}`, paddingTop: 4 },
+    side: { width: 224, flexShrink: 0, background: panelGray, borderRight: splitBorder, paddingTop: 4 },
     title: { fontWeight: 700, fontSize: 17, padding: '14px 20px' },
-    content: { flex: 1, background: token.colorBgLayout, padding: 24, overflow: 'auto' },
+    content: { flex: 1, background: panelGray, padding: 24, overflow: 'auto' },
   }
 
   return (

@@ -7,11 +7,16 @@ import {
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
+import { useAppStore } from '../store/useAppStore'
 
 // 收件箱(对齐 ByteTrack 三栏:分类视图 / 会话列表 / 聊天)。会话/消息后端开发中,先放结构与空态。
 export default function Inbox() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const isDark = useAppStore((s) => s.themeMode) === 'dark'
+  // 分类视图与聊天区背景(ByteTrack 实测 #f7f7f7),暗色用容器层色;分隔线 0.5px 极淡
+  const panelGray = isDark ? token.colorBgLayout : '#f7f7f7'
+  const splitBorder = `0.5px solid ${isDark ? token.colorSplit : 'rgba(0,0,0,0.1)'}`
   const [active, setActive] = useState('mine')
   const [collapsed, setCollapsed] = useState(false) // 收起第一栏(分类视图)
 
@@ -28,12 +33,11 @@ export default function Inbox() {
   const styles: Record<string, CSSProperties> = {
     // 分区白底 + 清晰边框分隔;聊天区淡灰 —— 对齐 ByteTrack
     root: { display: 'flex', height: '100%' },
-    // col1/col2 固定宽度(flexShrink:0),不随窗口/内容变化 —— 对齐 ByteTrack
-    // 分类视图(col1)与聊天区(col3)同为浅灰;会话列表(col2)为白(放列表内容)
-    col1: { width: 216, flexShrink: 0, background: token.colorBgLayout, borderRight: `1px solid ${token.colorSplit}`, display: 'flex', flexDirection: 'column' },
-    col2: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderRight: `1px solid ${token.colorSplit}`, display: 'flex', flexDirection: 'column' },
-    col3: { flex: 1, minWidth: 0, background: token.colorBgLayout, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    colHeader: { height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: `1px solid ${token.colorSplit}` },
+    // 分类视图(col1=224/#f7f7f7)与聊天区(col3)同色;会话列表(col2)为白;固定宽度不变化 —— ByteTrack 实测值
+    col1: { width: 224, flexShrink: 0, background: panelGray, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
+    col2: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
+    col3: { flex: 1, minWidth: 0, background: panelGray, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    colHeader: { height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: splitBorder },
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
     catItem: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 8px', padding: '11px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15 },
