@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
 import {
   InboxOutlined, SettingOutlined, PoweroffOutlined, GlobalOutlined, UserOutlined,
@@ -12,6 +12,7 @@ import { getCtx, logout, saveEnter } from '../auth/session'
 import { canAccessSettings, hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
+import { wsClient } from '../ws/client'
 import type { ProjectBrief } from '../types'
 
 // 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
@@ -26,6 +27,15 @@ export default function MainLayout() {
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const lang = useAppStore((s) => s.lang)
   const [workOnline, setWorkOnline] = useState(true) // 工作状态(暂本地;接成员自助接口后落库)
+  const wsToken = useAppStore((s) => s.token)
+
+  // 进入项目即建立 WS 长连接(项目级令牌带 memberId);退出/卸载时断开
+  useEffect(() => {
+    if (wsToken) {
+      wsClient.connect(wsToken)
+    }
+    return () => wsClient.close()
+  }, [wsToken])
 
   // 菜单按权限显示:设置仅对有相关功能权限的成员可见
   const navItems = [
