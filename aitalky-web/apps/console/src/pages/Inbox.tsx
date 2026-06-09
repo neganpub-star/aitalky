@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Button, Empty, Input, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
@@ -15,6 +15,7 @@ import {
   listConversations, listMessages, replyConversation, updateCustomerContact,
 } from '../api/conversation'
 import { blockCustomer } from '../api/blacklist'
+import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
 import type { ConversationDetailVO, ConversationVO, MessageVO } from '../types'
 
 // 视图 → 列表查询的 view 参数
@@ -101,6 +102,12 @@ export default function Inbox() {
   const [savingContact, setSavingContact] = useState(false)
   const [bizCollapsed, setBizCollapsed] = useState(false)
   const [autoTranslate, setAutoTranslate] = useState(false) // 翻译为占位(AI翻译模块未做)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickReplies, setQuickReplies] = useState<QuickReplyVO[]>([])
+
+  const loadQuickReplies = useCallback(() => {
+    listQuickReplies().then(setQuickReplies).catch(() => {})
+  }, [])
 
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
@@ -556,12 +563,41 @@ export default function Inbox() {
                     { icon: <PaperClipOutlined />, k: 'inbox.toolFile' },
                     { icon: <LinkOutlined />, k: 'inbox.toolLink' },
                     { icon: <BookOutlined />, k: 'inbox.toolKb' },
-                    { icon: <ThunderboltOutlined />, k: 'inbox.toolQuick' },
                   ] as const).map(({ icon, k }) => (
                     <Tooltip key={k} title={t(k)}>
                       <span style={{ cursor: 'pointer' }} onClick={() => message.info(t('settings.wip'))}>{icon}</span>
                     </Tooltip>
                   ))}
+                  {/* 快捷回复:点击弹出列表,选中插入输入框 */}
+                  <Popover
+                    trigger="click"
+                    placement="topLeft"
+                    open={quickOpen}
+                    onOpenChange={(o) => { setQuickOpen(o); if (o) loadQuickReplies() }}
+                    content={
+                      <div style={{ width: 280, maxHeight: 320, overflow: 'auto' }}>
+                        {quickReplies.length === 0 ? (
+                          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.quickEmpty')} />
+                        ) : (
+                          quickReplies.map((q) => (
+                            <div
+                              key={q.id}
+                              className="at-row"
+                              style={{ padding: '8px 10px', borderRadius: 6, cursor: 'pointer' }}
+                              onClick={() => { setInput((prev) => (prev ? prev + '\n' : '') + q.content); setQuickOpen(false) }}
+                            >
+                              {q.title && <div style={{ fontSize: 13, fontWeight: 600 }}>{q.title}</div>}
+                              <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{q.content}</div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    }
+                  >
+                    <Tooltip title={t('inbox.toolQuick')}>
+                      <span style={{ cursor: 'pointer' }}><ThunderboltOutlined /></span>
+                    </Tooltip>
+                  </Popover>
                 </div>
                 {unassigned && !closed && (
                   <Button size="small" style={{ marginRight: 8 }} onClick={onClaim}>{t('inbox.claim')}</Button>

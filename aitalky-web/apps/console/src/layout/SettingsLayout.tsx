@@ -22,6 +22,7 @@ export default function SettingsLayout() {
       key: 'mse', icon: <MessageOutlined />, label: t('settings.messengerSetting'),
       children: [
         { key: '/settings/messenger', label: t('settings.basicSetting'), func: 'messenger.setting' },
+        { key: '/settings/quick-replies', label: t('settings.quickReply'), func: 'messenger.setting' },
         { key: '/settings/blacklist', label: t('settings.blacklist'), func: 'messenger.setting' },
       ],
     },
