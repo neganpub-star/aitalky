@@ -1,41 +1,53 @@
-import type { CSSProperties } from 'react'
-import { useState } from 'react'
-import { Button, Card, Form, Input, Typography, message } from 'antd'
-import { LockOutlined, MailOutlined, SafetyOutlined } from '@ant-design/icons'
-import { useNavigate, Link } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { Button, Form, Input, Typography, message } from 'antd'
+import { LockOutlined, MailOutlined } from '@ant-design/icons'
+import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import AuthShell from './auth/AuthShell'
 import { register, sendCode } from '../api/auth'
 
 const { Title, Text } = Typography
 
-/** 注册页:邮箱 + 密码 + 邮箱验证码。开发期可用万能码 888888 */
+// 注册:第一步 邮箱+密码,第二步 邮箱验证码(与登录同款两步式)
 export default function Register() {
+  const { t } = useTranslation()
   const nav = useNavigate()
   const [form] = Form.useForm()
+  const [step, setStep] = useState<'cred' | 'code'>('cred')
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const creds = useRef<{ email: string; password: string }>({ email: '', password: '' })
 
-  const onSendCode = async () => {
-    try {
-      const { email } = await form.validateFields(['email'])
-      await sendCode(email, 'REGISTER')
-      message.success('验证码已发送(开发期可直接用 888888)')
-      let n = 60
+  const startCountdown = () => {
+    let n = 60
+    setCountdown(n)
+    const timer = setInterval(() => {
+      n -= 1
       setCountdown(n)
-      const t = setInterval(() => {
-        n -= 1
-        setCountdown(n)
-        if (n <= 0) clearInterval(t)
-      }, 1000)
+      if (n <= 0) clearInterval(timer)
+    }, 1000)
+  }
+
+  const onCred = async (v: { email: string; password: string }) => {
+    setLoading(true)
+    creds.current = { email: v.email, password: v.password }
+    try {
+      await sendCode(v.email, 'REGISTER')
+      message.success(t('auth.codeSent'))
     } catch {
       /* ignore */
+    } finally {
+      setLoading(false)
+      setStep('code')
+      startCountdown()
     }
   }
 
-  const onFinish = async (v: { email: string; password: string; code: string }) => {
+  const onCode = async (code: string) => {
     setLoading(true)
     try {
-      await register(v.email, v.password, v.code)
-      message.success('注册成功,请登录')
+      await register(creds.current.email, creds.current.password, code)
+      message.success(t('auth.registerOk'))
       nav('/login')
     } finally {
       setLoading(false)
@@ -43,52 +55,41 @@ export default function Register() {
   }
 
   return (
-    <div style={styles.wrap}>
-      <Card style={styles.card} variant="borderless">
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <Title level={3} style={{ marginBottom: 4 }}>注册 aitalky 账号</Title>
-          <Text type="secondary">用邮箱创建你的客服账号</Text>
-        </div>
-        <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
-          <Form.Item name="email" rules={[{ required: true, type: 'email', message: '请输入有效邮箱' }]}>
-            <Input size="large" prefix={<MailOutlined />} placeholder="邮箱" />
-          </Form.Item>
-          <Form.Item name="password" rules={[{ required: true, min: 6, message: '密码至少 6 位' }]}>
-            <Input.Password size="large" prefix={<LockOutlined />} placeholder="密码(≥6位)" />
-          </Form.Item>
-          <Form.Item name="code" rules={[{ required: true, message: '请输入验证码' }]}>
-            <Input
-              size="large"
-              prefix={<SafetyOutlined />}
-              placeholder="邮箱验证码"
-              addonAfter={
-                <Button type="link" style={{ padding: 0 }} disabled={countdown > 0} onClick={onSendCode}>
-                  {countdown > 0 ? `${countdown}s` : '发送验证码'}
-                </Button>
-              }
-            />
-          </Form.Item>
-          <Form.Item style={{ marginTop: 8 }}>
-            <Button type="primary" size="large" htmlType="submit" loading={loading} block>
-              注册
+    <AuthShell>
+      {step === 'cred' ? (
+        <>
+          <Title style={{ fontSize: 40, fontWeight: 800, marginBottom: 8 }}>{t('auth.registerTitle')}</Title>
+          <div style={{ marginBottom: 28 }}>
+            <Text type="secondary">{t('auth.haveAccount')}</Text> <Link to="/login">{t('auth.loginNow')}</Link>
+          </div>
+          <Form form={form} onFinish={onCred} requiredMark={false}>
+            <Form.Item name="email" rules={[{ required: true, type: 'email', message: t('auth.email') }]}>
+              <Input size="large" variant="filled" prefix={<MailOutlined />} placeholder={t('auth.email')} />
+            </Form.Item>
+            <Form.Item name="password" rules={[{ required: true, min: 6, message: t('auth.passwordMin') }]}>
+              <Input.Password size="large" variant="filled" prefix={<LockOutlined />} placeholder={t('auth.passwordMin')} />
+            </Form.Item>
+            <Button type="primary" size="large" htmlType="submit" loading={loading} block style={{ marginTop: 8 }}>
+              {t('auth.next')}
             </Button>
-          </Form.Item>
-        </Form>
-        <div style={{ textAlign: 'center' }}>
-          <Text type="secondary">已有账号?</Text> <Link to="/login">去登录</Link>
-        </div>
-      </Card>
-    </div>
+          </Form>
+        </>
+      ) : (
+        <>
+          <Title style={{ fontSize: 36, fontWeight: 800, marginBottom: 8 }}>{t('auth.emailVerify')}</Title>
+          <div style={{ marginBottom: 28 }}>
+            {countdown > 0 ? (
+              <Text type="secondary">{t('auth.resendIn', { n: countdown })}</Text>
+            ) : (
+              <a onClick={() => sendCode(creds.current.email, 'REGISTER').finally(startCountdown)}>{t('auth.resend')}</a>
+            )}
+          </div>
+          <Input.OTP length={6} size="large" onChange={(v) => v.length === 6 && onCode(v)} disabled={loading} />
+          <div style={{ marginTop: 24 }}>
+            <a onClick={() => setStep('cred')}>{t('auth.back')}</a>
+          </div>
+        </>
+      )}
+    </AuthShell>
   )
-}
-
-const styles: Record<string, CSSProperties> = {
-  wrap: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg,#eef2ff 0%,#f5f7fb 100%)',
-  },
-  card: { width: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', borderRadius: 12 },
 }

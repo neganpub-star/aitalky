@@ -1,8 +1,6 @@
-// 登录态本地存储:token + 轻量上下文(展示用)
+// 登录态访问:委托给 Zustand store(集中 + 持久化)。保留函数签名,兼容现有非组件代码
+import { useAppStore } from '../store/useAppStore'
 import type { EnterResult, LoginResult, ProjectBrief } from '../types'
-
-const TOKEN_KEY = 'aitalky_token'
-const CTX_KEY = 'aitalky_ctx'
 
 export interface SessionCtx {
   email?: string
@@ -15,35 +13,36 @@ export interface SessionCtx {
 }
 
 export function getToken(): string {
-  return localStorage.getItem(TOKEN_KEY) || ''
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  return useAppStore.getState().token
 }
 
 export function getCtx(): SessionCtx {
-  const raw = localStorage.getItem(CTX_KEY)
-  return raw ? (JSON.parse(raw) as SessionCtx) : {}
+  const s = useAppStore.getState()
+  return {
+    email: s.email,
+    accountId: s.accountId,
+    projects: s.projects,
+    projectId: s.projectId,
+    projectName: s.projectName,
+    roleName: s.roleName,
+    functions: s.functions,
+  }
+}
+
+export function saveLogin(r: LoginResult): void {
+  useAppStore.getState().saveLogin(r)
+}
+
+export function saveEnter(r: EnterResult, projectName: string): void {
+  useAppStore.getState().saveEnter(r, projectName)
 }
 
 export function patchCtx(patch: SessionCtx): void {
-  localStorage.setItem(CTX_KEY, JSON.stringify({ ...getCtx(), ...patch }))
-}
-
-/** 登录成功:存账号级 token + 账号信息 + 可进入项目列表 */
-export function saveLogin(r: LoginResult): void {
-  setToken(r.token)
-  patchCtx({ email: r.email, accountId: r.accountId, projects: r.projects })
-}
-
-/** 进入项目:换成项目级 token + 项目上下文 */
-export function saveEnter(r: EnterResult, projectName: string): void {
-  setToken(r.token)
-  patchCtx({ projectId: r.projectId, projectName, roleName: r.roleName, functions: r.functions })
+  if (patch.projects) {
+    useAppStore.getState().setProjects(patch.projects)
+  }
 }
 
 export function logout(): void {
-  localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(CTX_KEY)
+  useAppStore.getState().logout()
 }

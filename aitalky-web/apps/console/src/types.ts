@@ -30,3 +30,29 @@ export interface WhoAmI {
 }
 
 export type VerifyScene = 'REGISTER' | 'LOGIN' | 'RESET_PWD'
+
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  current: number
+  size: number
+}
+
+export interface MemberVO {
+  id: string
+  accountId: string
+  email: string
+  nickname: string
+  avatar: string | null
+  roleId: string
+  roleName: string
+  status: number
+  onlineStatus: number
+  workStatus: number
+}
+
+export interface RoleVO {
+  id: string
+  name: string
+  isSystem: number
+}

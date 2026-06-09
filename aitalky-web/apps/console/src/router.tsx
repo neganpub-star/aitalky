@@ -5,7 +5,12 @@ import Register from './pages/Register'
 import Projects from './pages/Projects'
 import Inbox from './pages/Inbox'
 import MainLayout from './layout/MainLayout'
+import SettingsLayout from './layout/SettingsLayout'
+import Members from './pages/settings/Members'
+import Invites from './pages/settings/Invites'
+import Placeholder from './pages/settings/Placeholder'
 import { getCtx, getToken } from './auth/session'
+import { canAccessSettings } from './auth/perm'
 
 /** 需登录(有 token) */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -19,6 +24,11 @@ function RequireProject({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/** 需设置区权限(普通成员直接访问 /settings 重定向回收件箱) */
+function RequireSettings({ children }: { children: ReactNode }) {
+  return canAccessSettings() ? <>{children}</> : <Navigate to="/inbox" replace />
+}
+
 export const router = createHashRouter([
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
@@ -29,6 +39,20 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/inbox" replace /> },
       { path: 'inbox', element: <Inbox /> },
+      {
+        path: 'settings',
+        element: <RequireSettings><SettingsLayout /></RequireSettings>,
+        children: [
+          { index: true, element: <Navigate to="/settings/members" replace /> },
+          { path: 'members', element: <Members /> },
+          { path: 'invites', element: <Invites /> },
+          { path: 'messenger', element: <Placeholder title="信使设置" /> },
+          { path: 'team', element: <Placeholder title="基本信息" /> },
+          { path: 'roles', element: <Placeholder title="角色管理" /> },
+          { path: 'data', element: <Placeholder title="数据管理" /> },
+          { path: 'billing', element: <Placeholder title="服务订阅" /> },
+        ],
+      },
     ],
   },
   { path: '*', element: <Navigate to="/inbox" replace /> },

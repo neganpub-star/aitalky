@@ -1,69 +1,146 @@
 import type { CSSProperties } from 'react'
-import { Avatar, Tooltip, Dropdown, Popover, Divider } from 'antd'
+import { useState } from 'react'
+import { Avatar, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
 import {
-  InboxOutlined,
-  TeamOutlined,
-  BarChartOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  PlusCircleOutlined,
-  CheckOutlined,
+  InboxOutlined, SettingOutlined, PoweroffOutlined, GlobalOutlined, UserOutlined,
+  PlusCircleOutlined, CheckOutlined, UsergroupAddOutlined, BulbOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { enterProject } from '../api/auth'
 import { getCtx, logout, saveEnter } from '../auth/session'
+import { canAccessSettings, hasFunction } from '../auth/perm'
+import { useAppStore } from '../store/useAppStore'
+import { changeLang } from '../i18n'
 import type { ProjectBrief } from '../types'
 
-// 参照 ByteTrack:最左为窄图标导航栏;左上角品牌 LOGO 点击弹出「项目切换」面板
-const NAV = [
-  { key: '/inbox', icon: <InboxOutlined />, label: '收件箱' },
-  { key: '/customers', icon: <TeamOutlined />, label: '客户' },
-  { key: '/statistics', icon: <BarChartOutlined />, label: '数据' },
-  { key: '/settings', icon: <SettingOutlined />, label: '设置' },
-]
-
+// 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
 export default function MainLayout() {
+  const { t } = useTranslation()
+  const { token } = theme.useToken()
   const nav = useNavigate()
   const loc = useLocation()
   const ctx = getCtx()
   const projects: ProjectBrief[] = ctx.projects || []
+  const themeMode = useAppStore((s) => s.themeMode)
+  const toggleTheme = useAppStore((s) => s.toggleTheme)
+  const lang = useAppStore((s) => s.lang)
+  const [workOnline, setWorkOnline] = useState(true) // 工作状态(暂本地;接成员自助接口后落库)
+
+  // 菜单按权限显示:设置仅对有相关功能权限的成员可见
+  const navItems = [
+    { key: '/inbox', icon: <InboxOutlined />, label: t('nav.inbox'), visible: true },
+    { key: '/settings', icon: <SettingOutlined />, label: t('nav.settings'), visible: canAccessSettings() },
+  ].filter((n) => n.visible)
 
   const onSwitch = async (p: ProjectBrief) => {
     if (p.id === ctx.projectId) return
-    const r = await enterProject(p.id)
-    saveEnter(r, p.name)
-    location.reload() // 切项目后刷新,重新加载该项目数据
+    saveEnter(await enterProject(p.id), p.name)
+    location.reload()
   }
 
-  const onLogout = () => {
-    logout()
-    nav('/login')
+  const styles: Record<string, CSSProperties> = {
+    root: { display: 'flex', height: '100vh', overflow: 'hidden' },
+    rail: {
+      width: 56, background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}`,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, paddingBottom: 16,
+    },
+    brand: {
+      width: 36, height: 36, borderRadius: 8, background: token.colorPrimary, color: '#fff',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginBottom: 20, cursor: 'pointer',
+    },
+    navGroup: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 },
+    navItem: {
+      width: 40, height: 40, borderRadius: 8, color: token.colorTextSecondary, fontSize: 20,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+    },
+    navItemActive: { background: token.colorPrimaryBg, color: token.colorPrimary },
+    bottom: { marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 },
+    content: { flex: 1, background: token.colorBgLayout, overflow: 'auto' },
+    projItem: { display: 'flex', alignItems: 'center', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' },
+    userRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', cursor: 'pointer' },
   }
 
-  // 左上角品牌 LOGO 点击弹出的项目切换面板
   const projectPanel = (
     <div style={{ width: 240 }}>
       <div style={{ padding: '4px 12px', fontWeight: 600 }}>{ctx.projectName}</div>
       <Divider style={{ margin: '8px 0' }} />
-      <div style={{ padding: '0 12px 4px', color: '#999', fontSize: 12 }}>切换项目</div>
+      <div style={{ padding: '0 12px 4px', color: token.colorTextSecondary, fontSize: 12 }}>{t('nav.switchProject')}</div>
       <div style={{ maxHeight: 260, overflow: 'auto' }}>
-        {projects.map((p) => {
-          const active = p.id === ctx.projectId
-          return (
-            <div key={p.id} style={styles.projItem} onClick={() => onSwitch(p)}>
-              <Avatar shape="square" size={24} style={{ background: '#2f54eb', fontSize: 12 }}>
-                {p.name.charAt(0)}
-              </Avatar>
-              <span style={{ flex: 1, marginLeft: 8 }}>{p.name}</span>
-              {active && <CheckOutlined style={{ color: '#2f54eb' }} />}
-            </div>
-          )
-        })}
+        {projects.map((p) => (
+          <div key={p.id} style={styles.projItem} onClick={() => onSwitch(p)}>
+            <Avatar shape="square" size={24} style={{ background: token.colorPrimary, fontSize: 12 }}>{p.name.charAt(0)}</Avatar>
+            <span style={{ flex: 1, marginLeft: 8 }}>{p.name}</span>
+            {p.id === ctx.projectId && <CheckOutlined style={{ color: token.colorPrimary }} />}
+          </div>
+        ))}
       </div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={styles.projItem} onClick={() => nav('/projects')}>
-        <PlusCircleOutlined style={{ color: '#2f54eb' }} />
-        <span style={{ marginLeft: 8 }}>新建项目</span>
+        <PlusCircleOutlined style={{ color: token.colorPrimary }} />
+        <span style={{ marginLeft: 8 }}>{t('nav.newProject')}</span>
+      </div>
+    </div>
+  )
+
+  // 头像弹出菜单(1:1 参照 ByteTrack):资料 + 工作状态 + 个人中心/邀请成员/切换语言/切换主题/退出 + 版本
+  const displayName = (ctx.email || 'user').split('@')[0]
+  const rowIcon = { fontSize: 17, color: token.colorTextSecondary }
+  const userPanel = (
+    <div style={{ width: 236, fontSize: 15 }}>
+      {/* 头像 + 名字 + 角色 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px 14px' }}>
+        <div style={{ position: 'relative' }}>
+          <Avatar size={46} style={{ background: token.colorPrimary, fontSize: 18 }}>
+            {displayName.charAt(0).toUpperCase()}
+          </Avatar>
+          <span style={{
+            position: 'absolute', right: 1, bottom: 1, width: 11, height: 11, borderRadius: '50%',
+            background: workOnline ? '#52c41a' : '#bfbfbf', border: `2px solid ${token.colorBgElevated}`,
+          }} />
+        </div>
+        <div style={{ overflow: 'hidden' }}>
+          <div style={{ fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {displayName}
+          </div>
+          {ctx.roleName && <Tag color="orange" style={{ marginTop: 4 }}>{ctx.roleName}</Tag>}
+        </div>
+      </div>
+      <Divider style={{ margin: 0 }} />
+
+      {/* 工作状态 */}
+      <div style={{ ...styles.userRow, justifyContent: 'space-between' }}>
+        <span>工作状态</span>
+        <Switch checked={workOnline} onChange={setWorkOnline} />
+      </div>
+      <Divider style={{ margin: 0 }} />
+
+      {/* 菜单项 */}
+      <div style={styles.userRow} onClick={() => nav('/settings')}>
+        <UserOutlined style={rowIcon} /><span>{t('nav.profile')}</span>
+      </div>
+      {hasFunction('member.manage') && (
+        <div style={styles.userRow} onClick={() => nav('/settings/invites')}>
+          <UsergroupAddOutlined style={rowIcon} /><span>{t('nav.invite')}</span>
+        </div>
+      )}
+      <div style={styles.userRow} onClick={() => changeLang(lang === 'en_US' ? 'zh_CN' : 'en_US')}>
+        <GlobalOutlined style={rowIcon} />
+        <span style={{ flex: 1 }}>{t('nav.lang')}</span>
+        <span style={{ color: token.colorTextSecondary }}>{lang === 'en_US' ? 'English' : '简体中文'}</span>
+      </div>
+      <div style={{ ...styles.userRow, justifyContent: 'space-between' }} onClick={toggleTheme}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <BulbOutlined style={rowIcon} />{t('nav.theme')}
+        </span>
+        <Switch size="small" checked={themeMode === 'dark'} onChange={toggleTheme} checkedChildren="🌙" unCheckedChildren="☀" />
+      </div>
+      <div style={styles.userRow} onClick={() => { logout(); nav('/login') }}>
+        <PoweroffOutlined style={rowIcon} /><span>{t('common.logout')}</span>
+      </div>
+      <Divider style={{ margin: 0 }} />
+      <div style={{ padding: '10px 16px', fontSize: 13, color: token.colorTextSecondary }}>
+        {t('common.version')}: v1.0.0
       </div>
     </div>
   )
@@ -71,39 +148,35 @@ export default function MainLayout() {
   return (
     <div style={styles.root}>
       <div style={styles.rail}>
-        {/* 左上角:品牌 LOGO → 项目切换面板 */}
         <Popover content={projectPanel} trigger="click" placement="rightTop" arrow={false}>
-          <div style={styles.brand} title={ctx.projectName}>
-            {(ctx.projectName || 'AT').charAt(0).toUpperCase()}
-          </div>
+          <div style={styles.brand} title={ctx.projectName}>{(ctx.projectName || 'AT').charAt(0).toUpperCase()}</div>
         </Popover>
 
         <div style={styles.navGroup}>
-          {NAV.map((n) => {
-            const active = loc.pathname.startsWith(n.key)
-            return (
-              <Tooltip key={n.key} title={n.label} placement="right">
-                <div
-                  style={{ ...styles.navItem, ...(active ? styles.navItemActive : {}) }}
-                  onClick={() => nav(n.key)}
-                >
-                  {n.icon}
-                </div>
-              </Tooltip>
-            )
-          })}
+          {navItems.map((n) => (
+            <Tooltip key={n.key} title={n.label} placement="right">
+              <div
+                style={{ ...styles.navItem, ...(loc.pathname.startsWith(n.key) ? styles.navItemActive : {}) }}
+                onClick={() => nav(n.key)}
+              >
+                {n.icon}
+              </div>
+            </Tooltip>
+          ))}
         </div>
 
-        {/* 底部:用户头像 → 退出 */}
-        <div style={styles.railBottom}>
-          <Dropdown
-            menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: onLogout }] }}
-            placement="topRight"
+        <div style={styles.bottom}>
+          <Popover
+            content={userPanel}
+            trigger="click"
+            placement="rightBottom"
+            arrow={false}
+            styles={{ body: { padding: 0 } }}
           >
-            <Avatar style={{ background: '#2f54eb', cursor: 'pointer' }}>
+            <Avatar style={{ background: token.colorPrimary, cursor: 'pointer' }}>
               {(ctx.email || 'U').charAt(0).toUpperCase()}
             </Avatar>
-          </Dropdown>
+          </Popover>
         </div>
       </div>
 
@@ -112,53 +185,4 @@ export default function MainLayout() {
       </div>
     </div>
   )
-}
-
-const styles: Record<string, CSSProperties> = {
-  root: { display: 'flex', height: '100vh', overflow: 'hidden' },
-  rail: {
-    width: 56,
-    background: '#fff',
-    borderRight: '1px solid #f0f0f0',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 16,
-  },
-  brand: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    background: '#2f54eb',
-    color: '#fff',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: 700,
-    marginBottom: 20,
-    cursor: 'pointer',
-  },
-  navGroup: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 },
-  navItem: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    color: '#8c8c8c',
-    fontSize: 20,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-  },
-  navItemActive: { background: 'rgba(47,84,235,0.1)', color: '#2f54eb' },
-  railBottom: { marginTop: 'auto' },
-  content: { flex: 1, background: '#fff', overflow: 'auto' },
-  projItem: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 12px',
-    borderRadius: 6,
-    cursor: 'pointer',
-  },
 }
