@@ -14,6 +14,7 @@ import {
   claimConversation, closeConversation, getConversation,
   listConversations, listMessages, replyConversation, updateCustomerContact,
 } from '../api/conversation'
+import { blockCustomer } from '../api/blacklist'
 import type { ConversationDetailVO, ConversationVO, MessageVO } from '../types'
 
 // 视图 → 列表查询的 view 参数
@@ -654,9 +655,20 @@ export default function Inbox() {
             )}
           </div>
 
-          {/* 加入黑名单(blacklist 模块未做,先占位)*/}
+          {/* 加入黑名单:拉黑该客户(用户=全设备,游客=该设备),拉黑后该身份无法再接入 */}
           <div style={{ padding: '16px' }}>
-            <Button block onClick={() => message.info(t('settings.wip'))}>{t('inbox.detail.blacklist')}</Button>
+            <Popconfirm
+              title={t('inbox.detail.blacklistConfirm')}
+              okText={t('common.confirm')}
+              cancelText={t('common.cancel')}
+              onConfirm={async () => {
+                if (!detail.customerId) return
+                await blockCustomer(detail.customerId)
+                message.success(t('inbox.detail.blacklisted'))
+              }}
+            >
+              <Button block danger>{t('inbox.detail.blacklist')}</Button>
+            </Popconfirm>
           </div>
         </div>
       )}

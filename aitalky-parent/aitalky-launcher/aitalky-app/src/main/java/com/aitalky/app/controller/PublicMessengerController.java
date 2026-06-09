@@ -48,6 +48,7 @@ public class PublicMessengerController {
     private final CustomerTokenService customerTokenService;
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
+    private final com.aitalky.messenger.service.BlacklistService blacklistService;
 
     /** 初始化会话:校验 appId,解析/创建客户与会话,签发客户令牌 */
     @PostMapping("/init")
@@ -58,6 +59,10 @@ public class PublicMessengerController {
         }
         if (!StringUtils.hasText(req.userId()) && !StringUtils.hasText(req.visitorId())) {
             throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        // 黑名单拦截:被拉黑的用户/游客不允许接入
+        if (blacklistService.isBlocked(project.getId(), req.userId(), req.visitorId())) {
+            throw new BizException(ResultCode.FORBIDDEN);
         }
         CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), req.lang());
         CnvConversation conv = conversationService.openOrCreate(new OpenConversationCmd(

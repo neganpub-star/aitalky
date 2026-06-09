@@ -20,7 +20,10 @@ export default function SettingsLayout() {
   const groups = [
     {
       key: 'mse', icon: <MessageOutlined />, label: t('settings.messengerSetting'),
-      children: [{ key: '/settings/messenger', label: t('settings.basicSetting'), func: 'messenger.setting' }],
+      children: [
+        { key: '/settings/messenger', label: t('settings.basicSetting'), func: 'messenger.setting' },
+        { key: '/settings/blacklist', label: t('settings.blacklist'), func: 'messenger.setting' },
+      ],
     },
     {
       key: 'team', icon: <TeamOutlined />, label: t('settings.teamSetting'),

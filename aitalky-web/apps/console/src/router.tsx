@@ -13,6 +13,7 @@ import Placeholder from './pages/settings/Placeholder'
 import ProfileBasic from './pages/profile/ProfileBasic'
 import ProfilePreferences from './pages/profile/ProfilePreferences'
 import ProfilePush from './pages/profile/ProfilePush'
+import Blacklist from './pages/settings/Blacklist'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -61,6 +62,7 @@ export const router = createHashRouter([
           { path: 'members', element: <Members /> },
           { path: 'invites', element: <Invites /> },
           { path: 'messenger', element: <Placeholder title="信使设置" /> },
+          { path: 'blacklist', element: <Blacklist /> },
           { path: 'team', element: <Placeholder title="基本信息" /> },
           { path: 'roles', element: <Placeholder title="角色管理" /> },
           { path: 'data', element: <Placeholder title="数据管理" /> },
