@@ -129,7 +129,7 @@ export default function MainLayout() {
       <Divider style={{ margin: 0 }} />
 
       {/* 菜单项 */}
-      <div className="at-row" style={styles.userRow} onClick={() => nav('/settings')}>
+      <div className="at-row" style={styles.userRow} onClick={() => nav('/profile')}>
         <UserOutlined style={rowIcon} /><span>{t('nav.profile')}</span>
       </div>
       {hasFunction('member.manage') && (

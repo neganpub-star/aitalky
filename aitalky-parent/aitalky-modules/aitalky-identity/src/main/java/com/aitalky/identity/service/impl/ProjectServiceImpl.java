@@ -132,6 +132,11 @@ public class ProjectServiceImpl implements ProjectService {
                 .last("limit 1"));
     }
 
+    @Override
+    public IdProject getById(Long id) {
+        return projectMapper.selectById(id);
+    }
+
     /** 解析角色权限 JSON 取 functions;解析失败返回空集合(不影响进入,只是无功能权限) */
     private Set<String> parseFunctions(IdRole role) {
         if (role == null || role.getPermissions() == null) {

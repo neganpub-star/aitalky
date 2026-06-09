@@ -6,9 +6,13 @@ import Projects from './pages/Projects'
 import Inbox from './pages/Inbox'
 import MainLayout from './layout/MainLayout'
 import SettingsLayout from './layout/SettingsLayout'
+import ProfileLayout from './layout/ProfileLayout'
 import Members from './pages/settings/Members'
 import Invites from './pages/settings/Invites'
 import Placeholder from './pages/settings/Placeholder'
+import ProfileBasic from './pages/profile/ProfileBasic'
+import ProfilePreferences from './pages/profile/ProfilePreferences'
+import ProfilePush from './pages/profile/ProfilePush'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -39,6 +43,16 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/inbox" replace /> },
       { path: 'inbox', element: <Inbox /> },
+      {
+        path: 'profile',
+        element: <ProfileLayout />,
+        children: [
+          { index: true, element: <Navigate to="/profile/basic" replace /> },
+          { path: 'basic', element: <ProfileBasic /> },
+          { path: 'preferences', element: <ProfilePreferences /> },
+          { path: 'push', element: <ProfilePush /> },
+        ],
+      },
       {
         path: 'settings',
         element: <RequireSettings><SettingsLayout /></RequireSettings>,

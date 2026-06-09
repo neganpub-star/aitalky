@@ -22,4 +22,7 @@ public interface ProjectService {
 
     /** 按 appId 查项目(信使接入校验);不存在/停用返回 null */
     com.aitalky.identity.entity.IdProject findByAppId(String appId);
+
+    /** 按 id 取项目(个人中心判断是否 owner 等) */
+    com.aitalky.identity.entity.IdProject getById(Long id);
 }

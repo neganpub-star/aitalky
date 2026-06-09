@@ -4,6 +4,7 @@ import com.aitalky.common.api.PageResult;
 import com.aitalky.identity.dto.MemberBrief;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
+import com.aitalky.identity.dto.ProfileVO;
 
 /**
  * 成员管理服务(均在当前项目范围内,多租户拦截器自动隔离)。
@@ -31,4 +32,10 @@ public interface MemberService {
 
     /** 成员轻量信息(昵称/头像),用于消息发送者快照 */
     MemberBrief brief(Long memberId);
+
+    /** 个人中心资料:账户邮箱 + 当前项目成员信息聚合(含是否 owner、偏好设置) */
+    ProfileVO profile(Long memberId);
+
+    /** 更新个人偏好(语言/声音/推送);传 null 的字段不改 */
+    void updatePreferences(Long memberId, String language, Integer soundEnabled, Integer pushEnabled);
 }

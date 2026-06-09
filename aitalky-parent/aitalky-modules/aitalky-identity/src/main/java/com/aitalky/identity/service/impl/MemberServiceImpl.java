@@ -7,6 +7,7 @@ import com.aitalky.common.util.MaskUtil;
 import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
+import com.aitalky.identity.dto.ProfileVO;
 import com.aitalky.identity.entity.IdAccount;
 import com.aitalky.identity.entity.IdMember;
 import com.aitalky.identity.entity.IdProject;
@@ -113,6 +114,35 @@ public class MemberServiceImpl implements MemberService {
     public com.aitalky.identity.dto.MemberBrief brief(Long memberId) {
         IdMember m = memberMapper.selectById(memberId);
         return m == null ? null : new com.aitalky.identity.dto.MemberBrief(m.getId(), m.getNickname(), m.getAvatar());
+    }
+
+    @Override
+    public ProfileVO profile(Long memberId) {
+        IdMember m = requireMember(memberId);
+        IdAccount account = accountMapper.selectById(m.getAccountId());
+        IdProject project = projectMapper.selectById(m.getProjectId());
+        IdRole role = roleMapper.selectById(m.getRoleId());
+        boolean owner = project != null && project.getOwnerAccountId().equals(m.getAccountId());
+        return new ProfileVO(
+                account == null ? null : account.getEmail(),
+                m.getProjectId(), project == null ? null : project.getName(), owner,
+                m.getId(), m.getNickname(), m.getAvatar(), role == null ? null : role.getName(),
+                m.getLanguage(), m.getSoundEnabled(), m.getPushEnabled());
+    }
+
+    @Override
+    public void updatePreferences(Long memberId, String language, Integer soundEnabled, Integer pushEnabled) {
+        IdMember member = requireMember(memberId);
+        if (language != null) {
+            member.setLanguage(language);
+        }
+        if (soundEnabled != null) {
+            member.setSoundEnabled(soundEnabled);
+        }
+        if (pushEnabled != null) {
+            member.setPushEnabled(pushEnabled);
+        }
+        memberMapper.updateById(member);
     }
 
     /** 取成员(自动按当前项目隔离),不存在抛错 */
