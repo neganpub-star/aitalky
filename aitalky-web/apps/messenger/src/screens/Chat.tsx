@@ -13,11 +13,18 @@ interface Props {
   onBack: () => void
 }
 
-// 时间戳是 Long→String 序列化的字符串,需 Number() 转换,否则 new Date(字符串) → NaN:NaN
-function fmtTime(ms: number | string): string {
-  const d = new Date(Number(ms))
+// 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
+function fmtTime(ms: number): string {
+  const d = new Date(ms)
+  if (Number.isNaN(d.getTime())) return ''
   const p = (n: number) => String(n).padStart(2, '0')
-  return `${p(d.getHours())}:${p(d.getMinutes())}`
+  const now = new Date()
+  const hm = `${p(d.getHours())}:${p(d.getMinutes())}`
+  const sameDay =
+    d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+  if (sameDay) return hm
+  const md = `${p(d.getMonth() + 1)}-${p(d.getDate())} ${hm}`
+  return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
