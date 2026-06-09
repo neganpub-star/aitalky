@@ -13,6 +13,7 @@ import { canAccessSettings, hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
+import { getProfile } from '../api/account'
 import type { ProjectBrief } from '../types'
 
 // 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
@@ -28,6 +29,9 @@ export default function MainLayout() {
   const lang = useAppStore((s) => s.lang)
   const [workOnline, setWorkOnline] = useState(true) // 工作状态(暂本地;接成员自助接口后落库)
   const wsToken = useAppStore((s) => s.token)
+  const nickname = useAppStore((s) => s.nickname)
+  const avatar = useAppStore((s) => s.avatar)
+  const setMember = useAppStore((s) => s.setMember)
 
   // 进入项目即建立 WS 长连接(项目级令牌带 memberId);退出/卸载时断开
   useEffect(() => {
@@ -36,6 +40,11 @@ export default function MainLayout() {
     }
     return () => wsClient.close()
   }, [wsToken])
+
+  // 拉取个人资料,供头像栏/菜单显示成员昵称与头像
+  useEffect(() => {
+    getProfile().then((p) => setMember(p.nickname ?? undefined, p.avatar ?? undefined)).catch(() => {})
+  }, [setMember])
 
   // 菜单按权限显示:设置仅对有相关功能权限的成员可见
   const navItems = [
@@ -97,14 +106,14 @@ export default function MainLayout() {
   )
 
   // 头像弹出菜单(1:1 参照 ByteTrack):资料 + 工作状态 + 个人中心/邀请成员/切换语言/切换主题/退出 + 版本
-  const displayName = (ctx.email || 'user').split('@')[0]
+  const displayName = nickname || (ctx.email || 'user').split('@')[0]
   const rowIcon = { fontSize: 17, color: token.colorTextSecondary }
   const userPanel = (
     <div style={{ width: 236, fontSize: 15 }}>
       {/* 头像 + 名字 + 角色 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px 14px' }}>
         <div style={{ position: 'relative' }}>
-          <Avatar size={46} style={{ background: token.colorPrimary, fontSize: 18 }}>
+          <Avatar size={46} src={avatar || undefined} style={{ background: token.colorPrimary, fontSize: 18 }}>
             {displayName.charAt(0).toUpperCase()}
           </Avatar>
           <span style={{
@@ -187,8 +196,8 @@ export default function MainLayout() {
             align={{ offset: [14, 0] }}
             styles={{ body: { padding: 0 } }}
           >
-            <Avatar style={{ background: token.colorPrimary, cursor: 'pointer' }}>
-              {(ctx.email || 'U').charAt(0).toUpperCase()}
+            <Avatar src={avatar || undefined} style={{ background: token.colorPrimary, cursor: 'pointer' }}>
+              {displayName.charAt(0).toUpperCase()}
             </Avatar>
           </Popover>
         </div>

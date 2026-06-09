@@ -12,6 +12,8 @@ interface AppState {
   projectName?: string
   memberId?: string
   roleName?: string
+  nickname?: string
+  avatar?: string
   functions: string[]
   themeMode: 'light' | 'dark'
   lang: string
@@ -19,6 +21,7 @@ interface AppState {
   saveLogin: (r: LoginResult) => void
   saveEnter: (r: EnterResult, projectName: string) => void
   setProjects: (projects: ProjectBrief[]) => void
+  setMember: (nickname?: string, avatar?: string) => void
   logout: () => void
   toggleTheme: () => void
   setLang: (lang: string) => void
@@ -45,6 +48,7 @@ export const useAppStore = create<AppState>()(
           functions: r.functions,
         }),
       setProjects: (projects) => set({ projects }),
+      setMember: (nickname, avatar) => set({ nickname, avatar }),
       logout: () =>
         set({
           token: '',
@@ -55,6 +59,8 @@ export const useAppStore = create<AppState>()(
           projectName: undefined,
           memberId: undefined,
           roleName: undefined,
+          nickname: undefined,
+          avatar: undefined,
           functions: [],
         }),
       toggleTheme: () => set((s) => ({ themeMode: s.themeMode === 'light' ? 'dark' : 'light' })),

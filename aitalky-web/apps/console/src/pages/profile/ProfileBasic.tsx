@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { getProfile, leaveProject, updateMyAvatar, updateMyNickname, type ProfileVO } from '../../api/account'
 import { uploadFile } from '../../api/file'
 import { logout } from '../../auth/session'
+import { useAppStore } from '../../store/useAppStore'
 
 // 个人中心 - 基本资料(对齐 ByteTrack):账户信息 + 项目成员信息 + 退出项目
 export default function ProfileBasic() {
@@ -20,6 +21,7 @@ export default function ProfileBasic() {
   const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const setMember = useAppStore((s) => s.setMember)
 
   const load = async () => {
     setLoading(true)
@@ -46,6 +48,7 @@ export default function ProfileBasic() {
     try {
       await updateMyNickname(v)
       setData((d) => (d ? { ...d, nickname: v } : d))
+      setMember(v, data?.avatar ?? undefined) // 同步左下角头像栏昵称
       setEditNick(false)
       message.success(t('profile.saved'))
     } finally {
@@ -68,6 +71,7 @@ export default function ProfileBasic() {
       .then(async (url) => {
         await updateMyAvatar(url)
         setData((d) => (d ? { ...d, avatar: url } : d))
+        setMember(data?.nickname ?? undefined, url) // 同步左下角头像栏头像
         message.success(t('profile.saved'))
       })
       .finally(() => setUploadingAvatar(false))
