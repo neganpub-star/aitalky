@@ -2,6 +2,7 @@ package com.aitalky.app.controller;
 
 import com.aitalky.app.dto.AgentReplyReq;
 import com.aitalky.app.dto.ConversationDetailVO;
+import com.aitalky.app.dto.UpdateCustomerReq;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.R;
 import com.aitalky.conversation.dto.ConversationListQuery;
@@ -57,13 +58,27 @@ public class ConversationController {
     public R<ConversationDetailVO> detail(@PathVariable Long id) {
         CnvConversation c = conversationService.getById(id);
         CusCustomer cu = customerService.getById(c.getCustomerId());
+        // 会话分配:展示坐席昵称而非 memberId(未分配为 null)
+        String assigneeName = null;
+        if (c.getAssigneeMemberId() != null) {
+            MemberBrief m = memberService.brief(c.getAssigneeMemberId());
+            assigneeName = m == null ? null : m.nickname();
+        }
         return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
                 c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
                 cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
                 cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
-                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq()));
+                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName));
+    }
+
+    /** 更新客户联系方式/邮箱(详情面板编辑) */
+    @PutMapping("/{id}/customer")
+    public R<Void> updateCustomer(@PathVariable Long id, @RequestBody UpdateCustomerReq req) {
+        CnvConversation c = conversationService.getById(id);
+        customerService.updateContact(c.getCustomerId(), c.getProjectId(), req.contact(), req.email());
+        return R.ok();
     }
 
     /** 会话消息(afterSeq 增量;不传取最近 50 条);打开即清未读。坐席可见内部消息 */

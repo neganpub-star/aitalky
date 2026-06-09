@@ -37,6 +37,11 @@ export async function replyConversation(
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, payload))
 }
 
+/** 更新客户联系方式/邮箱(详情面板编辑) */
+export function updateCustomerContact(id: string, contact: string, email: string) {
+  return client.put<unknown, void>(`/conversations/${id}/customer`, { contact, email })
+}
+
 /** 认领会话 */
 export function claimConversation(id: string) {
   return client.post<unknown, void>(`/conversations/${id}/claim`)

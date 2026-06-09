@@ -91,6 +91,7 @@ export interface ConversationDetailVO {
   email: string | null
   customAttrs: string | null
   lastSeq: number | null
+  assigneeName: string | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

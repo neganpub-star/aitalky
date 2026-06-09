@@ -18,4 +18,14 @@ public interface CustomerService {
 
     /** 按id取客户 */
     CusCustomer getById(Long customerId);
+
+    /**
+     * 更新客户联系方式/邮箱(坐席在详情面板编辑)。校验客户属于该项目(多租户隔离)。
+     *
+     * @param customerId 客户id
+     * @param projectId  当前项目id(越权保护)
+     * @param contact    联系方式(可空=清空)
+     * @param email      邮箱(可空=清空)
+     */
+    void updateContact(Long customerId, Long projectId, String contact, String email);
 }

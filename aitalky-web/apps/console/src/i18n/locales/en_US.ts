@@ -85,6 +85,7 @@ export default {
       convId: 'Conversation ID',
       ip: 'IP',
       location: 'Location',
+      language: 'Language',
       assignee: 'Assignee',
       unassigned: 'Unassigned',
       bizInfo: 'Customer',

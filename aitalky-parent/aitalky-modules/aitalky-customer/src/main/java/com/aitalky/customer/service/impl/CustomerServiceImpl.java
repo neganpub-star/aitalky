@@ -63,6 +63,18 @@ public class CustomerServiceImpl implements CustomerService {
         return customerMapper.selectById(customerId);
     }
 
+    @Override
+    public void updateContact(Long customerId, Long projectId, String contact, String email) {
+        CusCustomer c = customerMapper.selectById(customerId);
+        // 越权保护:客户不存在或不属于当前项目则不更新
+        if (c == null || !projectId.equals(c.getProjectId())) {
+            return;
+        }
+        c.setContact(contact);
+        c.setEmail(email);
+        customerMapper.updateById(c);
+    }
+
     private CusCustomer findOne(Long projectId, String externalUserId, String visitorId, boolean isUser) {
         return customerMapper.selectOne(Wrappers.<CusCustomer>lambdaQuery()
                 .eq(CusCustomer::getProjectId, projectId)

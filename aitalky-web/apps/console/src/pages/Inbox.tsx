@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
-  UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined,
+  UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -11,7 +11,7 @@ import { useAppStore } from '../store/useAppStore'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
   claimConversation, closeConversation, getConversation,
-  listConversations, listMessages, replyConversation,
+  listConversations, listMessages, replyConversation, updateCustomerContact,
 } from '../api/conversation'
 import type { ConversationDetailVO, ConversationVO, MessageVO } from '../types'
 
@@ -37,6 +37,13 @@ function fmtMsgTime(ms: number): string {
   if (sameDay) return hm
   const md = `${p(d.getMonth() + 1)}-${p(d.getDate())} ${hm}`
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
+}
+
+// 客户源语言代码 → 展示名(对齐 ByteTrack)
+function langLabel(code: string | null): string {
+  if (!code) return '-'
+  const map: Record<string, string> = { zh_CN: '简体中文', zh_TW: '繁體中文', en_US: 'English', en: 'English', ja_JP: '日本語', ko_KR: '한국어' }
+  return map[code] || code
 }
 
 // 合并消息:按 seq 去重(seq 会话内唯一)+ 升序插入。补漏拉回的旧 seq 会落到正确位置,而非追加到底。
@@ -86,6 +93,10 @@ export default function Inbox() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [wsStatus, setWsStatus] = useState<WsStatus>(wsClient.getStatus())
+  // 详情面板:联系方式/邮箱内联编辑
+  const [editField, setEditField] = useState<'contact' | 'email' | null>(null)
+  const [editVal, setEditVal] = useState('')
+  const [savingContact, setSavingContact] = useState(false)
 
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
@@ -222,6 +233,7 @@ export default function Inbox() {
       setSelectedId(conv.id)
       setReplyTab('reply')
       setInput('')
+      setEditField(null)
       setDetail(null)
       setMessages([])
       localMaxSeqRef.current = 0
@@ -294,6 +306,21 @@ export default function Inbox() {
     setDetail(await getConversation(selectedId))
     loadList()
   }, [selectedId, loadList])
+
+  // ===== 详情:保存联系方式/邮箱(编辑哪个就改哪个,另一个保持原值)=====
+  const saveContact = useCallback(async () => {
+    if (!selectedId || !detail || !editField) return
+    setSavingContact(true)
+    try {
+      const contact = editField === 'contact' ? editVal.trim() : detail.contact || ''
+      const email = editField === 'email' ? editVal.trim() : detail.email || ''
+      await updateCustomerContact(selectedId, contact, email)
+      setDetail({ ...detail, contact, email })
+      setEditField(null)
+    } finally {
+      setSavingContact(false)
+    }
+  }, [selectedId, detail, editField, editVal])
 
   const styles: Record<string, CSSProperties> = {
     root: { display: 'flex', height: '100%' },
@@ -537,16 +564,51 @@ export default function Inbox() {
             [t('inbox.detail.convId'), detail.id],
             [t('inbox.detail.ip'), detail.ip || t('inbox.detail.empty')],
             [t('inbox.detail.location'), detail.location || t('inbox.detail.empty')],
-            [t('inbox.detail.assignee'), detail.assigneeMemberId
-              ? (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : detail.assigneeMemberId)
-              : t('inbox.detail.unassigned')],
+            [t('inbox.detail.language'), langLabel(detail.sourceLanguage)],
+            [t('inbox.detail.assignee'), detail.assigneeName
+              || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : null)
+              || t('inbox.detail.unassigned')],
           ]} />
 
-          <DetailSection title={t('inbox.detail.bizInfo')} token={token} rows={[
-            [t('inbox.detail.bizUid'), detail.externalUserId || detail.customerName || t('inbox.detail.empty')],
-            [t('inbox.detail.contact'), detail.contact || t('inbox.detail.empty')],
-            [t('inbox.detail.email'), detail.email || t('inbox.detail.empty')],
-          ]} />
+          {/* 客户信息:UID 只读;联系方式/邮箱可内联编辑 */}
+          <div style={{ padding: '14px 16px', borderBottom: `0.5px solid ${token.colorSplit}` }}>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>{t('inbox.detail.bizInfo')}</div>
+            <div style={{ display: 'flex', fontSize: 13, marginBottom: 8 }}>
+              <span style={{ width: 92, flexShrink: 0, color: token.colorTextTertiary }}>{t('inbox.detail.bizUid')}</span>
+              <span style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</span>
+            </div>
+            {(['contact', 'email'] as const).map((field) => {
+              const label = t(field === 'contact' ? 'inbox.detail.contact' : 'inbox.detail.email')
+              const val = detail[field]
+              const editing = editField === field
+              return (
+                <div key={field} style={{ display: 'flex', alignItems: 'center', fontSize: 13, marginBottom: 8, minHeight: 24 }}>
+                  <span style={{ width: 92, flexShrink: 0, color: token.colorTextTertiary }}>{label}</span>
+                  {editing ? (
+                    <Input
+                      size="small"
+                      autoFocus
+                      value={editVal}
+                      disabled={savingContact}
+                      onChange={(e) => setEditVal(e.target.value)}
+                      onPressEnter={saveContact}
+                      onBlur={saveContact}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setEditField(null) }}
+                      style={{ flex: 1 }}
+                    />
+                  ) : (
+                    <>
+                      <span style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>{val || t('inbox.detail.empty')}</span>
+                      <EditOutlined
+                        onClick={() => { setEditField(field); setEditVal(val || '') }}
+                        style={{ cursor: 'pointer', color: token.colorTextTertiary, marginLeft: 6 }}
+                      />
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>

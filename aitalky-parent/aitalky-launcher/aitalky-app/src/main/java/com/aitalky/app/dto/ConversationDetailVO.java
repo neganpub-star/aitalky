@@ -8,5 +8,5 @@ public record ConversationDetailVO(
         Integer autoTranslate, Long assigneeMemberId, LocalDateTime lastMessageAt,
         Long customerId, String externalUserId, String customerName, String customerAvatar,
         Integer customerType, String sourceLanguage, String contact, String email, String customAttrs,
-        Long lastSeq) {
+        Long lastSeq, String assigneeName) {
 }

@@ -85,6 +85,7 @@ export default {
       convId: '会话ID',
       ip: 'IP',
       location: '所在地',
+      language: '语言',
       assignee: '会话分配',
       unassigned: '未分配',
       bizInfo: '业务资料',
