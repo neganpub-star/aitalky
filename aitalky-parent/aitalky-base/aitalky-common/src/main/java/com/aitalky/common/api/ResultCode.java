@@ -32,6 +32,9 @@ public enum ResultCode {
     OPERATE_OWNER_FORBIDDEN(1017, "operate.owner.forbidden"),
     MEMBER_NOT_FOUND(1018, "member.not.found"),
 
+    // ===== 限流 102x =====
+    RATE_LIMITED(1020, "rate.limited"),
+
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
 

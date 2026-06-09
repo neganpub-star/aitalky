@@ -43,7 +43,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/public/**",   // 信使端公共接口（按 appId/groupId 鉴权）
                         "/api/ping",         // 健康检查样例
                         "/actuator/**",
-                        "/doc.html", "/swagger-ui/**", "/v3/api-docs/**"
+                        "/doc.html", "/swagger-ui/**", "/v3/api-docs/**",
+                        "/webjars/**"   // Knife4j/swagger-ui 前端静态资源
                 );
     }
 }

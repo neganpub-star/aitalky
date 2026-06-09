@@ -8,6 +8,7 @@ import com.aitalky.identity.dto.RegisterCmd;
 import com.aitalky.identity.dto.SendCodeCmd;
 import com.aitalky.identity.service.AccountService;
 import com.aitalky.identity.service.ProjectService;
+import com.aitalky.framework.ratelimit.RateLimit;
 import com.aitalky.framework.security.RsaCryptoService;
 import com.aitalky.framework.tenant.TenantContext;
 import jakarta.validation.Valid;
@@ -39,7 +40,8 @@ public class AuthController {
         return R.ok(rsaCryptoService.getPublicKey());
     }
 
-    /** 发送邮箱验证码(scene: REGISTER/LOGIN/RESET_PWD) */
+    /** 发送邮箱验证码(scene: REGISTER/LOGIN/RESET_PWD);限流:每 IP 每分钟最多 5 次 */
+    @RateLimit(key = "auth:send-code", count = 5, period = 60)
     @PostMapping("/send-code")
     public R<Void> sendCode(@Valid @RequestBody SendCodeCmd cmd) {
         accountService.sendCode(cmd.scene(), cmd.email());
@@ -52,7 +54,8 @@ public class AuthController {
         return R.ok(accountService.register(cmd));
     }
 
-    /** 登录 → 账号级令牌 + 可进入项目列表 */
+    /** 登录 → 账号级令牌 + 可进入项目列表;限流:每 IP 每分钟最多 10 次,防暴力破解 */
+    @RateLimit(key = "auth:login", count = 10, period = 60)
     @PostMapping("/login")
     public R<LoginResult> login(@Valid @RequestBody LoginCmd cmd) {
         return R.ok(accountService.login(cmd));

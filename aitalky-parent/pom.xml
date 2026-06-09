@@ -36,6 +36,8 @@
         <rocketmq.version>2.3.1</rocketmq.version>
         <jjwt.version>0.12.6</jjwt.version>
         <netty.version>4.1.114.Final</netty.version>
+        <knife4j.version>4.4.0</knife4j.version>
+        <minio.version>8.5.12</minio.version>
     </properties>
 
     <dependencyManagement>
@@ -134,7 +136,18 @@
                 <artifactId>netty-all</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-            <!-- 说明：MinIO（对象存储）/ 其他工具按需在用到的模块里引入并在此锁版本，避免声明未使用 -->
+            <!-- Knife4j（基于 OpenAPI3 的接口文档,适配 Spring Boot 3） -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <!-- MinIO（对象存储:头像/图片消息上传） -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>${minio.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

@@ -2,6 +2,7 @@ package com.aitalky.framework.config;
 
 import com.aitalky.framework.security.JwtProperties;
 import com.aitalky.framework.security.RsaProperties;
+import com.aitalky.framework.storage.MinioProperties;
 import com.aitalky.framework.verify.VerifyCodeProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,6 @@ import org.springframework.context.annotation.Configuration;
  * <p>各部署入口（app/admin/ws）以 {@code scanBasePackages="com.aitalky"} 扫描即可装配本模块全部 Bean。
  */
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, VerifyCodeProperties.class, RsaProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, VerifyCodeProperties.class, RsaProperties.class, MinioProperties.class})
 public class FrameworkConfig {
 }
