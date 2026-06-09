@@ -39,10 +39,13 @@ export default function MainLayout() {
     location.reload()
   }
 
+  const isDark = themeMode === 'dark'
   const styles: Record<string, CSSProperties> = {
     root: { display: 'flex', height: '100vh', overflow: 'hidden' },
+    // 第1栏(图标栏):宽 44、淡蓝底(暗色用容器色)—— 对齐 ByteTrack
     rail: {
-      width: 56, background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}`,
+      width: 44, flexShrink: 0, background: isDark ? token.colorBgContainer : '#e9eef8',
+      borderRight: `1px solid ${token.colorSplit}`,
       display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 12, paddingBottom: 16,
     },
     brand: {
@@ -54,7 +57,7 @@ export default function MainLayout() {
       width: 40, height: 40, borderRadius: 8, color: token.colorTextSecondary, fontSize: 20,
       display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
     },
-    navItemActive: { background: token.colorPrimaryBg, color: token.colorPrimary },
+    navItemActive: { background: isDark ? token.colorPrimaryBg : '#fff', color: token.colorPrimary, boxShadow: isDark ? 'none' : token.boxShadowTertiary },
     bottom: { marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 },
     content: { flex: 1, background: token.colorBgLayout, overflow: 'auto' },
     projItem: { display: 'flex', alignItems: 'center', padding: '8px 12px', borderRadius: 6, cursor: 'pointer' },
@@ -109,33 +112,33 @@ export default function MainLayout() {
       <Divider style={{ margin: 0 }} />
 
       {/* 工作状态 */}
-      <div style={{ ...styles.userRow, justifyContent: 'space-between' }}>
+      <div className="at-row" style={{ ...styles.userRow, justifyContent: 'space-between' }}>
         <span>工作状态</span>
         <Switch checked={workOnline} onChange={setWorkOnline} />
       </div>
       <Divider style={{ margin: 0 }} />
 
       {/* 菜单项 */}
-      <div style={styles.userRow} onClick={() => nav('/settings')}>
+      <div className="at-row" style={styles.userRow} onClick={() => nav('/settings')}>
         <UserOutlined style={rowIcon} /><span>{t('nav.profile')}</span>
       </div>
       {hasFunction('member.manage') && (
-        <div style={styles.userRow} onClick={() => nav('/settings/invites')}>
+        <div className="at-row" style={styles.userRow} onClick={() => nav('/settings/invites')}>
           <UsergroupAddOutlined style={rowIcon} /><span>{t('nav.invite')}</span>
         </div>
       )}
-      <div style={styles.userRow} onClick={() => changeLang(lang === 'en_US' ? 'zh_CN' : 'en_US')}>
+      <div className="at-row" style={styles.userRow} onClick={() => changeLang(lang === 'en_US' ? 'zh_CN' : 'en_US')}>
         <GlobalOutlined style={rowIcon} />
         <span style={{ flex: 1 }}>{t('nav.lang')}</span>
         <span style={{ color: token.colorTextSecondary }}>{lang === 'en_US' ? 'English' : '简体中文'}</span>
       </div>
-      <div style={{ ...styles.userRow, justifyContent: 'space-between' }} onClick={toggleTheme}>
+      <div className="at-row" style={{ ...styles.userRow, justifyContent: 'space-between' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <BulbOutlined style={rowIcon} />{t('nav.theme')}
         </span>
-        <Switch size="small" checked={themeMode === 'dark'} onChange={toggleTheme} checkedChildren="🌙" unCheckedChildren="☀" />
+        <Switch checked={themeMode === 'dark'} onChange={toggleTheme} checkedChildren="🌙" unCheckedChildren="☀" />
       </div>
-      <div style={styles.userRow} onClick={() => { logout(); nav('/login') }}>
+      <div className="at-row" style={styles.userRow} onClick={() => { logout(); nav('/login') }}>
         <PoweroffOutlined style={rowIcon} /><span>{t('common.logout')}</span>
       </div>
       <Divider style={{ margin: 0 }} />
@@ -171,6 +174,7 @@ export default function MainLayout() {
             trigger="click"
             placement="rightBottom"
             arrow={false}
+            align={{ offset: [14, 0] }}
             styles={{ body: { padding: 0 } }}
           >
             <Avatar style={{ background: token.colorPrimary, cursor: 'pointer' }}>

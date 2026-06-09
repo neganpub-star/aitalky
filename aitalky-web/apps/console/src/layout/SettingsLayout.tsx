@@ -45,9 +45,10 @@ export default function SettingsLayout() {
     .filter(Boolean) as MenuProps['items']
 
   const styles: Record<string, CSSProperties> = {
+    // 与收件箱第2栏(分类视图)一致:宽 216、淡灰底、淡分隔线 —— 切换页面时不跳变
     root: { display: 'flex', height: '100%' },
-    side: { width: 230, background: token.colorBgContainer, borderRight: `1px solid ${token.colorBorderSecondary}`, paddingTop: 4 },
-    title: { fontWeight: 600, fontSize: 18, padding: '14px 20px' },
+    side: { width: 216, flexShrink: 0, background: token.colorBgLayout, borderRight: `1px solid ${token.colorSplit}`, paddingTop: 4 },
+    title: { fontWeight: 700, fontSize: 17, padding: '14px 20px' },
     content: { flex: 1, background: token.colorBgLayout, padding: 24, overflow: 'auto' },
   }
 
@@ -56,7 +57,7 @@ export default function SettingsLayout() {
       <div style={styles.side}>
         <div style={styles.title}>{t('settings.title')}</div>
         <Menu mode="inline" selectedKeys={[loc.pathname]} defaultOpenKeys={['team']} items={items}
-          style={{ border: 'none' }} onClick={({ key }) => nav(key)} />
+          style={{ border: 'none', background: 'transparent' }} onClick={({ key }) => nav(key)} />
       </div>
       <div style={styles.content}>
         <Outlet />
