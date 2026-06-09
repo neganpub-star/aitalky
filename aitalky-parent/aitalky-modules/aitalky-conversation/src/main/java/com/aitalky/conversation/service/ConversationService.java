@@ -16,6 +16,9 @@ public interface ConversationService {
     /** 收件箱列表(view: mine/unassigned/all/mention) */
     PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll);
 
+    /** 各视图进行中会话数(分类徽标) */
+    com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll);
+
     /** 取会话 */
     CnvConversation getById(Long conversationId);
 

@@ -53,6 +53,13 @@ public class ConversationController {
         return R.ok(conversationService.list(query, TenantContext.getMemberId(), canViewAll));
     }
 
+    /** 各视图进行中会话数(分类徽标) */
+    @GetMapping("/counts")
+    public R<com.aitalky.conversation.dto.ConversationCounts> counts() {
+        boolean canViewAll = TenantContext.hasFunction("inbox.viewAll");
+        return R.ok(conversationService.counts(TenantContext.getMemberId(), canViewAll));
+    }
+
     /** 会话详情(含客户信息) */
     @GetMapping("/{id}")
     public R<ConversationDetailVO> detail(@PathVariable Long id) {

@@ -102,6 +102,19 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll) {
+        // 进行中(status=1);project_id 由多租户拦截器自动过滤
+        long mine = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
+                .eq(CnvConversation::getAssigneeMemberId, memberId).eq(CnvConversation::getStatus, 1));
+        long unassigned = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
+                .isNull(CnvConversation::getAssigneeMemberId).eq(CnvConversation::getStatus, 1));
+        long all = canViewAll
+                ? conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery().eq(CnvConversation::getStatus, 1))
+                : 0;
+        return new com.aitalky.conversation.dto.ConversationCounts(mine, unassigned, all, 0);
+    }
+
+    @Override
     public CnvConversation getById(Long conversationId) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {

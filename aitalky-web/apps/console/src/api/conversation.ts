@@ -10,6 +10,19 @@ export interface ConversationListQuery {
   size?: number
 }
 
+// 各视图进行中会话数(分类徽标)
+export interface ConversationCounts {
+  mine: number
+  unassigned: number
+  all: number
+  mention: number
+}
+
+/** 各视图进行中会话数 */
+export function getConversationCounts() {
+  return client.get<unknown, ConversationCounts>('/conversations/counts')
+}
+
 /** 收件箱会话分页 */
 export async function listConversations(query: ConversationListQuery) {
   const res = await client.get<unknown, PageResult<ConversationVO>>('/conversations', { params: query })

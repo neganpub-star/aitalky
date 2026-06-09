@@ -11,8 +11,9 @@ import { hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
-  claimConversation, closeConversation, getConversation,
+  claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, replyConversation, updateCustomerContact,
+  type ConversationCounts,
 } from '../api/conversation'
 import { blockCustomer } from '../api/blacklist'
 import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
@@ -86,6 +87,7 @@ export default function Inbox() {
   const [list, setList] = useState<ConversationVO[]>([])
   const [total, setTotal] = useState(0)
   const [loadingList, setLoadingList] = useState(false)
+  const [counts, setCounts] = useState<ConversationCounts>({ mine: 0, unassigned: 0, all: 0, mention: 0 })
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<ConversationDetailVO | null>(null)
@@ -167,6 +169,8 @@ export default function Inbox() {
       if (curConv && curConv.lastSeq != null && curConv.lastSeq > localMaxSeqRef.current) {
         syncCurrentRef.current()
       }
+      // 分类徽标:各视图进行中数量
+      getConversationCounts().then(setCounts).catch(() => {})
     } finally {
       setLoadingList(false)
     }
@@ -353,8 +357,8 @@ export default function Inbox() {
       <div key={c.key} className="at-row" style={{ ...styles.catItem, ...(on ? styles.catActive : {}) }} onClick={() => { setActive(c.key); setSelectedId(null) }}>
         <span style={{ width: 18, textAlign: 'center' }}>{c.icon}</span>
         <span>{c.label}</span>
-        {/* 仅当前激活分类显示真实数量;各视图独立计数待后端 counts 接口(避免非激活恒显 0 误导) */}
-        {on && <span style={styles.count}>{total}</span>}
+        {/* 各视图进行中会话数(真实计数,来自 /conversations/counts) */}
+        <span style={styles.count}>{counts[c.key]}</span>
       </div>
     )
   }
