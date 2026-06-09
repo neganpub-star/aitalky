@@ -8,9 +8,11 @@ import com.aitalky.identity.dto.RegisterCmd;
 import com.aitalky.identity.dto.SendCodeCmd;
 import com.aitalky.identity.service.AccountService;
 import com.aitalky.identity.service.ProjectService;
+import com.aitalky.framework.security.RsaCryptoService;
 import com.aitalky.framework.tenant.TenantContext;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,6 +31,13 @@ public class AuthController {
 
     private final AccountService accountService;
     private final ProjectService projectService;
+    private final RsaCryptoService rsaCryptoService;
+
+    /** 下发 RSA 公钥(前端用它加密密码) */
+    @GetMapping("/public-key")
+    public R<String> publicKey() {
+        return R.ok(rsaCryptoService.getPublicKey());
+    }
 
     /** 发送邮箱验证码(scene: REGISTER/LOGIN/RESET_PWD) */
     @PostMapping("/send-code")

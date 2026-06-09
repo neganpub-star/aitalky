@@ -33,6 +33,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/login",
                         "/api/auth/register",
                         "/api/auth/send-code",
+                        "/api/auth/public-key",
                         "/api/auth/captcha",
                         "/api/public/**",   // 信使端公共接口（按 appId/groupId 鉴权）
                         "/api/ping",         // 健康检查样例

@@ -4,6 +4,7 @@ import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.framework.security.JwtUtil;
+import com.aitalky.framework.security.RsaCryptoService;
 import com.aitalky.framework.verify.VerifyScene;
 import com.aitalky.framework.verify.VerifyCodeService;
 import com.aitalky.identity.dto.LoginCmd;
@@ -42,6 +43,7 @@ public class AccountServiceImpl implements AccountService {
     private final JwtUtil jwtUtil;
     private final SnowflakeIdGenerator idGenerator;
     private final VerifyCodeService verifyCodeService;
+    private final RsaCryptoService rsaCryptoService;
 
     @Override
     public void sendCode(VerifyScene scene, String email) {
@@ -58,10 +60,15 @@ public class AccountServiceImpl implements AccountService {
         if (exists) {
             throw new BizException(ResultCode.EMAIL_ALREADY_EXISTS);
         }
+        // RSA 解密前端传来的密码密文,再校验明文长度
+        String rawPassword = rsaCryptoService.decrypt(cmd.password());
+        if (rawPassword.length() < 6 || rawPassword.length() > 32) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
         IdAccount account = new IdAccount();
         account.setId(idGenerator.nextId());
         account.setEmail(cmd.email());
-        account.setPasswordHash(passwordEncoder.encode(cmd.password())); // BCrypt,严禁打印
+        account.setPasswordHash(passwordEncoder.encode(rawPassword)); // BCrypt,严禁打印
         account.setStatus(1);
         accountMapper.insert(account);
         log.info("账号注册成功 accountId={}, email={}", account.getId(), cmd.email());
@@ -72,8 +79,9 @@ public class AccountServiceImpl implements AccountService {
     public LoginResult login(LoginCmd cmd) {
         IdAccount account = accountMapper.selectOne(
                 Wrappers.<IdAccount>lambdaQuery().eq(IdAccount::getEmail, cmd.email()));
-        // 账号不存在 / 密码错误 统一返回 LOGIN_FAILED,避免暴露邮箱是否注册
-        if (account == null || !passwordEncoder.matches(cmd.password(), account.getPasswordHash())) {
+        // RSA 解密密码密文后比对;账号不存在 / 密码错误 统一返回 LOGIN_FAILED,避免暴露邮箱是否注册
+        String rawPassword = rsaCryptoService.decrypt(cmd.password());
+        if (account == null || !passwordEncoder.matches(rawPassword, account.getPasswordHash())) {
             throw new BizException(ResultCode.LOGIN_FAILED);
         }
         if (account.getStatus() == null || account.getStatus() != 1) {
