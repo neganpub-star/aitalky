@@ -1,0 +1,9 @@
+{
+  "name": "aitalky-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "aitalky 前端 monorepo(坐席工作台/平台后管/信使)",
+  "scripts": {
+    "console": "pnpm --filter @aitalky/console dev"
+  }
+}
