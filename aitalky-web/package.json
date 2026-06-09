@@ -4,6 +4,9 @@
   "private": true,
   "description": "aitalky 前端 monorepo(坐席工作台/平台后管/信使)",
   "scripts": {
-    "console": "pnpm --filter @aitalky/console dev"
+    "console": "pnpm --filter @aitalky/console dev",
+    "messenger": "pnpm --filter @aitalky/messenger dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
   }
 }
