@@ -1,9 +1,9 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, theme } from 'antd'
+import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
-  UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined,
+  UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -97,6 +97,7 @@ export default function Inbox() {
   const [editField, setEditField] = useState<'contact' | 'email' | null>(null)
   const [editVal, setEditVal] = useState('')
   const [savingContact, setSavingContact] = useState(false)
+  const [bizCollapsed, setBizCollapsed] = useState(false)
 
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
@@ -547,19 +548,30 @@ export default function Inbox() {
         )}
       </div>
 
-      {/* 第四栏:详情面板(客户资料) */}
+      {/* 第四栏:详情面板(客户资料)—— 对齐 ByteTrack:标题 + 横排头像 + 分组折叠 + 底部加黑 */}
       {selectedId && detail && (
         <div style={styles.col4}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 16px 20px', borderBottom: splitBorder }}>
-            <Avatar size={64} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary }}>
-              {(detail.customerName || 'U').charAt(0).toUpperCase()}
-            </Avatar>
-            <div style={{ fontWeight: 700, fontSize: 17, marginTop: 10 }}>{detail.customerName || detail.customerId}</div>
-            <span style={{ marginTop: 6, padding: '1px 10px', borderRadius: 4, background: token.colorFillSecondary, color: token.colorTextSecondary, fontSize: 12 }}>
-              {t('inbox.detail.userTag')}
-            </span>
+          {/* 面板标题 */}
+          <div style={{ padding: '16px 16px 14px', fontWeight: 700, fontSize: 18, borderBottom: splitBorder }}>
+            {t('inbox.detail.title')}
           </div>
 
+          {/* 头像 + 名字 + 用户/访客标签(左对齐横排) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: splitBorder }}>
+            <Avatar size={44} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+              {(detail.customerName || 'U').charAt(0).toUpperCase()}
+            </Avatar>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {detail.customerName || detail.customerId}
+              </div>
+              <span style={{ display: 'inline-block', marginTop: 4, padding: '1px 8px', borderRadius: 4, background: token.colorPrimaryBg, color: token.colorPrimary, fontSize: 12 }}>
+                {detail.customerType === 1 ? t('inbox.detail.visitor') : t('inbox.detail.user')}
+              </span>
+            </div>
+          </div>
+
+          {/* 会话信息(来源渠道/渠道名称数据待专属分配 asn 模块,先占位 --)*/}
           <DetailSection title={t('inbox.detail.convInfo')} token={token} rows={[
             [t('inbox.detail.convId'), detail.id],
             [t('inbox.detail.ip'), detail.ip || t('inbox.detail.empty')],
@@ -568,46 +580,56 @@ export default function Inbox() {
             [t('inbox.detail.assignee'), detail.assigneeName
               || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : null)
               || t('inbox.detail.unassigned')],
+            [t('inbox.detail.source'), t('inbox.detail.empty')],
+            [t('inbox.detail.channelName'), t('inbox.detail.empty')],
           ]} />
 
-          {/* 客户信息:UID 只读;联系方式/邮箱可内联编辑 */}
+          {/* 客户信息:UID 只读;联系方式/邮箱可内联编辑(两行式,编辑铅笔在值行右侧)*/}
           <div style={{ padding: '14px 16px', borderBottom: `0.5px solid ${token.colorSplit}` }}>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>{t('inbox.detail.bizInfo')}</div>
-            <div style={{ display: 'flex', fontSize: 13, marginBottom: 8 }}>
-              <span style={{ width: 92, flexShrink: 0, color: token.colorTextTertiary }}>{t('inbox.detail.bizUid')}</span>
-              <span style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</span>
-            </div>
-            {(['contact', 'email'] as const).map((field) => {
-              const label = t(field === 'contact' ? 'inbox.detail.contact' : 'inbox.detail.email')
-              const val = detail[field]
-              const editing = editField === field
-              return (
-                <div key={field} style={{ display: 'flex', alignItems: 'center', fontSize: 13, marginBottom: 8, minHeight: 24 }}>
-                  <span style={{ width: 92, flexShrink: 0, color: token.colorTextTertiary }}>{label}</span>
-                  {editing ? (
-                    <Input
-                      size="small"
-                      autoFocus
-                      value={editVal}
-                      disabled={savingContact}
-                      onChange={(e) => setEditVal(e.target.value)}
-                      onPressEnter={saveContact}
-                      onBlur={saveContact}
-                      onKeyDown={(e) => { if (e.key === 'Escape') setEditField(null) }}
-                      style={{ flex: 1 }}
-                    />
-                  ) : (
-                    <>
-                      <span style={{ flex: 1, minWidth: 0, wordBreak: 'break-all' }}>{val || t('inbox.detail.empty')}</span>
-                      <EditOutlined
-                        onClick={() => { setEditField(field); setEditVal(val || '') }}
-                        style={{ cursor: 'pointer', color: token.colorTextTertiary, marginLeft: 6 }}
-                      />
-                    </>
-                  )}
+            <SectionHeader title={t('inbox.detail.bizInfo')} collapsed={bizCollapsed} onToggle={() => setBizCollapsed((c) => !c)} token={token} />
+            {!bizCollapsed && (
+              <>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{t('inbox.detail.bizUid')}:</div>
+                  <div style={{ fontSize: 14, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</div>
                 </div>
-              )
-            })}
+                {(['contact', 'email'] as const).map((field) => {
+                  const label = t(field === 'contact' ? 'inbox.detail.contact' : 'inbox.detail.email')
+                  const val = detail[field]
+                  const editing = editField === field
+                  return (
+                    <div key={field} style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{label}:</div>
+                      {editing ? (
+                        <Input
+                          size="small"
+                          autoFocus
+                          value={editVal}
+                          disabled={savingContact}
+                          onChange={(e) => setEditVal(e.target.value)}
+                          onPressEnter={saveContact}
+                          onBlur={saveContact}
+                          onKeyDown={(e) => { if (e.key === 'Escape') setEditField(null) }}
+                        />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 14, wordBreak: 'break-all' }}>{val || t('inbox.detail.empty')}</span>
+                          <EditOutlined
+                            onClick={() => { setEditField(field); setEditVal(val || '') }}
+                            style={{ cursor: 'pointer', color: token.colorTextTertiary, marginLeft: 6 }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </>
+            )}
+          </div>
+
+          {/* 加入黑名单(blacklist 模块未做,先占位)*/}
+          <div style={{ padding: '16px' }}>
+            <Button block onClick={() => message.info(t('settings.wip'))}>{t('inbox.detail.blacklist')}</Button>
           </div>
         </div>
       )}
@@ -615,17 +637,32 @@ export default function Inbox() {
   )
 }
 
-// 详情分组:标题 + 键值行
+// 详情分组标题(可折叠,带 ∨ 箭头,对齐 ByteTrack)
+function SectionHeader({ title, collapsed, onToggle, token }: { title: string; collapsed: boolean; onToggle: () => void; token: ReturnType<typeof theme.useToken>['token'] }) {
+  return (
+    <div
+      onClick={onToggle}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', fontWeight: 600, fontSize: 14, marginBottom: collapsed ? 0 : 10 }}
+    >
+      <span>{title}</span>
+      <DownOutlined style={{ fontSize: 12, color: token.colorTextTertiary, transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform .2s' }} />
+    </div>
+  )
+}
+
+// 详情分组:标题 + 键值行(可折叠)
 function DetailSection({ title, rows, token }: { title: string; rows: [string, string][]; token: ReturnType<typeof theme.useToken>['token'] }) {
+  const [collapsed, setCollapsed] = useState(false)
   return (
     <div style={{ padding: '14px 16px', borderBottom: `0.5px solid ${token.colorSplit}` }}>
-      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>{title}</div>
-      {rows.map(([k, v]) => (
-        <div key={k} style={{ display: 'flex', fontSize: 13, marginBottom: 8 }}>
-          <span style={{ width: 92, flexShrink: 0, color: token.colorTextTertiary }}>{k}</span>
-          <span style={{ flex: 1, minWidth: 0, color: token.colorText, wordBreak: 'break-all' }}>{v}</span>
-        </div>
-      ))}
+      <SectionHeader title={title} collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} token={token} />
+      {!collapsed &&
+        rows.map(([k, v]) => (
+          <div key={k} style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{k}:</div>
+            <div style={{ fontSize: 14, color: token.colorText, wordBreak: 'break-all' }}>{v}</div>
+          </div>
+        ))}
     </div>
   )
 }
