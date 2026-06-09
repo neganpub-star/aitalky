@@ -1,16 +1,19 @@
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
-import { Avatar, Button, Card, Empty, Form, Input, List, Modal, Typography, message } from 'antd'
+import { Avatar, Button, Card, Empty, Form, Input, List, Modal, Typography, message, theme } from 'antd'
 import { AppstoreOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { createProject, enterProject } from '../api/auth'
 import { getCtx, logout, patchCtx, saveEnter } from '../auth/session'
 import type { ProjectBrief } from '../types'
 
 const { Title, Text } = Typography
 
-/** 选择/创建项目:登录后在此进入某个项目工作台 */
+// 选择/创建项目:登录后在此进入某个项目工作台(ByteTrack 经左上角切换;首登录在此建首个项目)
 export default function Projects() {
+  const { t } = useTranslation()
+  const { token } = theme.useToken()
   const nav = useNavigate()
   const ctx = getCtx()
   const [projects, setProjects] = useState<ProjectBrief[]>(ctx.projects || [])
@@ -24,18 +27,18 @@ export default function Projects() {
     patchCtx({ projects: next })
     setOpen(false)
     form.resetFields()
-    message.success('项目创建成功')
+    message.success(t('common.create') + ' ✓')
   }
 
   const onEnter = async (p: ProjectBrief) => {
-    const r = await enterProject(p.id)
-    saveEnter(r, p.name)
+    saveEnter(await enterProject(p.id), p.name)
     nav('/inbox')
   }
 
-  const onLogout = () => {
-    logout()
-    nav('/login')
+  const styles: Record<string, CSSProperties> = {
+    wrap: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: token.colorBgLayout },
+    card: { width: 460, boxShadow: token.boxShadowSecondary, borderRadius: 12 },
+    head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   }
 
   return (
@@ -43,21 +46,21 @@ export default function Projects() {
       <Card style={styles.card} variant="borderless">
         <div style={styles.head}>
           <div>
-            <Title level={4} style={{ margin: 0 }}>选择项目</Title>
+            <Title level={4} style={{ margin: 0 }}>{t('project.select')}</Title>
             <Text type="secondary">{ctx.email}</Text>
           </div>
-          <Button icon={<LogoutOutlined />} onClick={onLogout}>退出</Button>
+          <Button icon={<LogoutOutlined />} onClick={() => { logout(); nav('/login') }}>{t('common.logout')}</Button>
         </div>
 
         {projects.length === 0 ? (
-          <Empty description="还没有项目,先创建一个" style={{ margin: '32px 0' }} />
+          <Empty description={t('project.empty')} style={{ margin: '32px 0' }} />
         ) : (
           <List
             dataSource={projects}
             renderItem={(p) => (
-              <List.Item actions={[<Button type="primary" onClick={() => onEnter(p)}>进入</Button>]}>
+              <List.Item actions={[<Button type="primary" onClick={() => onEnter(p)}>{t('project.enter')}</Button>]}>
                 <List.Item.Meta
-                  avatar={<Avatar shape="square" icon={<AppstoreOutlined />} style={{ background: '#2f54eb' }} />}
+                  avatar={<Avatar shape="square" icon={<AppstoreOutlined />} style={{ background: token.colorPrimary }} />}
                   title={p.name}
                   description={`appId: ${p.appId}`}
                 />
@@ -67,29 +70,17 @@ export default function Projects() {
         )}
 
         <Button type="dashed" icon={<PlusOutlined />} block style={{ marginTop: 12 }} onClick={() => setOpen(true)}>
-          创建项目
+          {t('project.create')}
         </Button>
       </Card>
 
-      <Modal title="创建项目" open={open} onCancel={() => setOpen(false)} onOk={() => form.submit()} okText="创建">
+      <Modal title={t('project.create')} open={open} onCancel={() => setOpen(false)} onOk={() => form.submit()} okText={t('common.create')}>
         <Form form={form} layout="vertical" onFinish={onCreate} requiredMark={false}>
-          <Form.Item name="name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>
-            <Input placeholder="例如:我的客服项目" maxLength={64} />
+          <Form.Item name="name" label={t('project.name')} rules={[{ required: true, message: t('project.name') }]}>
+            <Input placeholder={t('project.namePlaceholder')} maxLength={64} />
           </Form.Item>
         </Form>
       </Modal>
     </div>
   )
-}
-
-const styles: Record<string, CSSProperties> = {
-  wrap: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'linear-gradient(135deg,#eef2ff 0%,#f5f7fb 100%)',
-  },
-  card: { width: 460, boxShadow: '0 8px 32px rgba(0,0,0,0.08)', borderRadius: 12 },
-  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
 }

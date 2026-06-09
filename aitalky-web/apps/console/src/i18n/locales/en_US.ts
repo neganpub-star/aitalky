@@ -61,6 +61,13 @@ export default {
     mention: 'Mentions',
     unassigned: 'Unassigned',
     all: 'All',
+    categoryView: 'Views',
+    normalView: 'General',
+    finn: 'Finn (AI agent)',
+    inProgress: 'Open',
+    closed: 'Closed',
+    noOngoing: 'No open conversations',
+    notOpened: 'No conversation selected',
   },
   project: {
     select: 'Select project',
