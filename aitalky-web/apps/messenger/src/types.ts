@@ -29,6 +29,7 @@ export interface MessageVO {
 // URL 接入参数:?appId=&userId=(或 visitorId)&lang=&source=
 export interface AccessParams {
   appId: string
+  groupId?: string
   userId?: string
   visitorId?: string
   lang: string

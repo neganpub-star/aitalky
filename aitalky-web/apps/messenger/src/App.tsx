@@ -6,15 +6,37 @@ import type { AccessParams, MessageVO, MessengerInit } from './types'
 import Home from './screens/Home'
 import Chat from './screens/Chat'
 
-// 解析 URL 接入参数:?appId=&userId=(或 visitorId)&lang=&source=
+// 游客身份:无 userId/visitorId 时按 appId 维度生成并持久化匿名 visitorId
+// (匿名标识、非敏感凭证;否则游客每次刷新都新建会话/客户)
+function getOrCreateVisitorId(appId: string): string {
+  const key = `aitalky_visitor_${appId}`
+  let vid = localStorage.getItem(key)
+  if (!vid) {
+    const rand =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    vid = `v_${rand}`
+    localStorage.setItem(key, vid)
+  }
+  return vid
+}
+
+// 解析 URL 接入参数(对齐参考系统):?appId=&groupId=(游客);带 &userId= 则为实名业务用户。
+// appId=项目级接入标识;groupId=专属分配策略标识(决定分到哪组队友,asn 模块未做时后端忽略)。
 function parseAccess(): AccessParams | null {
   const q = new URLSearchParams(location.search)
   const appId = q.get('appId') || ''
   if (!appId) return null
+  const userId = q.get('userId') || undefined
+  let visitorId = q.get('visitorId') || undefined
+  // 无业务 userId(也无显式 visitorId)→ 游客接入,用持久化匿名身份兜底
+  if (!userId && !visitorId) visitorId = getOrCreateVisitorId(appId)
   return {
     appId,
-    userId: q.get('userId') || undefined,
-    visitorId: q.get('visitorId') || undefined,
+    groupId: q.get('groupId') || undefined,
+    userId,
+    visitorId,
     lang: q.get('lang') || 'zh_CN',
     source: q.get('source') || 'web',
   }

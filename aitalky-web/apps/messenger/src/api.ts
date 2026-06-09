@@ -32,6 +32,7 @@ client.interceptors.response.use(
 export function init(p: AccessParams): Promise<MessengerInit> {
   return client.post<unknown, MessengerInit>('/init', {
     appId: p.appId,
+    groupId: p.groupId,
     userId: p.userId,
     visitorId: p.visitorId,
     lang: p.lang,
