@@ -18,19 +18,7 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-framework</artifactId>
         </dependency>
-        <!-- 鉴权/会话/消息服务（推送时校验与取数） -->
-        <dependency>
-            <groupId>com.aitalky</groupId>
-            <artifactId>aitalky-identity</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.aitalky</groupId>
-            <artifactId>aitalky-conversation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.aitalky</groupId>
-            <artifactId>aitalky-message</artifactId>
-        </dependency>
+        <!-- 注:ws 保持轻量,不依赖业务模块;推送事件 MsgPushEvent 在 common(framework 已带) -->
         <!-- Netty -->
         <dependency>
             <groupId>io.netty</groupId>

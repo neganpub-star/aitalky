@@ -4,6 +4,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolConfig;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -34,14 +35,20 @@ public class WebSocketChannelInitializer extends ChannelInitializer<SocketChanne
 
     @Override
     protected void initChannel(SocketChannel ch) {
+        // checkStartsWith=true:URL 带 query(如 /ws?token=xxx)也能匹配握手路径
+        WebSocketServerProtocolConfig wsConfig = WebSocketServerProtocolConfig.newBuilder()
+                .websocketPath(path)
+                .checkStartsWith(true)
+                .handleCloseFrames(true)
+                .build();
         ch.pipeline()
                 .addLast(new HttpServerCodec())
                 .addLast(new HttpObjectAggregator(64 * 1024))
                 .addLast(new ChunkedWriteHandler())
                 // 读空闲检测：客户端应周期性发 ping，超 readerIdleSeconds 无任何帧 → 触发 IdleStateEvent
                 .addLast(new IdleStateHandler(readerIdleSeconds, 0, 0, TimeUnit.SECONDS))
-                // 握手 + 自动处理 ping/pong/close 控制帧；保留握手参数（query token）
-                .addLast(new WebSocketServerProtocolHandler(path, null, true))
+                // 握手 + 自动处理 ping/pong/close 控制帧
+                .addLast(new WebSocketServerProtocolHandler(wsConfig))
                 .addLast(frameHandler);
     }
 }

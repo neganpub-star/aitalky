@@ -101,24 +101,23 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         ctx.close();
     }
 
-    /** 解析身份：坐席用 JWT；信使客户的 appId/userId 鉴权这里留 TODO */
+    /** 解析身份:坐席项目级令牌→member:{id};客户令牌(scope=customer)→cust:{customerId} */
     private String resolveIdentity(String uri) {
         Map<String, List<String>> params = new QueryStringDecoder(uri).parameters();
         List<String> tokens = params.get("token");
-        if (tokens != null && !tokens.isEmpty()) {
-            try {
-                Claims claims = jwtUtil.parse(tokens.get(0));
-                Object memberId = claims.get("memberId");
-                if (memberId != null) {
-                    return "member:" + memberId;
-                }
-                return "account:" + claims.getSubject();
-            } catch (Exception e) {
-                return null;
-            }
+        if (tokens == null || tokens.isEmpty()) {
+            return null;
         }
-        // TODO 信使客户：按 appId 校验 + userId/visitorId → "cust:{customerId}"
-        return null;
+        try {
+            Claims claims = jwtUtil.parse(tokens.get(0));
+            if ("customer".equals(claims.get("scope"))) {
+                return "cust:" + claims.get("customerId");
+            }
+            Object memberId = claims.get("memberId");
+            return memberId != null ? "member:" + memberId : null; // 账号级令牌(未进项目)不允许连 WS
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String extract(String json, String field) {

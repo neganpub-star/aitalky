@@ -53,6 +53,7 @@ public class PushService {
 
     /** 把消息分发到一组连接节点（实例#connId）：本实例直推，跨实例走 MQ 广播 */
     private void dispatch(Set<String> nodes, String payloadJson) {
+        log.debug("dispatch 目标连接数={}", nodes.size());
         for (String node : nodes) {
             int sep = node.indexOf('#');
             if (sep < 0) {

@@ -16,7 +16,10 @@ import com.aitalky.identity.service.MemberService;
 import com.aitalky.message.document.Message;
 import com.aitalky.message.dto.MessageVO;
 import com.aitalky.message.dto.SendMessageCmd;
+import com.aitalky.common.event.MsgPushEvent;
+import com.aitalky.message.event.MessagePushPublisher;
 import com.aitalky.message.service.MessageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,8 @@ public class ConversationController {
     private final MessageService messageService;
     private final MemberService memberService;
     private final CustomerService customerService;
+    private final MessagePushPublisher pushPublisher;
+    private final ObjectMapper objectMapper;
 
     /** 收件箱列表 */
     @GetMapping
@@ -83,11 +88,21 @@ public class ConversationController {
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), internal, req.mentions()));
         conversationService.onNewMessage(id, m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), false);
-        if (conv.getAssigneeMemberId() == null && !internal) {
+        Long targetAssignee = conv.getAssigneeMemberId();
+        if (targetAssignee == null && !internal) {
             conversationService.claim(id, me.id()); // 直接回复未分配会话即认领
+            targetAssignee = me.id();
         }
-        // TODO P2: WS 推送给 客户 + assignee全部连接 + 会话订阅者(代看/代发)
-        return R.ok(PublicMessengerController.toVO(m));
+        // 推送:客户(若非内部消息)+ assignee全部连接 + 会话订阅者(代看/代发由订阅天然覆盖)
+        MessageVO vo = PublicMessengerController.toVO(m);
+        try {
+            // 内部消息不推客户;customerId 传 null 让 ws 跳过客户下发
+            Long custTarget = internal ? null : conv.getCustomerId();
+            pushPublisher.publish(new MsgPushEvent(id, targetAssignee, custTarget, objectMapper.writeValueAsString(vo)));
+        } catch (Exception ignore) {
+            // 序列化异常忽略
+        }
+        return R.ok(vo);
     }
 
     /** 认领 */

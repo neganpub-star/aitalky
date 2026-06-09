@@ -22,7 +22,7 @@ aitalky:
     datacenter-id: 2
     worker-id: 0
   ws:
-    port: 9000
+    port: 9100          # 避开 MinIO 占用的 9000
     path: /ws
     reader-idle-seconds: 60
     # ★ 横向扩展：每个 ws 实例必须唯一(上线多实例时改这里)

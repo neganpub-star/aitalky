@@ -17,7 +17,10 @@ import com.aitalky.identity.service.ProjectService;
 import com.aitalky.message.document.Message;
 import com.aitalky.message.dto.MessageVO;
 import com.aitalky.message.dto.SendMessageCmd;
+import com.aitalky.common.event.MsgPushEvent;
+import com.aitalky.message.event.MessagePushPublisher;
 import com.aitalky.message.service.MessageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +46,8 @@ public class PublicMessengerController {
     private final ConversationService conversationService;
     private final MessageService messageService;
     private final CustomerTokenService customerTokenService;
+    private final MessagePushPublisher pushPublisher;
+    private final ObjectMapper objectMapper;
 
     /** 初始化会话:校验 appId,解析/创建客户与会话,签发客户令牌 */
     @PostMapping("/init")
@@ -77,8 +82,10 @@ public class PublicMessengerController {
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
                 req.type(), req.content(), false, null));
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), true);
-        // TODO P2: WS 推送给 assignee 全部连接 + 会话订阅者
-        return R.ok(toVO(m));
+        // 推送:坐席侧(assignee 全部连接 + 会话订阅者)+ 客户其他端
+        MessageVO vo = toVO(m);
+        publishPush(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
+        return R.ok(vo);
     }
 
     /** 客户拉消息(客户令牌):afterSeq 增量;不传则取最近 50 条。客户看不到内部消息 */
@@ -97,6 +104,16 @@ public class PublicMessengerController {
         return R.ok(list.stream()
                 .filter(m -> !Boolean.TRUE.equals(m.getInternal()))   // 客户不可见内部消息
                 .map(PublicMessengerController::toVO).toList());
+    }
+
+    /** 发布消息推送事件(供 ws 下发);序列化失败仅告警,不影响已落库消息 */
+    private void publishPush(Long conversationId, Long assigneeMemberId, Long customerId, MessageVO vo) {
+        try {
+            String payload = objectMapper.writeValueAsString(vo);
+            pushPublisher.publish(new MsgPushEvent(conversationId, assigneeMemberId, customerId, payload));
+        } catch (Exception ignore) {
+            // 序列化异常忽略:客户端重连可按 seq 补拉
+        }
     }
 
     static MessageVO toVO(Message m) {
