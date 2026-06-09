@@ -1,9 +1,10 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, message, theme } from 'antd'
+import { Avatar, Button, Empty, Input, Popconfirm, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
+  PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -98,6 +99,7 @@ export default function Inbox() {
   const [editVal, setEditVal] = useState('')
   const [savingContact, setSavingContact] = useState(false)
   const [bizCollapsed, setBizCollapsed] = useState(false)
+  const [autoTranslate, setAutoTranslate] = useState(false) // 翻译为占位(AI翻译模块未做)
 
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
@@ -508,37 +510,62 @@ export default function Inbox() {
               <div ref={msgEndRef} />
             </div>
 
-            {/* 输入区:回复 / 内部消息 */}
+            {/* 输入区:对齐 ByteTrack(tab+翻译开关 / 加高输入框 / 工具栏 + 翻译·发送)*/}
             <div style={{ flexShrink: 0, background: token.colorBgContainer, borderTop: splitBorder, padding: '8px 16px 12px' }}>
-              <div style={{ display: 'flex', gap: 20, marginBottom: 6 }}>
-                {(['reply', 'internal'] as const).map((k) => (
-                  <span
-                    key={k}
-                    onClick={() => setReplyTab(k)}
-                    style={{
-                      cursor: 'pointer', fontSize: 14, paddingBottom: 4,
-                      color: replyTab === k ? token.colorPrimary : token.colorTextSecondary,
-                      borderBottom: `2px solid ${replyTab === k ? token.colorPrimary : 'transparent'}`,
-                    }}
-                  >
-                    {t(k === 'reply' ? 'inbox.reply' : 'inbox.internalNote')}
-                  </span>
-                ))}
+              {/* 第一行:回复/内部消息 tab(左) + 自动翻译开关 + 客户源语言(右) */}
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 20, flex: 1 }}>
+                  {(['reply', 'internal'] as const).map((k) => (
+                    <span
+                      key={k}
+                      onClick={() => setReplyTab(k)}
+                      style={{
+                        cursor: 'pointer', fontSize: 14, paddingBottom: 4,
+                        color: replyTab === k ? token.colorPrimary : token.colorTextSecondary,
+                        borderBottom: `2px solid ${replyTab === k ? token.colorPrimary : 'transparent'}`,
+                      }}
+                    >
+                      {t(k === 'reply' ? 'inbox.reply' : 'inbox.internalNote')}
+                    </span>
+                  ))}
+                </div>
+                {/* 翻译控件(占位,AI翻译模块未做)*/}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: token.colorTextSecondary }}>
+                  <span>{t('inbox.autoTranslate')}</span>
+                  <Switch size="small" checked={autoTranslate} onChange={(v) => { setAutoTranslate(v); message.info(t('settings.wip')) }} />
+                  <span style={{ color: token.colorTextTertiary }}>{t('inbox.customerLang')}</span>
+                  <span>{langLabel(detail.sourceLanguage)}</span>
+                </div>
               </div>
+              {/* 输入框(加高,对齐参考)*/}
               <Input.TextArea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onInputKeyDown}
                 placeholder={t(replyTab === 'reply' ? 'inbox.replyPlaceholder' : 'inbox.internalPlaceholder')}
-                autoSize={{ minRows: 2, maxRows: 6 }}
+                autoSize={{ minRows: 5, maxRows: 10 }}
                 variant="borderless"
                 style={{ padding: 0, fontSize: 15 }}
               />
+              {/* 底部:工具栏图标(左,占位)+ 认领/翻译/发送(右)*/}
               <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
-                <span style={{ flex: 1, fontSize: 12, color: token.colorTextTertiary }}>{t('inbox.sendHint')}</span>
+                <div style={{ display: 'flex', gap: 18, flex: 1, color: token.colorTextTertiary, fontSize: 18 }}>
+                  {([
+                    { icon: <PictureOutlined />, k: 'inbox.toolImage' },
+                    { icon: <PaperClipOutlined />, k: 'inbox.toolFile' },
+                    { icon: <LinkOutlined />, k: 'inbox.toolLink' },
+                    { icon: <BookOutlined />, k: 'inbox.toolKb' },
+                    { icon: <ThunderboltOutlined />, k: 'inbox.toolQuick' },
+                  ] as const).map(({ icon, k }) => (
+                    <Tooltip key={k} title={t(k)}>
+                      <span style={{ cursor: 'pointer' }} onClick={() => message.info(t('settings.wip'))}>{icon}</span>
+                    </Tooltip>
+                  ))}
+                </div>
                 {unassigned && !closed && (
                   <Button size="small" style={{ marginRight: 8 }} onClick={onClaim}>{t('inbox.claim')}</Button>
                 )}
+                <Button style={{ marginRight: 8 }} onClick={() => message.info(t('settings.wip'))}>{t('inbox.translate')}</Button>
                 <Button type="primary" loading={sending} disabled={!input.trim()} onClick={onSend}>
                   {t('inbox.send')}
                 </Button>
