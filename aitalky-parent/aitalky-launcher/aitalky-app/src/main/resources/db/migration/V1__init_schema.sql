@@ -1,15 +1,7 @@
--- ============================================================
--- aitalky 数据库初始化 ① 表结构 (MySQL 8)
--- 字符集 utf8mb4 / 排序规则 utf8mb4_general_ci
--- 表结构以《doc/design/ddl-mysql.sql》为设计权威,本文件为可执行版(含建库+DROP)
--- 执行: mysql -uroot -p < 01-schema.sql
--- ============================================================
-CREATE DATABASE IF NOT EXISTS `aitalky` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `aitalky`;
+-- Flyway V1: 初始表结构(26 表, utf8mb4_general_ci)
+-- 由 doc/design/ddl-mysql.sql 演进;以后改表新增 V{n}__xxx.sql
 SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS `pf_admin`;
 CREATE TABLE `pf_admin` (
   `id`            bigint       NOT NULL COMMENT '主键(雪花ID)',
   `username`      varchar(64)  NOT NULL COMMENT '登录名',
@@ -26,7 +18,6 @@ CREATE TABLE `pf_admin` (
   UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='平台管理员账号';
 
-DROP TABLE IF EXISTS `pf_admin_role`;
 CREATE TABLE `pf_admin_role` (
   `id`          bigint      NOT NULL COMMENT '主键(雪花ID)',
   `name`        varchar(32) NOT NULL COMMENT '角色名称',
@@ -40,7 +31,6 @@ CREATE TABLE `pf_admin_role` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='平台角色';
 
 -- 套餐(平台定义; 通用结构,V1 只配少量档位+席位/翻译/客户配额)
-DROP TABLE IF EXISTS `pf_plan`;
 CREATE TABLE `pf_plan` (
   `id`            bigint        NOT NULL COMMENT '主键(雪花ID)',
   `code`          varchar(32)   NOT NULL COMMENT '套餐编码',
@@ -62,7 +52,6 @@ CREATE TABLE `pf_plan` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='套餐';
 
 -- 套餐含的资源配额(套餐×资源类型; 扩展资源只需加行,不改表)
-DROP TABLE IF EXISTS `pf_plan_quota`;
 CREATE TABLE `pf_plan_quota` (
   `id`            bigint      NOT NULL COMMENT '主键(雪花ID)',
   `plan_id`       bigint      NOT NULL COMMENT '套餐id',
@@ -79,7 +68,6 @@ CREATE TABLE `pf_plan_quota` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='套餐资源配额';
 
 -- 加量包定义(平台; V1 只有 翻译包/席位)
-DROP TABLE IF EXISTS `pf_addon_pack`;
 CREATE TABLE `pf_addon_pack` (
   `id`            bigint        NOT NULL COMMENT '主键(雪花ID)',
   `code`          varchar(32)   NOT NULL COMMENT '加量包编码',
@@ -99,7 +87,6 @@ CREATE TABLE `pf_addon_pack` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='加量包定义';
 
 -- 协议/法律文档(平台后管编辑; 多语言)
-DROP TABLE IF EXISTS `pf_agreement`;
 CREATE TABLE `pf_agreement` (
   `id`          bigint       NOT NULL COMMENT '主键(雪花ID)',
   `type`        varchar(32)  NOT NULL COMMENT '类型 terms服务条款/privacy隐私政策/subscription套餐订阅协议',
@@ -121,7 +108,6 @@ CREATE TABLE `pf_agreement` (
 -- id_ 身份与租户
 -- ========================================================================
 
-DROP TABLE IF EXISTS `id_account`;
 CREATE TABLE `id_account` (
   `id`            bigint       NOT NULL COMMENT '主键(雪花ID)',
   `email`         varchar(128) NOT NULL COMMENT '邮箱(登录名,收验证码)',
@@ -136,7 +122,6 @@ CREATE TABLE `id_account` (
   UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='租户账号(坐席侧登录)';
 
-DROP TABLE IF EXISTS `id_project`;
 CREATE TABLE `id_project` (
   `id`               bigint      NOT NULL COMMENT '主键(雪花ID)',
   `name`             varchar(64) NOT NULL COMMENT '项目名称',
@@ -157,7 +142,6 @@ CREATE TABLE `id_project` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='项目(租户)';
 
 -- 角色(项目内 RBAC; 权限=页面权限+功能权限; 预置 负责人/管理员/普通用户)
-DROP TABLE IF EXISTS `id_role`;
 CREATE TABLE `id_role` (
   `id`          bigint      NOT NULL COMMENT '主键(雪花ID)',
   `project_id`  bigint      NOT NULL COMMENT '项目id',
@@ -173,7 +157,6 @@ CREATE TABLE `id_role` (
   KEY `idx_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色';
 
-DROP TABLE IF EXISTS `id_member`;
 CREATE TABLE `id_member` (
   `id`            bigint      NOT NULL COMMENT '主键(雪花ID)',
   `project_id`    bigint      NOT NULL COMMENT '项目id',
@@ -198,7 +181,6 @@ CREATE TABLE `id_member` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='成员(坐席)';
 
 -- 邮箱邀请(一邮箱一条)
-DROP TABLE IF EXISTS `id_invite`;
 CREATE TABLE `id_invite` (
   `id`                bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`        bigint       NOT NULL COMMENT '项目id',
@@ -219,7 +201,6 @@ CREATE TABLE `id_invite` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='邮箱邀请';
 
 -- 链接邀请(可复用,多人通过同一链接加入)
-DROP TABLE IF EXISTS `id_invite_link`;
 CREATE TABLE `id_invite_link` (
   `id`                bigint      NOT NULL COMMENT '主键(雪花ID)',
   `project_id`        bigint      NOT NULL COMMENT '项目id',
@@ -244,7 +225,6 @@ CREATE TABLE `id_invite_link` (
 -- ========================================================================
 
 -- 信使配置(项目级 1:1; 非多语言的配置项)
-DROP TABLE IF EXISTS `mse_messenger`;
 CREATE TABLE `mse_messenger` (
   `id`                    bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`            bigint       NOT NULL COMMENT '项目id',
@@ -271,7 +251,6 @@ CREATE TABLE `mse_messenger` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='信使配置';
 
 -- 信使多语言内容(问候语/团队介绍/紧急通知 按语言)
-DROP TABLE IF EXISTS `mse_messenger_i18n`;
 CREATE TABLE `mse_messenger_i18n` (
   `id`             bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`     bigint       NOT NULL COMMENT '项目id',
@@ -293,7 +272,6 @@ CREATE TABLE `mse_messenger_i18n` (
 -- asn_ 客服组与分配(会话设置)
 -- ========================================================================
 
-DROP TABLE IF EXISTS `asn_config`;
 CREATE TABLE `asn_config` (
   `id`                     bigint   NOT NULL COMMENT '主键(雪花ID)',
   `project_id`             bigint   NOT NULL COMMENT '项目id',
@@ -309,7 +287,6 @@ CREATE TABLE `asn_config` (
   UNIQUE KEY `uk_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='会话设置(分配规则/限制/保持期)';
 
-DROP TABLE IF EXISTS `asn_group`;
 CREATE TABLE `asn_group` (
   `id`          bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`  bigint       NOT NULL COMMENT '项目id',
@@ -328,7 +305,6 @@ CREATE TABLE `asn_group` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='客服组';
 
 -- 组成员(普通组=参与自动分配的队友; 专属组=该组队友)
-DROP TABLE IF EXISTS `asn_group_member`;
 CREATE TABLE `asn_group_member` (
   `id`          bigint   NOT NULL COMMENT '主键(雪花ID)',
   `project_id`  bigint   NOT NULL COMMENT '项目id',
@@ -348,7 +324,6 @@ CREATE TABLE `asn_group_member` (
 -- cus_ 客户
 -- ========================================================================
 
-DROP TABLE IF EXISTS `cus_customer`;
 CREATE TABLE `cus_customer` (
   `id`               bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`       bigint       NOT NULL COMMENT '项目id',
@@ -375,7 +350,6 @@ CREATE TABLE `cus_customer` (
 -- cnv_ 会话
 -- ========================================================================
 
-DROP TABLE IF EXISTS `cnv_conversation`;
 CREATE TABLE `cnv_conversation` (
   `id`                   bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`           bigint       NOT NULL COMMENT '项目id',
@@ -404,7 +378,6 @@ CREATE TABLE `cnv_conversation` (
   KEY `idx_customer` (`customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='会话';
 
-DROP TABLE IF EXISTS `cnv_assign_log`;
 CREATE TABLE `cnv_assign_log` (
   `id`                 bigint   NOT NULL COMMENT '主键(雪花ID)',
   `project_id`         bigint   NOT NULL COMMENT '项目id',
@@ -428,7 +401,6 @@ CREATE TABLE `cnv_assign_log` (
 -- ========================================================================
 
 -- 快捷回复分类(可管理: 添加分类/未分类/售前场景/售后场景...)
-DROP TABLE IF EXISTS `sup_quick_reply_category`;
 CREATE TABLE `sup_quick_reply_category` (
   `id`          bigint      NOT NULL COMMENT '主键(雪花ID)',
   `project_id`  bigint      NOT NULL COMMENT '项目id',
@@ -443,7 +415,6 @@ CREATE TABLE `sup_quick_reply_category` (
   KEY `idx_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='快捷回复分类';
 
-DROP TABLE IF EXISTS `sup_quick_reply`;
 CREATE TABLE `sup_quick_reply` (
   `id`              bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`      bigint       NOT NULL COMMENT '项目id',
@@ -463,7 +434,6 @@ CREATE TABLE `sup_quick_reply` (
   KEY `idx_project` (`project_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='快捷回复';
 
-DROP TABLE IF EXISTS `sup_blacklist`;
 CREATE TABLE `sup_blacklist` (
   `id`           bigint       NOT NULL COMMENT '主键(雪花ID)',
   `project_id`   bigint       NOT NULL COMMENT '项目id',
@@ -483,7 +453,6 @@ CREATE TABLE `sup_blacklist` (
 -- pay_ 订阅计费(租户购买; 平台后管可查/管)
 -- ========================================================================
 
-DROP TABLE IF EXISTS `pay_subscription`;
 CREATE TABLE `pay_subscription` (
   `id`          bigint   NOT NULL COMMENT '主键(雪花ID)',
   `project_id`  bigint   NOT NULL COMMENT '项目id',
@@ -501,7 +470,6 @@ CREATE TABLE `pay_subscription` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='订阅';
 
 -- 资源配额与用量(项目×资源类型; 套餐给基础量+加量包累加, used 部分动态算)
-DROP TABLE IF EXISTS `pay_quota`;
 CREATE TABLE `pay_quota` (
   `id`            bigint      NOT NULL COMMENT '主键(雪花ID)',
   `project_id`    bigint      NOT NULL COMMENT '项目id',
@@ -519,7 +487,6 @@ CREATE TABLE `pay_quota` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='资源配额与用量';
 
 -- 支付订单(数字货币在线支付, 搬 cicada/NexaPay 逻辑)
-DROP TABLE IF EXISTS `pay_order`;
 CREATE TABLE `pay_order` (
   `id`              bigint         NOT NULL COMMENT '主键(雪花ID)',
   `project_id`      bigint         NOT NULL COMMENT '项目id',
@@ -557,4 +524,3 @@ CREATE TABLE `pay_order` (
 -- 结构见《领域模型与表结构.md》第六节; seq 由 Redis INCR + 落 cnv_conversation.last_seq。
 -- ============================================================
 
-SET FOREIGN_KEY_CHECKS = 1;

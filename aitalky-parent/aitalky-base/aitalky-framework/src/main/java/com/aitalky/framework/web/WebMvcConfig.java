@@ -27,8 +27,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 功能权限拦截器(在鉴权之后执行,此时上下文已填充 functions)
+        registry.addInterceptor(new FunctionPermissionInterceptor())
+                .addPathPatterns("/api/**")
+                .order(2);
         registry.addInterceptor(new AuthInterceptor(jwtUtil, jwtProperties))
                 .addPathPatterns("/api/**")
+                .order(1)
                 .excludePathPatterns(
                         "/api/auth/login",
                         "/api/auth/register",

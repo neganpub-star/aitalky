@@ -29,6 +29,8 @@ public enum ResultCode {
     NOT_PROJECT_MEMBER(1014, "not.project.member"),
     VERIFY_CODE_ERROR(1015, "verify.code.error"),
     VERIFY_CODE_TOO_FREQUENT(1016, "verify.code.too.frequent"),
+    OPERATE_OWNER_FORBIDDEN(1017, "operate.owner.forbidden"),
+    MEMBER_NOT_FOUND(1018, "member.not.found"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");

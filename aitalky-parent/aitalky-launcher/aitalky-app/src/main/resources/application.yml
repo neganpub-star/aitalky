@@ -14,6 +14,12 @@ spring:
     username: root
     password: negan123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  # 数据库迁移:启动时按 db/migration 下 V{n}__xxx.sql 版本顺序执行
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
   data:
     redis:
       host: localhost
@@ -45,6 +51,8 @@ rocketmq:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+    # 枚举统一处理:实体可用 @EnumValue 枚举字段(数据规范:状态优先用语义化枚举)
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     db-config:
       logic-delete-field: delFlag
