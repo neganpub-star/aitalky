@@ -82,7 +82,8 @@ export default {
     pushDesc: 'Show desktop notification on new messages',
     saved: 'Saved',
     nicknameRequired: 'Nickname is required',
-    avatarPrompt: 'Enter avatar image URL',
+    avatarTypeError: 'Please choose an image file',
+    avatarSizeError: 'Image must be under 2MB',
   },
   inbox: {
     title: 'Inbox',

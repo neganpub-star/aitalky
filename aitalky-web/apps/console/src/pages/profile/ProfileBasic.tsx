@@ -1,10 +1,11 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
-import { Avatar, Button, Input, Modal, Popconfirm, Spin, Tag, message, theme } from 'antd'
-import { EditOutlined } from '@ant-design/icons'
+import { Avatar, Button, Input, Popconfirm, Spin, Tag, Upload, message, theme } from 'antd'
+import { EditOutlined, LoadingOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { getProfile, leaveProject, updateMyAvatar, updateMyNickname, type ProfileVO } from '../../api/account'
+import { uploadFile } from '../../api/file'
 import { logout } from '../../auth/session'
 
 // 个人中心 - 基本资料(对齐 ByteTrack):账户信息 + 项目成员信息 + 退出项目
@@ -18,6 +19,7 @@ export default function ProfileBasic() {
   const [nickVal, setNickVal] = useState('')
   const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -51,24 +53,25 @@ export default function ProfileBasic() {
     }
   }
 
-  // 头像:先用 URL 方式(上传组件后续接 MinIO)
-  const changeAvatar = () => {
-    let url = data?.avatar || ''
-    Modal.confirm({
-      title: t('profile.avatar'),
-      content: (
-        <Input defaultValue={url} placeholder={t('profile.avatarPrompt')} onChange={(e) => (url = e.target.value)} />
-      ),
-      okText: t('common.confirm'),
-      cancelText: t('common.cancel'),
-      onOk: async () => {
-        const v = url.trim()
-        if (!v) return
-        await updateMyAvatar(v)
-        setData((d) => (d ? { ...d, avatar: v } : d))
+  // 头像:选图片 → 上传 MinIO → 拿 URL → 落库。beforeUpload 返回 false 阻止 antd 默认上传(自己传)
+  const beforeAvatarUpload = (file: File): boolean => {
+    if (!file.type.startsWith('image/')) {
+      message.warning(t('profile.avatarTypeError'))
+      return false
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.warning(t('profile.avatarSizeError'))
+      return false
+    }
+    setUploadingAvatar(true)
+    uploadFile(file)
+      .then(async (url) => {
+        await updateMyAvatar(url)
+        setData((d) => (d ? { ...d, avatar: url } : d))
         message.success(t('profile.saved'))
-      },
-    })
+      })
+      .finally(() => setUploadingAvatar(false))
+    return false
   }
 
   const onLeave = async () => {
@@ -159,14 +162,16 @@ export default function ProfileBasic() {
       </div>
       <div style={{ ...styles.row, alignItems: 'flex-start' }}>
         <span style={{ ...styles.label, marginTop: 6 }}>{t('profile.avatar')}:</span>
-        <div style={{ position: 'relative', cursor: 'pointer' }} onClick={changeAvatar}>
-          <Avatar size={84} src={data.avatar || undefined} style={{ background: token.colorPrimary, fontSize: 30 }}>
-            {(data.nickname || 'U').charAt(0).toUpperCase()}
-          </Avatar>
-          <span style={{ position: 'absolute', right: 0, bottom: 0, width: 24, height: 24, borderRadius: '50%', background: token.colorBgElevated, boxShadow: token.boxShadowTertiary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <EditOutlined style={{ fontSize: 12, color: token.colorPrimary }} />
-          </span>
-        </div>
+        <Upload showUploadList={false} accept="image/*" beforeUpload={beforeAvatarUpload} disabled={uploadingAvatar}>
+          <div style={{ position: 'relative', cursor: uploadingAvatar ? 'default' : 'pointer' }}>
+            <Avatar size={84} src={data.avatar || undefined} style={{ background: token.colorPrimary, fontSize: 30 }}>
+              {(data.nickname || 'U').charAt(0).toUpperCase()}
+            </Avatar>
+            <span style={{ position: 'absolute', right: 0, bottom: 0, width: 24, height: 24, borderRadius: '50%', background: token.colorBgElevated, boxShadow: token.boxShadowTertiary, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {uploadingAvatar ? <LoadingOutlined style={{ fontSize: 12, color: token.colorPrimary }} /> : <EditOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+            </span>
+          </div>
+        </Upload>
       </div>
 
       {/* 退出项目 */}

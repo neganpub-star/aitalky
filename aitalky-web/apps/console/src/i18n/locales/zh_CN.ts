@@ -82,7 +82,8 @@ export default {
     pushDesc: '新消息时弹出桌面通知',
     saved: '已保存',
     nicknameRequired: '昵称不能为空',
-    avatarPrompt: '请输入头像图片 URL',
+    avatarTypeError: '请选择图片文件',
+    avatarSizeError: '图片不能超过 2MB',
   },
   inbox: {
     title: '收件箱',
