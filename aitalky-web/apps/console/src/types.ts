@@ -56,3 +56,53 @@ export interface RoleVO {
   name: string
   isSystem: number
 }
+
+// 会话列表项(对应后端 ConversationVO)。status: 0等待 1进行中 2已结束
+export interface ConversationVO {
+  id: string
+  customerId: string
+  customerName: string
+  customerAvatar: string | null
+  assigneeMemberId: string | null
+  status: number
+  lastMessagePreview: string | null
+  lastMessageAt: string | null
+  unreadCount: number
+}
+
+// 会话详情(会话 + 客户信息,供详情面板用)
+export interface ConversationDetailVO {
+  id: string
+  status: number
+  source: string | null
+  ip: string | null
+  location: string | null
+  autoTranslate: number | null
+  assigneeMemberId: string | null
+  lastMessageAt: string | null
+  customerId: string | null
+  externalUserId: string | null
+  customerName: string | null
+  customerAvatar: string | null
+  customerType: number | null
+  sourceLanguage: string | null
+  contact: string | null
+  email: string | null
+  customAttrs: string | null
+}
+
+// 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...
+export interface MessageVO {
+  msgId: string
+  seq: number
+  conversationId: string
+  senderType: string
+  senderId: string
+  senderName: string | null
+  senderAvatar: string | null
+  type: string
+  content: string
+  internal: boolean | null
+  isVisible: boolean | null
+  timestamp: number
+}

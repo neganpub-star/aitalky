@@ -10,6 +10,7 @@ interface AppState {
   projects: ProjectBrief[]
   projectId?: string
   projectName?: string
+  memberId?: string
   roleName?: string
   functions: string[]
   themeMode: 'light' | 'dark'
@@ -39,6 +40,7 @@ export const useAppStore = create<AppState>()(
           token: r.token,
           projectId: r.projectId,
           projectName,
+          memberId: r.memberId,
           roleName: r.roleName,
           functions: r.functions,
         }),
@@ -51,6 +53,7 @@ export const useAppStore = create<AppState>()(
           projects: [],
           projectId: undefined,
           projectName: undefined,
+          memberId: undefined,
           roleName: undefined,
           functions: [],
         }),
