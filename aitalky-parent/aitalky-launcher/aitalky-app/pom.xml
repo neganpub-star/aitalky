@@ -52,6 +52,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-billing</artifactId>
         </dependency>
+        <!-- 只读引用平台语种字典(console 读候选语种) -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-platform</artifactId>
+        </dependency>
         <!-- MySQL 驱动 -->
         <dependency>
             <groupId>com.mysql</groupId>
