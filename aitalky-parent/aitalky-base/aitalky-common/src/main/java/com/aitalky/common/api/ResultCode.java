@@ -31,6 +31,8 @@ public enum ResultCode {
     VERIFY_CODE_TOO_FREQUENT(1016, "verify.code.too.frequent"),
     OPERATE_OWNER_FORBIDDEN(1017, "operate.owner.forbidden"),
     MEMBER_NOT_FOUND(1018, "member.not.found"),
+    OLD_PASSWORD_ERROR(1019, "old.password.error"),
+    INVITE_CODE_INVALID(1021, "invite.code.invalid"),
 
     // ===== 限流 102x =====
     RATE_LIMITED(1020, "rate.limited"),

@@ -45,4 +45,28 @@ public class IdMember extends BaseEntity {
 
     /** 系统推送 1开 0关 */
     private Integer pushEnabled;
+
+    /** 推送-分配给我的会话客户消息(APP) 1开 0关 */
+    private Integer pushAssignedApp;
+
+    /** 推送-分配给我的会话客户消息(Web) 1开 0关 */
+    private Integer pushAssignedWeb;
+
+    /** 推送-未分配会话客户消息(APP) 1开 0关 */
+    private Integer pushUnassignedApp;
+
+    /** 推送-未分配会话客户消息(Web) 1开 0关 */
+    private Integer pushUnassignedWeb;
+
+    /** 推送-提到我的消息(APP) 1开 0关 */
+    private Integer pushMentionApp;
+
+    /** 推送-提到我的消息(Web) 1开 0关 */
+    private Integer pushMentionWeb;
+
+    /** 推送-新客户提醒(APP) 1开 0关 */
+    private Integer pushNewCustomerApp;
+
+    /** 推送-新客户提醒(Web) 1开 0关 */
+    private Integer pushNewCustomerWeb;
 }

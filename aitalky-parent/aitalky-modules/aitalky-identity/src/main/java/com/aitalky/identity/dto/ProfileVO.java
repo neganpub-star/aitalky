@@ -5,7 +5,7 @@ package com.aitalky.identity.dto;
  * isOwner=该成员是否为项目负责人(owner 不能退出项目)。
  */
 public record ProfileVO(
-        String email,
+        String email, String username, String inviteCode,
         Long projectId, String projectName, boolean owner,
         Long memberId, String nickname, String avatar, String roleName,
         String language, Integer soundEnabled, Integer pushEnabled) {

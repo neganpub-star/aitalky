@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 账号服务实现。
@@ -68,11 +69,47 @@ public class AccountServiceImpl implements AccountService {
         IdAccount account = new IdAccount();
         account.setId(idGenerator.nextId());
         account.setEmail(cmd.email());
+        account.setUsername(cmd.email().split("@")[0]); // 默认用户名=邮箱前缀,后续可在个人中心修改
+        account.setInviteCode(generateUniqueInviteCode());
+        account.setInviterAccountId(resolveInviter(cmd.inviteCode()));
         account.setPasswordHash(passwordEncoder.encode(rawPassword)); // BCrypt,严禁打印
         account.setStatus(1);
         accountMapper.insert(account);
         log.info("账号注册成功 accountId={}, email={}", account.getId(), cmd.email());
         return account.getId();
+    }
+
+    /** 解析注册时所填邀请码归属(选填:为空不处理;填了但无效则报错) */
+    private Long resolveInviter(String inviteCode) {
+        if (inviteCode == null || inviteCode.isBlank()) {
+            return null;
+        }
+        IdAccount inviter = accountMapper.selectOne(
+                Wrappers.<IdAccount>lambdaQuery().eq(IdAccount::getInviteCode, inviteCode.trim()));
+        if (inviter == null) {
+            throw new BizException(ResultCode.INVITE_CODE_INVALID);
+        }
+        return inviter.getId();
+    }
+
+    /** 邀请码字符集(去掉易混淆的 0/O/1/I/L) */
+    private static final char[] INVITE_CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789".toCharArray();
+
+    /** 生成全局唯一的 8 位邀请码(碰撞重试) */
+    private String generateUniqueInviteCode() {
+        for (int attempt = 0; attempt < 10; attempt++) {
+            StringBuilder sb = new StringBuilder(8);
+            for (int i = 0; i < 8; i++) {
+                sb.append(INVITE_CODE_CHARS[ThreadLocalRandom.current().nextInt(INVITE_CODE_CHARS.length)]);
+            }
+            String code = sb.toString();
+            boolean exists = accountMapper.exists(
+                    Wrappers.<IdAccount>lambdaQuery().eq(IdAccount::getInviteCode, code));
+            if (!exists) {
+                return code;
+            }
+        }
+        throw new BizException(ResultCode.SYSTEM_ERROR);
     }
 
     @Override
@@ -108,5 +145,73 @@ public class AccountServiceImpl implements AccountService {
         return projectMapper.selectBatchIds(projectIds).stream()
                 .map(p -> new ProjectBrief(p.getId(), p.getName(), p.getAppId()))
                 .toList();
+    }
+
+    @Override
+    public void updateUsername(Long accountId, String username) {
+        String v = username == null ? "" : username.trim();
+        if (v.isEmpty() || v.length() > 64) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        IdAccount account = requireAccount(accountId);
+        account.setUsername(v);
+        accountMapper.updateById(account);
+        log.info("账号修改用户名 accountId={}", accountId);
+    }
+
+    @Override
+    public void changeEmail(Long accountId, String newEmail, String code) {
+        // 校验发往「新邮箱」的验证码(复用 REGISTER 场景=证明拥有该邮箱)
+        verifyCodeService.verify(VerifyScene.REGISTER, newEmail, code);
+        boolean exists = accountMapper.exists(Wrappers.<IdAccount>lambdaQuery()
+                .eq(IdAccount::getEmail, newEmail)
+                .ne(IdAccount::getId, accountId));
+        if (exists) {
+            throw new BizException(ResultCode.EMAIL_ALREADY_EXISTS);
+        }
+        IdAccount account = requireAccount(accountId);
+        account.setEmail(newEmail);
+        accountMapper.updateById(account);
+        log.info("账号更改邮箱成功 accountId={}", accountId);
+    }
+
+    @Override
+    public void changePassword(Long accountId, String oldPasswordCipher, String newPasswordCipher) {
+        IdAccount account = requireAccount(accountId);
+        // 校验旧密码(RSA 解密后比对 BCrypt)
+        String oldRaw = rsaCryptoService.decrypt(oldPasswordCipher);
+        if (!passwordEncoder.matches(oldRaw, account.getPasswordHash())) {
+            throw new BizException(ResultCode.OLD_PASSWORD_ERROR);
+        }
+        updatePasswordHash(account, newPasswordCipher);
+        log.info("账号更改密码成功 accountId={}", accountId);
+    }
+
+    @Override
+    public void resetPassword(Long accountId, String code, String newPasswordCipher) {
+        IdAccount account = requireAccount(accountId);
+        // 验证码发往本账号邮箱(忘记旧密码场景)
+        verifyCodeService.verify(VerifyScene.RESET_PWD, account.getEmail(), code);
+        updatePasswordHash(account, newPasswordCipher);
+        log.info("账号重置密码成功 accountId={}", accountId);
+    }
+
+    /** RSA 解密新密码 → 校验明文长度 → 更新 BCrypt 哈希(严禁打印明文) */
+    private void updatePasswordHash(IdAccount account, String newPasswordCipher) {
+        String newRaw = rsaCryptoService.decrypt(newPasswordCipher);
+        if (newRaw.length() < 6 || newRaw.length() > 32) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        account.setPasswordHash(passwordEncoder.encode(newRaw));
+        accountMapper.updateById(account);
+    }
+
+    /** 取账号,不存在视为登录态异常 */
+    private IdAccount requireAccount(Long accountId) {
+        IdAccount account = accountMapper.selectById(accountId);
+        if (account == null) {
+            throw new BizException(ResultCode.UNAUTHORIZED);
+        }
+        return account;
     }
 }

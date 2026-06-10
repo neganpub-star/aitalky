@@ -5,6 +5,7 @@ import com.aitalky.identity.dto.MemberBrief;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
 import com.aitalky.identity.dto.ProfileVO;
+import com.aitalky.identity.dto.PushSettingsVO;
 
 /**
  * 成员管理服务(均在当前项目范围内,多租户拦截器自动隔离)。
@@ -38,4 +39,10 @@ public interface MemberService {
 
     /** 更新个人偏好(语言/声音/推送);传 null 的字段不改 */
     void updatePreferences(Long memberId, String language, Integer soundEnabled, Integer pushEnabled);
+
+    /** 系统推送设置(4 类消息 x APP/Web) */
+    PushSettingsVO pushSettings(Long memberId);
+
+    /** 更新系统推送设置(整体覆盖 8 个开关) */
+    void updatePushSettings(Long memberId, PushSettingsVO settings);
 }

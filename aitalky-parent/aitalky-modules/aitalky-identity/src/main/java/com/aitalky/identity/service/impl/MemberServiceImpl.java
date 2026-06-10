@@ -8,6 +8,7 @@ import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
 import com.aitalky.identity.dto.ProfileVO;
+import com.aitalky.identity.dto.PushSettingsVO;
 import com.aitalky.identity.entity.IdAccount;
 import com.aitalky.identity.entity.IdMember;
 import com.aitalky.identity.entity.IdProject;
@@ -125,9 +126,41 @@ public class MemberServiceImpl implements MemberService {
         boolean owner = project != null && project.getOwnerAccountId().equals(m.getAccountId());
         return new ProfileVO(
                 account == null ? null : account.getEmail(),
+                account == null ? null : account.getUsername(),
+                account == null ? null : account.getInviteCode(),
                 m.getProjectId(), project == null ? null : project.getName(), owner,
                 m.getId(), m.getNickname(), m.getAvatar(), role == null ? null : role.getName(),
                 m.getLanguage(), m.getSoundEnabled(), m.getPushEnabled());
+    }
+
+    @Override
+    public PushSettingsVO pushSettings(Long memberId) {
+        IdMember m = requireMember(memberId);
+        return new PushSettingsVO(
+                m.getPushAssignedApp(), m.getPushAssignedWeb(),
+                m.getPushUnassignedApp(), m.getPushUnassignedWeb(),
+                m.getPushMentionApp(), m.getPushMentionWeb(),
+                m.getPushNewCustomerApp(), m.getPushNewCustomerWeb());
+    }
+
+    @Override
+    public void updatePushSettings(Long memberId, PushSettingsVO s) {
+        IdMember m = requireMember(memberId);
+        // 整体覆盖 8 个开关(null 归一为关),保证多端一致
+        m.setPushAssignedApp(on(s.assignedApp()));
+        m.setPushAssignedWeb(on(s.assignedWeb()));
+        m.setPushUnassignedApp(on(s.unassignedApp()));
+        m.setPushUnassignedWeb(on(s.unassignedWeb()));
+        m.setPushMentionApp(on(s.mentionApp()));
+        m.setPushMentionWeb(on(s.mentionWeb()));
+        m.setPushNewCustomerApp(on(s.newCustomerApp()));
+        m.setPushNewCustomerWeb(on(s.newCustomerWeb()));
+        memberMapper.updateById(m);
+    }
+
+    /** 开关归一:非 1 即 0 */
+    private Integer on(Integer v) {
+        return v != null && v == 1 ? 1 : 0;
     }
 
     @Override
