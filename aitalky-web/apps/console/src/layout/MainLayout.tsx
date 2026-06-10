@@ -14,6 +14,8 @@ import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
 import { getProfile } from '../api/account'
+import { fetchLanguages } from '../api/language'
+import { setLanguageDict } from '../constants/languages'
 import type { ProjectBrief } from '../types'
 
 // 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
@@ -45,6 +47,11 @@ export default function MainLayout() {
   useEffect(() => {
     getProfile().then((p) => setMember(p.nickname ?? undefined, p.avatar ?? undefined)).catch(() => {})
   }, [setMember])
+
+  // 拉取平台语种字典(候选语种全集),覆盖本地兜底种子;失败则继续用种子
+  useEffect(() => {
+    fetchLanguages().then(setLanguageDict).catch(() => {})
+  }, [])
 
   // 菜单按权限显示:设置仅对有相关功能权限的成员可见
   const navItems = [

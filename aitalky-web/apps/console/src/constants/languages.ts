@@ -1,6 +1,7 @@
-// 系统支持的语言全集(单一来源)。
-// 当前为前端常量;TODO(后管):改为读后端「语种字典」接口(见 doc/后管功能清单.md),
-// 实现新增语种无需改代码。各处(常规设置/信使设置多语言平铺/紧急通知)都从这里取语种名。
+// 系统支持的语言全集。
+// 数据源已迁到后端「语种字典」(平台 pf_language,后管维护):App 启动后调 /api/languages
+// 拉取启用语种并 setLanguageDict() 覆盖本缓存;下方常量仅作为接口返回前/失败时的兜底种子。
+// 各处(常规设置/信使设置多语言平铺/紧急通知)统一用 allLanguages()/langLabel() 取数。
 
 export interface LangDef {
   code: string
@@ -8,8 +9,8 @@ export interface LangDef {
   en: string
 }
 
-// 语种全集(对齐参考系统常见语种)。code 与后端一致(xx_XX)
-export const LANGUAGES: LangDef[] = [
+// 兜底种子(对齐后端 pf_language 初始 18 种)。接口数据到达后会被 setLanguageDict 覆盖。
+const SEED: LangDef[] = [
   { code: 'zh_CN', zh: '简体中文', en: 'Simplified Chinese' },
   { code: 'en_US', zh: '英文', en: 'English' },
   { code: 'zh_TW', zh: '繁体中文', en: 'Traditional Chinese' },
@@ -30,11 +31,25 @@ export const LANGUAGES: LangDef[] = [
   { code: 'tr_TR', zh: '土耳其语', en: 'Turkish' },
 ]
 
-const LANG_MAP: Record<string, LangDef> = Object.fromEntries(LANGUAGES.map((l) => [l.code, l]))
+// 当前语种缓存(可被接口数据覆盖);用 let 持有,langLabel/allLanguages 都读它
+let dict: LangDef[] = [...SEED]
+let dictMap: Record<string, LangDef> = Object.fromEntries(SEED.map((l) => [l.code, l]))
+
+/** 用后端语种字典覆盖本地缓存(App 启动拉取 /api/languages 后调用) */
+export function setLanguageDict(list: LangDef[]): void {
+  if (!list || list.length === 0) return // 空结果不覆盖,保留种子兜底
+  dict = list
+  dictMap = Object.fromEntries(list.map((l) => [l.code, l]))
+}
+
+/** 当前语种全集(候选项来源) */
+export function allLanguages(): LangDef[] {
+  return dict
+}
 
 // 取语种展示名;lng 以 'en' 开头用英文名,否则中文名;未知 code 原样返回
 export function langLabel(code: string, lng?: string): string {
-  const def = LANG_MAP[code]
+  const def = dictMap[code]
   if (!def) return code
   return lng && lng.startsWith('en') ? def.en : def.zh
 }
