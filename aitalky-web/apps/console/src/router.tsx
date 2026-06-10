@@ -15,6 +15,8 @@ import ProfilePreferences from './pages/profile/ProfilePreferences'
 import ProfilePush from './pages/profile/ProfilePush'
 import Blacklist from './pages/settings/Blacklist'
 import QuickReplies from './pages/settings/QuickReplies'
+import Messenger from './pages/settings/Messenger'
+import UrgentNotice from './pages/settings/UrgentNotice'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -62,7 +64,8 @@ export const router = createHashRouter([
           { index: true, element: <Navigate to="/settings/members" replace /> },
           { path: 'members', element: <Members /> },
           { path: 'invites', element: <Invites /> },
-          { path: 'messenger', element: <Placeholder title="信使设置" /> },
+          { path: 'messenger', element: <Messenger /> },
+          { path: 'urgent-notice', element: <UrgentNotice /> },
           { path: 'blacklist', element: <Blacklist /> },
           { path: 'quick-replies', element: <QuickReplies /> },
           { path: 'team', element: <Placeholder title="基本信息" /> },
