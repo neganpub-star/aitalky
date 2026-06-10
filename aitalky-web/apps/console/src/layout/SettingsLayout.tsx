@@ -25,6 +25,7 @@ export default function SettingsLayout() {
         { key: '/settings/urgent-notice', label: t('settings.urgentNotice'), func: 'messenger.setting' },
         { key: '/settings/quick-replies', label: t('settings.quickReply'), func: 'messenger.setting' },
         { key: '/settings/blacklist', label: t('settings.blacklist'), func: 'messenger.setting' },
+        { key: '/settings/general', label: t('settings.general'), func: 'messenger.setting' },
       ],
     },
     {

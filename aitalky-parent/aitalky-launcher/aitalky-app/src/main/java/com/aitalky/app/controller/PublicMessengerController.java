@@ -71,6 +71,12 @@ public class PublicMessengerController {
         String token = customerTokenService.issue(project.getId(), customer.getId());
         // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询
         var config = messengerConfigService.getPublicConfig(project.getId(), req.lang());
+        // 品牌名=项目名称(messenger 模块不依赖 identity,在此注入);LOGO 暂无项目字段
+        if (config != null) {
+            config = new com.aitalky.messenger.dto.MessengerPublicVO(
+                    project.getName(), null, config.webTitle(), config.webIcon(), config.replyTime(),
+                    config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled());
+        }
         return R.ok(new MessengerInitVO(token, conv.getId(),
                 customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config));
     }

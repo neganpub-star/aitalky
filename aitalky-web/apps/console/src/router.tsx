@@ -17,6 +17,7 @@ import Blacklist from './pages/settings/Blacklist'
 import QuickReplies from './pages/settings/QuickReplies'
 import Messenger from './pages/settings/Messenger'
 import UrgentNotice from './pages/settings/UrgentNotice'
+import General from './pages/settings/General'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -66,6 +67,7 @@ export const router = createHashRouter([
           { path: 'invites', element: <Invites /> },
           { path: 'messenger', element: <Messenger /> },
           { path: 'urgent-notice', element: <UrgentNotice /> },
+          { path: 'general', element: <General /> },
           { path: 'blacklist', element: <Blacklist /> },
           { path: 'quick-replies', element: <QuickReplies /> },
           { path: 'team', element: <Placeholder title="基本信息" /> },

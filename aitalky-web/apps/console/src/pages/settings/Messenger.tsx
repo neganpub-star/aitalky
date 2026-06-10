@@ -1,22 +1,18 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
-  Avatar, Button, Input, InputNumber, Radio, Select, Spin, Switch, Upload, message, theme,
+  Avatar, Button, Checkbox, Input, InputNumber, Radio, Select, Spin, Switch, Upload, message,
 } from 'antd'
 import {
   SmileOutlined, AppstoreOutlined, ClockCircleOutlined, EyeOutlined,
-  AimOutlined, BellOutlined, GlobalOutlined, PictureOutlined,
-  RightOutlined, DownOutlined, LoadingOutlined, SendOutlined,
+  AimOutlined, BellOutlined, GlobalOutlined, MessageOutlined, RollbackOutlined,
+  PictureOutlined, RightOutlined, DownOutlined, LoadingOutlined, SendOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
 import { uploadFile } from '../../api/file'
-
-// 语言展示名(信使配置启用语种用)
-const LANG_LABELS: Record<string, string> = {
-  zh_CN: '简体中文', en_US: 'English', zh_TW: '繁體中文', ja_JP: '日本語', ko_KR: '한국어',
-}
-const langLabel = (code: string) => LANG_LABELS[code] || code
+import { langLabel } from '../../constants/languages'
 
 // 空配置默认值:后端未就绪/无数据时也能渲染页面供 UI 走查
 function emptyConfig(): MessengerConfigVO {
@@ -24,39 +20,45 @@ function emptyConfig(): MessengerConfigVO {
     brandName: null, logo: null, customDomain: null, badge: null,
     webTitle: null, webIcon: null,
     defaultLanguage: 'zh_CN', enabledLanguages: ['zh_CN', 'en_US'],
-    replyTime: 'replyTimeFew', messageRetentionDays: 0,
-    popupEnabled: true, popupAllowClose: true, i18n: [],
+    replyTime: 'rtFew', messageRetentionDays: 0,
+    popupEnabled: true, popupAllowClose: true,
+    sysMsgUnread: true, sysMsgTyping: true, sysMsgMemberRetract: true, customerRetractEnabled: true,
+    i18n: [],
   }
 }
 
-// 会话服务 - 信使设置(对齐 ByteTrack img-81):中间卡片 accordion + 右侧 widget 实时预览
+// 会话服务 - 信使设置(对齐 ByteTrack img_1):中间卡片 accordion + 右侧 widget 实时预览
+// 卡片顺序:欢迎信息 → Wiki → 回复时间 → 消息查看时间 → 启动器样式 → 系统消息显示 → 偏好设置 → 客户撤回权限 → 网站标题图标
 export default function Messenger() {
-  const { t } = useTranslation()
-  const { token } = theme.useToken()
+  const { t, i18n } = useTranslation()
+  const lng = i18n.language
+  const nav = useNavigate()
   const [cfg, setCfg] = useState<MessengerConfigVO>(emptyConfig())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [openKey, setOpenKey] = useState<string | null>('welcome')
-  const [editLang, setEditLang] = useState('zh_CN')
-  const [uploading, setUploading] = useState<string | null>(null) // logo|webIcon
+  const [previewLang, setPreviewLang] = useState('zh_CN')
+  const [uploading, setUploading] = useState(false) // webIcon
 
   useEffect(() => {
     getMessengerConfig()
-      .then((c) => { setCfg({ ...emptyConfig(), ...c }); if (c.defaultLanguage) setEditLang(c.defaultLanguage) })
-      .catch(() => message.warning(t('mse.loadFailed'))) // 后端未就绪时用默认值,不阻塞 UI
+      .then((c) => { setCfg({ ...emptyConfig(), ...c }); if (c.defaultLanguage) setPreviewLang(c.defaultLanguage) })
+      .catch(() => message.warning(t('mse.loadFailed')))
       .finally(() => setLoading(false))
   }, [t])
 
-  // 取/改某语言的多语言内容(不存在则即时补一条)
-  const curI18n: MessengerI18n = useMemo(() => {
-    return cfg.i18n.find((x) => x.language === editLang)
-      || { language: editLang, greeting: null, teamIntro: null, urgentNotice: null, urgentEnabled: false }
-  }, [cfg.i18n, editLang])
-
   const patch = (p: Partial<MessengerConfigVO>) => setCfg((c) => ({ ...c, ...p }))
-  const patchI18n = (p: Partial<MessengerI18n>) => setCfg((c) => {
-    const rest = c.i18n.filter((x) => x.language !== editLang)
-    return { ...c, i18n: [...rest, { ...curI18n, ...p }] }
+
+  // 取某语言的多语言内容(不存在则给空壳)
+  const i18nOf = (lang: string): MessengerI18n =>
+    cfg.i18n.find((x) => x.language === lang)
+    || { language: lang, greeting: null, teamIntro: null, urgentNotice: null, urgentEnabled: false }
+
+  const patchI18n = (lang: string, p: Partial<MessengerI18n>) => setCfg((c) => {
+    const cur = c.i18n.find((x) => x.language === lang)
+      || { language: lang, greeting: null, teamIntro: null, urgentNotice: null, urgentEnabled: false }
+    const rest = c.i18n.filter((x) => x.language !== lang)
+    return { ...c, i18n: [...rest, { ...cur, ...p }] }
   })
 
   const save = async () => {
@@ -69,14 +71,12 @@ export default function Messenger() {
     }
   }
 
-  // 图片上传(logo / webIcon)→ MinIO → 回填 URL
-  const beforeUpload = (field: 'logo' | 'webIcon') => (file: File) => {
+  // 网站图标上传 → MinIO → 回填 URL
+  const beforeIconUpload = (file: File) => {
     if (!file.type.startsWith('image/')) { message.warning(t('profile.avatarTypeError')); return false }
     if (file.size > 1024 * 1024) { message.warning(t('profile.avatarSizeError')); return false }
-    setUploading(field)
-    uploadFile(file)
-      .then((url) => patch({ [field]: url } as Partial<MessengerConfigVO>))
-      .finally(() => setUploading(null))
+    setUploading(true)
+    uploadFile(file).then((url) => patch({ webIcon: url })).finally(() => setUploading(false))
     return false
   }
 
@@ -86,85 +86,47 @@ export default function Messenger() {
 
   const styles: Record<string, CSSProperties> = {
     root: { display: 'flex', gap: 24, alignItems: 'flex-start' },
-    left: { flex: 1, minWidth: 0, maxWidth: 660 },
+    left: { flex: 1, minWidth: 0, maxWidth: 680 },
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
     right: { width: 340, flexShrink: 0 },
-    previewLabel: { color: token.colorTextTertiary, fontSize: 13, marginBottom: 12 },
-    cardHead: {
-      display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', cursor: 'pointer',
-    },
-    cardIcon: {
-      width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: token.colorPrimaryBg, color: token.colorPrimary, fontSize: 17,
-    },
-    cardTitle: { fontWeight: 600, fontSize: 14, color: token.colorText },
-    cardDesc: { fontSize: 12, color: token.colorTextTertiary, marginTop: 2 },
-    cardBody: { padding: '4px 18px 18px 66px' },
+    previewLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13, marginBottom: 12 },
+    cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', cursor: 'pointer' },
+    cardTitle: { fontWeight: 600, fontSize: 14, color: 'rgba(0,0,0,0.88)' },
+    cardDesc: { fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 },
+    cardBody: { padding: '4px 18px 18px 60px' },
     fieldLabel: { fontWeight: 600, fontSize: 13, margin: '14px 0 8px' },
-    tip: { color: token.colorTextTertiary, fontSize: 12, marginTop: 6 },
-    switchRow: { display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 0' },
+    tip: { color: 'rgba(0,0,0,0.45)', fontSize: 12, marginTop: 6 },
+    switchRow: { display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0' },
     actions: { marginTop: 18, display: 'flex', gap: 10 },
   }
 
-  // 单张卡片(自绘以贴合 ByteTrack:白底圆角、图标、标题副标题、展开箭头)
+  // 单张卡片(自绘贴合 ByteTrack:白底圆角、朴素线条图标、标题副标题、展开箭头)
   const Card = ({ k, icon, title, desc, body, onlyComingSoon }: {
     k: string; icon: ReactNode; title: string; desc: string; body?: ReactNode; onlyComingSoon?: boolean
   }) => {
     const open = openKey === k
     return (
-      <div style={{
-        background: token.colorBgContainer, borderRadius: 10, marginBottom: 12,
-        boxShadow: token.boxShadowTertiary, overflow: 'hidden',
-      }}>
-        <div
-          style={styles.cardHead}
-          onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}
-        >
-          <div style={styles.cardIcon}>{icon}</div>
+      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+        <div style={styles.cardHead}
+          onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}>
+          <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={styles.cardTitle}>{title}</div>
             <div style={styles.cardDesc}>{desc}</div>
           </div>
-          {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
+          {open ? <DownOutlined style={{ color: 'rgba(0,0,0,0.45)' }} /> : <RightOutlined style={{ color: 'rgba(0,0,0,0.25)' }} />}
         </div>
         {open && body && <div style={styles.cardBody}>{body}</div>}
       </div>
     )
   }
 
-  // 语言选择器(欢迎信息卡片内,切换正在编辑的语言)
-  const langSelect = (
-    <Select
-      size="small" value={editLang} onChange={setEditLang} style={{ width: 140 }}
-      options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c) }))}
-    />
-  )
-
+  // 卡片底部 取消 + 保存
   const saveBtns = (
     <div style={styles.actions}>
+      <Button onClick={() => setOpenKey(null)}>{t('common.cancel')}</Button>
       <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
     </div>
-  )
-
-  // 图片上传块(logo / webIcon)
-  const imgUpload = (field: 'logo' | 'webIcon', size: number, tip: string) => (
-    <>
-      <Upload showUploadList={false} accept="image/*" beforeUpload={beforeUpload(field)} disabled={uploading === field}>
-        <div style={{
-          width: size, height: size, borderRadius: 8, border: `1px dashed ${token.colorBorder}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
-          background: token.colorFillQuaternary,
-        }}>
-          {uploading === field
-            ? <LoadingOutlined style={{ color: token.colorPrimary }} />
-            : cfg[field]
-              ? <img src={cfg[field] as string} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <PictureOutlined style={{ fontSize: 20, color: token.colorTextQuaternary }} />}
-        </div>
-      </Upload>
-      <div style={styles.tip}>{tip}</div>
-    </>
   )
 
   return (
@@ -173,46 +135,55 @@ export default function Messenger() {
       <div style={styles.left}>
         <div style={styles.h1}>{t('mse.title')}</div>
 
-        {/* 品牌名称与 LOGO(信使端首页顶部展示) */}
-        <Card k="brand" icon={<AppstoreOutlined />} title={t('mse.brandTitle')} desc={t('mse.brandDesc')} body={
-          <>
-            <div style={styles.fieldLabel}>{t('mse.brandName')}</div>
-            <Input maxLength={64} value={cfg.brandName ?? ''} placeholder={t('mse.brandNamePh')}
-              onChange={(e) => patch({ brandName: e.target.value })} />
-            <div style={styles.fieldLabel}>{t('mse.logo')}</div>
-            {imgUpload('logo', 72, t('mse.logoTip'))}
-            {saveBtns}
-          </>
-        } />
-
-        {/* 欢迎信息(多语言:问候语 + 团队介绍) */}
+        {/* 欢迎信息:项目信息(只读)+ 各语种问候语平铺 */}
         <Card k="welcome" icon={<SmileOutlined />} title={t('mse.welcomeTitle')} desc={t('mse.welcomeDesc')} body={
           <>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>{langSelect}</div>
+            {/* 项目信息(只读,品牌=项目名称/LOGO) */}
+            <div style={styles.fieldLabel}>{t('mse.projectInfo')}</div>
+            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 8 }}>
+              {t('mse.projectInfoDesc')}
+              <a onClick={() => nav('/settings/team')}>{t('mse.goModify')}</a>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f7f7', borderRadius: 8, padding: '8px 12px', maxWidth: 360 }}>
+              <Avatar size={28} src={cfg.logo || undefined} shape="square" style={{ background: '#0b1f33', borderRadius: 6 }}>
+                {(cfg.brandName || 'A').charAt(0)}
+              </Avatar>
+              <span style={{ fontSize: 14 }}>{cfg.brandName || '--'}</span>
+            </div>
+
+            {/* 问候语:所有启用语种平铺 */}
             <div style={styles.fieldLabel}>{t('mse.greeting')}</div>
-            <Input maxLength={64} value={curI18n.greeting ?? ''} placeholder={t('mse.greetingPh')}
-              onChange={(e) => patchI18n({ greeting: e.target.value })} />
-            <div style={styles.fieldLabel}>{t('mse.teamIntro')}</div>
-            <Input.TextArea rows={2} maxLength={512} value={curI18n.teamIntro ?? ''} placeholder={t('mse.teamIntroPh')}
-              onChange={(e) => patchI18n({ teamIntro: e.target.value })} />
+            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 10 }}>{t('mse.greetingSectionDesc')}</div>
+            {cfg.enabledLanguages.map((lang) => (
+              <div key={lang} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 13, marginBottom: 6 }}>
+                  {langLabel(lang, lng)}
+                  {lang === cfg.defaultLanguage && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
+                  )}
+                </div>
+                <Input maxLength={100} showCount value={i18nOf(lang).greeting ?? ''} placeholder={t('mse.greetingPh')}
+                  onChange={(e) => patchI18n(lang, { greeting: e.target.value })} />
+              </div>
+            ))}
             {saveBtns}
           </>
         } />
 
-        {/* Wiki 集成(本轮占位) */}
+        {/* Wiki 集成(占位) */}
         <Card k="wiki" icon={<AppstoreOutlined />} title={t('mse.wikiTitle')} desc={t('mse.wikiDesc')} onlyComingSoon />
 
-        {/* 回复时间预期 */}
+        {/* 回复时间预期(5 选项) */}
         <Card k="reply" icon={<ClockCircleOutlined />} title={t('mse.replyTimeTitle')} desc={t('mse.replyTimeDesc')} body={
           <>
-            <div style={styles.fieldLabel}>{t('mse.replyTime')}</div>
-            <Select style={{ width: 240 }} value={cfg.replyTime ?? 'replyTimeFew'}
-              onChange={(v) => patch({ replyTime: v })}
-              options={[
-                { value: 'replyTimeFew', label: t('mse.replyTimeFew') },
-                { value: 'replyTimeHours', label: t('mse.replyTimeHours') },
-                { value: 'replyTimeDay', label: t('mse.replyTimeDay') },
-              ]} />
+            <Radio.Group style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}
+              value={cfg.replyTime ?? 'rtFew'} onChange={(e) => patch({ replyTime: e.target.value })}>
+              <Radio value="rtFew">{t('mse.rtFew')}</Radio>
+              <Radio value="rtHours">{t('mse.rtHours')}</Radio>
+              <Radio value="rtDay">{t('mse.rtDay')}</Radio>
+              <Radio value="rtUnderMin">{t('mse.rtUnderMin')}</Radio>
+              <Radio value="rtAsap">{t('mse.rtAsap')}</Radio>
+            </Radio.Group>
             {saveBtns}
           </>
         } />
@@ -228,8 +199,7 @@ export default function Messenger() {
             {cfg.messageRetentionDays > 0 && (
               <div style={{ marginTop: 14 }}>
                 <InputNumber min={1} max={999999} value={cfg.messageRetentionDays}
-                  onChange={(v) => patch({ messageRetentionDays: v || 1 })}
-                  addonAfter={t('mse.retentionDays')} />
+                  onChange={(v) => patch({ messageRetentionDays: v || 1 })} addonAfter={t('mse.retentionDays')} />
                 <div style={styles.tip}>{t('mse.retentionTip')}</div>
               </div>
             )}
@@ -237,8 +207,21 @@ export default function Messenger() {
           </>
         } />
 
-        {/* 启动器样式(本轮占位) */}
+        {/* 启动器样式(占位) */}
         <Card k="launcher" icon={<AimOutlined />} title={t('mse.launcherTitle')} desc={t('mse.launcherDesc')} onlyComingSoon />
+
+        {/* 系统消息显示 */}
+        <Card k="sysmsg" icon={<MessageOutlined />} title={t('mse.sysMsgTitle')} desc={t('mse.sysMsgDesc')} body={
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+              <Checkbox checked={cfg.sysMsgUnread} onChange={(e) => patch({ sysMsgUnread: e.target.checked })}>{t('mse.sysUnread')}</Checkbox>
+              <Checkbox checked={cfg.sysMsgTyping} onChange={(e) => patch({ sysMsgTyping: e.target.checked })}>{t('mse.sysTyping')}</Checkbox>
+              <Checkbox checked={cfg.sysMsgMemberRetract} onChange={(e) => patch({ sysMsgMemberRetract: e.target.checked })}>{t('mse.sysMemberRetract')}</Checkbox>
+            </div>
+            <div style={styles.tip}>{t('mse.sysMsgNote')}</div>
+            {saveBtns}
+          </>
+        } />
 
         {/* 偏好设置(弹窗通知) */}
         <Card k="pref" icon={<BellOutlined />} title={t('mse.prefTitle')} desc={t('mse.prefDesc')} body={
@@ -261,62 +244,73 @@ export default function Messenger() {
           </>
         } />
 
+        {/* 客户撤回消息权限 */}
+        <Card k="retract" icon={<RollbackOutlined />} title={t('mse.retractTitle')} desc={t('mse.retractDesc')} body={
+          <>
+            <div style={{ marginTop: 14 }}>
+              <Checkbox checked={cfg.customerRetractEnabled} onChange={(e) => patch({ customerRetractEnabled: e.target.checked })}>{t('mse.retractCheck')}</Checkbox>
+            </div>
+            <div style={styles.tip}>{t('mse.sysMsgNote')}</div>
+            {saveBtns}
+          </>
+        } />
+
         {/* 自定义网站标题和图标 */}
         <Card k="web" icon={<GlobalOutlined />} title={t('mse.webTitleTitle')} desc={t('mse.webTitleDesc')} body={
           <>
             <div style={styles.fieldLabel}>{t('mse.webIcon')}</div>
-            {imgUpload('webIcon', 48, t('mse.webIconTip'))}
+            <Upload showUploadList={false} accept="image/*" beforeUpload={beforeIconUpload} disabled={uploading}>
+              <div style={{ width: 48, height: 48, borderRadius: 8, border: '1px dashed #d9d9d9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: '#fafafa' }}>
+                {uploading ? <LoadingOutlined style={{ color: '#1677ff' }} />
+                  : cfg.webIcon ? <img src={cfg.webIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <PictureOutlined style={{ fontSize: 18, color: '#bbb' }} />}
+              </div>
+            </Upload>
+            <div style={styles.tip}>{t('mse.webIconTip')}</div>
             <div style={styles.fieldLabel}>{t('mse.webTitleLabel')}</div>
-            <Input maxLength={64} value={cfg.webTitle ?? ''} placeholder={t('mse.webTitlePh')}
+            <Input maxLength={80} showCount value={cfg.webTitle ?? ''} placeholder={t('mse.webTitlePh')}
               onChange={(e) => patch({ webTitle: e.target.value })} />
             {saveBtns}
           </>
         } />
       </div>
 
-      {/* 右:信使端 widget 预览(简化版,跟随表单实时变化) */}
+      {/* 右:信使端 widget 预览(随表单 + 预览语种实时变) */}
       <div style={styles.right}>
-        <div style={styles.previewLabel}>{t('mse.preview')}</div>
-        <WidgetPreview cfg={cfg} i18n={curI18n} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={styles.previewLabel}>{t('mse.preview')}</span>
+          <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
+            options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
+        </div>
+        <WidgetPreview cfg={cfg} i18n={i18nOf(previewLang)} />
       </div>
     </div>
   )
 }
 
-// 信使端首页预览(简化还原 img-83:渐变头 + 品牌/欢迎语 + 紧急通知条 + 输入框)
+// 信使端首页预览(简化还原 img_3:渐变头 + 品牌/欢迎语 + 紧急通知 + 联系卡)
 function WidgetPreview({ cfg, i18n }: { cfg: MessengerConfigVO; i18n: MessengerI18n }) {
   const { t } = useTranslation()
   const brand = cfg.brandName || 'Aitalky'
   const greeting = i18n.greeting || t('mse.greetingPh')
-  const intro = i18n.teamIntro || t('mse.teamIntroPh')
   return (
-    <div style={{
-      borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', background: '#fff',
-    }}>
+    <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', background: '#fff' }}>
       <div style={{ padding: '28px 22px 30px', background: 'linear-gradient(135deg,#cfe0ff 0%,#e7d9ff 100%)' }}>
-        <Avatar size={40} src={cfg.logo || undefined} shape="square"
-          style={{ background: '#0b1f33', borderRadius: 10, marginBottom: 16 }}>
-          {brand.charAt(0)}
-        </Avatar>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Avatar size={36} src={cfg.logo || undefined} shape="square" style={{ background: '#0b1f33', borderRadius: 9, marginBottom: 16 }}>
+            {brand.charAt(0)}
+          </Avatar>
+          <span style={{ color: '#0b1f33', opacity: 0.5 }}>✕</span>
+        </div>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{brand}</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{greeting}</div>
       </div>
       <div style={{ padding: 16 }}>
         {i18n.urgentEnabled && i18n.urgentNotice && (
-          <div style={{
-            background: '#fff7e6', border: '1px solid #ffe7ba', color: '#ad6800',
-            borderRadius: 8, padding: '8px 12px', fontSize: 12, marginBottom: 12,
-          }}>⚠ {i18n.urgentNotice}</div>
+          <div style={{ background: '#fff7e6', border: '1px solid #ffe7ba', color: '#ad6800', borderRadius: 8, padding: '8px 12px', fontSize: 12, marginBottom: 12 }}>⚠ {i18n.urgentNotice}</div>
         )}
-        <div style={{
-          border: '1px solid #eee', borderRadius: 12, padding: '12px 14px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-        }}>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 13, color: '#222' }}>{greeting}</div>
-            <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{intro}</div>
-          </div>
+        <div style={{ border: '1px solid #eee', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#222' }}>{greeting}</div>
           <SendOutlined style={{ color: '#1677ff' }} />
         </div>
       </div>

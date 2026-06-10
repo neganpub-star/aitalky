@@ -30,4 +30,10 @@ public class MseMessenger extends BaseEntity {
     private Integer messageRetentionDays;
     private Boolean popupEnabled;
     private Boolean popupAllowClose;
+    /** 系统消息显示开关 */
+    private Boolean sysMsgUnread;
+    private Boolean sysMsgTyping;
+    private Boolean sysMsgMemberRetract;
+    /** 客户撤回消息权限 */
+    private Boolean customerRetractEnabled;
 }
