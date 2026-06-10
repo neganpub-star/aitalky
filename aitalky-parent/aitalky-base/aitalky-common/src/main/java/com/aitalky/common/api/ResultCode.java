@@ -34,6 +34,7 @@ public enum ResultCode {
     OLD_PASSWORD_ERROR(1019, "old.password.error"),
     INVITE_CODE_INVALID(1021, "invite.code.invalid"),
     CAPTCHA_ERROR(1022, "captcha.error"),
+    DATA_DUPLICATED(1023, "data.duplicated"),
 
     // ===== 限流 102x =====
     RATE_LIMITED(1020, "rate.limited"),
