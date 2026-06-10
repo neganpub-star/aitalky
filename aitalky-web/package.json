@@ -6,6 +6,7 @@
   "scripts": {
     "console": "pnpm --filter @aitalky/console dev",
     "messenger": "pnpm --filter @aitalky/messenger dev",
+    "admin": "pnpm --filter @aitalky/admin dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
   }

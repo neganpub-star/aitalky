@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | 坐席工作台 | `@aitalky/console` | `apps/console` | **5173** | 客服坐席台(React+TS+Vite+AntD) |
 | 信使端 H5 | `@aitalky/messenger` | `apps/messenger` | **5174** | 终端客户聊天窗,URL 接入(轻量,无 AntD) |
-| 平台后管 | `@aitalky/admin` | `apps/admin` | 5175(规划) | 平台管理后台(尚未创建) |
+| 平台后管 | `@aitalky/admin` | `apps/admin` | **5175** | 平台运营后台(React+TS+Vite+AntD,代理 → 8090);默认账号 `admin`/`admin123456` |
 
 > 三端同仓 = 共享依赖/工具链/类型,可抽 `packages/*` 复用;但各自 `vite build` 产出独立静态包,运行时互不影响。
 
@@ -16,8 +16,9 @@
 
 1. **Node ≥ 18**、**pnpm ≥ 9**(本机用 pnpm 10)。没装 pnpm:`npm i -g pnpm`。
 2. **后端服务要先起**(前端 dev 通过代理打到后端,见下表)。前端**只代理、不内置**后端:
-   - `aitalky-app`:**8080**(REST,`/api` 代理目标)
+   - `aitalky-app`:**8080**(坐席 REST,console/messenger 的 `/api` 代理目标)
    - `aitalky-ws`:**9100**(Netty WebSocket,`/ws` 代理目标)
+   - `aitalky-admin`:**8090**(后管 REST,admin 的 `/api` 代理目标;仅开发后管时需要)
    - 中间件:MySQL / Redis / MongoDB / RocketMQ(nameserver 9876)/ MinIO(9000)
    - 后端启动命令见根目录 `CLAUDE.md` §4(注意必须用 JDK21)。
 
@@ -46,6 +47,10 @@ pnpm console
 # 信使端 H5 → http://localhost:5174
 pnpm messenger
 #（等价 pnpm --filter @aitalky/messenger dev)
+
+# 平台后管 → http://localhost:5175(代理到后管后端 aitalky-admin:8090)
+pnpm admin
+#（等价 pnpm --filter @aitalky/admin dev;默认账号 admin/admin123456)
 ```
 
 > 两个端可**同时**各开一个终端跑(端口不冲突),配合验证「客户发消息 ↔ 坐席台实时收到」。
@@ -81,12 +86,14 @@ pnpm lint           # = pnpm -r lint
 
 每个 app 的 `vite.config.ts` 里配了开发代理,避免跨域:
 
-| 前端请求 | 代理到 | 用途 |
-|---|---|---|
-| `/api/**` | `http://localhost:8080` | 后端 REST |
-| `/ws` | `ws://localhost:9100` | WebSocket 实时网关(Netty) |
+| 前端 | 前端请求 | 代理到 | 用途 |
+|---|---|---|---|
+| console / messenger | `/api/**` | `http://localhost:8080` | 坐席后端 REST(aitalky-app) |
+| console | `/ws` | `ws://localhost:9100` | WebSocket 实时网关(Netty) |
+| **admin** | `/api/**` | `http://localhost:8090` | **后管后端 REST(aitalky-admin,独立部署)** |
 
-改后端端口时同步改各 app 的 `vite.config.ts`。
+> 后管走**单独后端 8090**(平台 god 权限与租户 API 进程隔离),与 console/messenger 的 8080 不同。
+> 改后端端口时同步改各 app 的 `vite.config.ts`。
 
 ---
 
