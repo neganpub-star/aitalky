@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Button, Form, Input, Typography, message } from 'antd'
-import { LockOutlined, MailOutlined } from '@ant-design/icons'
+import { LockOutlined, MailOutlined, SafetyOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import AuthShell from './auth/AuthShell'
@@ -16,7 +16,7 @@ export default function Register() {
   const [step, setStep] = useState<'cred' | 'code'>('cred')
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
-  const creds = useRef<{ email: string; password: string }>({ email: '', password: '' })
+  const creds = useRef<{ email: string; password: string; inviteCode?: string }>({ email: '', password: '' })
 
   const startCountdown = () => {
     let n = 60
@@ -28,9 +28,9 @@ export default function Register() {
     }, 1000)
   }
 
-  const onCred = async (v: { email: string; password: string }) => {
+  const onCred = async (v: { email: string; password: string; inviteCode?: string }) => {
     setLoading(true)
-    creds.current = { email: v.email, password: v.password }
+    creds.current = { email: v.email, password: v.password, inviteCode: v.inviteCode }
     try {
       await sendCode(v.email, 'REGISTER')
       message.success(t('auth.codeSent'))
@@ -46,7 +46,7 @@ export default function Register() {
   const onCode = async (code: string) => {
     setLoading(true)
     try {
-      await register(creds.current.email, creds.current.password, code)
+      await register(creds.current.email, creds.current.password, code, creds.current.inviteCode)
       message.success(t('auth.registerOk'))
       nav('/login')
     } finally {
@@ -68,6 +68,9 @@ export default function Register() {
             </Form.Item>
             <Form.Item name="password" rules={[{ required: true, min: 6, message: t('auth.passwordMin') }]}>
               <Input.Password size="large" variant="filled" prefix={<LockOutlined />} placeholder={t('auth.passwordMin')} />
+            </Form.Item>
+            <Form.Item name="inviteCode">
+              <Input size="large" variant="filled" prefix={<SafetyOutlined />} placeholder={t('auth.inviteCode')} />
             </Form.Item>
             <Button type="primary" size="large" htmlType="submit" loading={loading} block style={{ marginTop: 8 }}>
               {t('auth.next')}

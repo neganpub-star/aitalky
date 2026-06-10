@@ -7,10 +7,10 @@ export function sendCode(email: string, scene: VerifyScene) {
   return client.post<unknown, void>('/auth/send-code', { email, scene })
 }
 
-/** 注册(密码经 RSA 公钥加密后再传) */
-export async function register(email: string, password: string, code: string) {
+/** 注册(密码经 RSA 公钥加密后再传;inviteCode 选填) */
+export async function register(email: string, password: string, code: string, inviteCode?: string) {
   const enc = await encryptPassword(password)
-  return client.post<unknown, string>('/auth/register', { email, password: enc, code })
+  return client.post<unknown, string>('/auth/register', { email, password: enc, code, inviteCode })
 }
 
 /** 登录(密码 RSA 加密 + 验证码 2FA) */
