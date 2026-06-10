@@ -40,6 +40,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/send-code",
                         "/api/auth/public-key",
                         "/api/auth/captcha",
+                        "/api/admin/auth/login",       // 平台后管登录
+                        "/api/admin/auth/public-key",  // 平台后管 RSA 公钥
+                        "/api/admin/auth/captcha",     // 平台后管图形验证码
                         "/api/public/**",   // 信使端公共接口（按 appId/groupId 鉴权）
                         "/api/ping",         // 健康检查样例
                         "/actuator/**",

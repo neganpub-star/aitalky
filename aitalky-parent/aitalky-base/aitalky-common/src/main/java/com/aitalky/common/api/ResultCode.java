@@ -33,6 +33,7 @@ public enum ResultCode {
     MEMBER_NOT_FOUND(1018, "member.not.found"),
     OLD_PASSWORD_ERROR(1019, "old.password.error"),
     INVITE_CODE_INVALID(1021, "invite.code.invalid"),
+    CAPTCHA_ERROR(1022, "captcha.error"),
 
     // ===== 限流 102x =====
     RATE_LIMITED(1020, "rate.limited"),
