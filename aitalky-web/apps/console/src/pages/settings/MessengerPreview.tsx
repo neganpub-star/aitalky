@@ -103,8 +103,8 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
           <span style={{ display: 'flex', gap: 12, color: '#1677ff' }}><PaperClipOutlined style={{ color: '#999' }} /><SendOutlined /></span>
         </div>
       </div>
-      {/* 浮动下箭头 */}
-      <div style={{ position: 'absolute', right: 4, bottom: -10, width: 40, height: 40, borderRadius: '50%', background: '#1677ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(22,119,255,0.4)' }}>
+      {/* 浮动下箭头(聊天窗下方外侧) */}
+      <div style={{ position: 'absolute', right: 0, bottom: -52, width: 40, height: 40, borderRadius: '50%', background: '#1677ff', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(22,119,255,0.4)' }}>
         <DownOutlined />
       </div>
     </div>
