@@ -146,6 +146,14 @@ export default {
     retractTitle: '客户撤回消息权限',
     retractDesc: '打开/关闭信使侧主动撤回消息的权限',
     retractCheck: '信使侧撤回消息',
+    // 预览(信使端模拟)
+    pvSub: '您可以询问任何问题,或分享您的建议',
+    pvReplyLabel: '预计回复时间',
+    pvContact: '联系我们',
+    pvContactPreview: '询问关于产品的概况...',
+    pvMessage: '消息',
+    pvMessageDesc: '请输入您想咨询,我们将尽快联系',
+    pvInput: '说点什么......',
     // 紧急通知
     urgentTitle: '紧急通知设置',
     urgentDesc: '开启后,信使端首页将显示一条醒目的紧急通知,可按语言分别设置',

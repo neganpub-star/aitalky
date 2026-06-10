@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Spin, Switch, message } from 'antd'
+import { Button, Input, Select, Spin, Switch, message } from 'antd'
 import { SmileOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
 import { langLabel } from '../../constants/languages'
+import MessengerPreview from './MessengerPreview'
 
-// 会话服务 - 紧急通知设置(对齐 ByteTrack img_0):头部总开关 + 各启用语种通知内容平铺(/500)
+// 会话服务 - 紧急通知设置(对齐 ByteTrack):左=头部总开关+各启用语种内容平铺(/500);右=信使端聊天窗预览(红条随语种变)
 export default function UrgentNotice() {
   const { t, i18n } = useTranslation()
   const lng = i18n.language
   const [cfg, setCfg] = useState<MessengerConfigVO | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [previewLang, setPreviewLang] = useState('zh_CN')
 
   useEffect(() => {
     getMessengerConfig()
-      .then(setCfg)
+      .then((c) => { setCfg(c); if (c.defaultLanguage) setPreviewLang(c.defaultLanguage) })
       .catch(() => message.warning(t('mse.loadFailed')))
       .finally(() => setLoading(false))
   }, [t])
@@ -24,7 +26,7 @@ export default function UrgentNotice() {
     cfg?.i18n.find((x) => x.language === lang)
     || { language: lang, greeting: null, teamIntro: null, urgentNotice: null, urgentEnabled: false }
 
-  // 紧急通知开关是全局的(任一语种 urgentEnabled 即视为开);保存时统一写到所有语种
+  // 紧急通知开关是全局的(任一语种 urgentEnabled 即视为开)
   const enabled = !!cfg?.i18n.some((x) => x.urgentEnabled)
 
   const patchI18n = (lang: string, p: Partial<MessengerI18n>) => setCfg((c) => {
@@ -62,41 +64,60 @@ export default function UrgentNotice() {
   }
 
   return (
-    <div style={{ maxWidth: 680 }}>
-      <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 20 }}>{t('mse.urgentTitle')}</div>
-      <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '18px 20px' }}>
-        {/* 头部:标题 + 总开关 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 16, borderBottom: '0.5px solid rgba(0,0,0,0.08)' }}>
-          <SmileOutlined style={{ fontSize: 20 }} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>{t('mse.urgentTitle')}</div>
-            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 }}>{t('mse.urgentDesc')}</div>
+    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      {/* 左:编辑区 */}
+      <div style={{ flex: 1, minWidth: 0, maxWidth: 680 }}>
+        <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 20 }}>{t('mse.urgentTitle')}</div>
+        <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '18px 20px' }}>
+          {/* 头部:标题 + 总开关 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 16, borderBottom: '0.5px solid rgba(0,0,0,0.08)' }}>
+            <SmileOutlined style={{ fontSize: 20 }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>{t('mse.urgentTitle')}</div>
+              <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 }}>{t('mse.urgentDesc')}</div>
+            </div>
+            <Switch checked={enabled} onChange={toggleEnabled} />
           </div>
-          <Switch checked={enabled} onChange={toggleEnabled} />
-        </div>
 
-        {/* 各语种通知内容平铺 */}
-        {enabled && (
-          <div style={{ paddingTop: 16 }}>
-            {cfg.enabledLanguages.map((lang) => (
-              <div key={lang} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 13, marginBottom: 6 }}>
-                  {langLabel(lang, lng)}
-                  {lang === cfg.defaultLanguage && (
-                    <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
-                  )}
+          {/* 各语种通知内容平铺 */}
+          {enabled && (
+            <div style={{ paddingTop: 16 }}>
+              {cfg.enabledLanguages.map((lang) => (
+                <div key={lang} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, marginBottom: 6 }}>
+                    {langLabel(lang, lng)}
+                    {lang === cfg.defaultLanguage && (
+                      <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
+                    )}
+                  </div>
+                  <Input.TextArea rows={3} maxLength={500} showCount value={i18nOf(lang).urgentNotice ?? ''}
+                    placeholder={t('mse.urgentContentPh')}
+                    onChange={(e) => patchI18n(lang, { urgentNotice: e.target.value })} />
                 </div>
-                <Input.TextArea rows={3} maxLength={500} showCount value={i18nOf(lang).urgentNotice ?? ''}
-                  placeholder={t('mse.urgentContentPh')}
-                  onChange={(e) => patchI18n(lang, { urgentNotice: e.target.value })} />
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
 
-        <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
-          <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
+          <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
+            <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
+          </div>
         </div>
+      </div>
+
+      {/* 右:信使端聊天窗预览(红色通知条随预览语种变) */}
+      <div style={{ width: 340, flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13, marginBottom: 12 }}>{t('mse.preview')}</span>
+          <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
+            options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
+        </div>
+        <MessengerPreview mode="chat" data={{
+          brandName: cfg.brandName, logo: cfg.logo,
+          greeting: i18nOf(previewLang).greeting,
+          replyTime: cfg.replyTime,
+          urgentNotice: i18nOf(previewLang).urgentNotice,
+          urgentEnabled: enabled,
+        }} />
       </div>
     </div>
   )

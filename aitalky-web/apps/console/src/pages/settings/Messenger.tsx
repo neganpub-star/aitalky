@@ -6,13 +6,14 @@ import {
 import {
   SmileOutlined, AppstoreOutlined, ClockCircleOutlined, EyeOutlined,
   AimOutlined, BellOutlined, GlobalOutlined, MessageOutlined, RollbackOutlined,
-  PictureOutlined, RightOutlined, DownOutlined, LoadingOutlined, SendOutlined,
+  PictureOutlined, RightOutlined, DownOutlined, LoadingOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
 import { uploadFile } from '../../api/file'
 import { langLabel } from '../../constants/languages'
+import MessengerPreview from './MessengerPreview'
 
 // 空配置默认值:后端未就绪/无数据时也能渲染页面供 UI 走查
 function emptyConfig(): MessengerConfigVO {
@@ -282,37 +283,13 @@ export default function Messenger() {
           <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
             options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
         </div>
-        <WidgetPreview cfg={cfg} i18n={i18nOf(previewLang)} />
-      </div>
-    </div>
-  )
-}
-
-// 信使端首页预览(简化还原 img_3:渐变头 + 品牌/欢迎语 + 紧急通知 + 联系卡)
-function WidgetPreview({ cfg, i18n }: { cfg: MessengerConfigVO; i18n: MessengerI18n }) {
-  const { t } = useTranslation()
-  const brand = cfg.brandName || 'Aitalky'
-  const greeting = i18n.greeting || t('mse.greetingPh')
-  return (
-    <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', background: '#fff' }}>
-      <div style={{ padding: '28px 22px 30px', background: 'linear-gradient(135deg,#cfe0ff 0%,#e7d9ff 100%)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Avatar size={36} src={cfg.logo || undefined} shape="square" style={{ background: '#0b1f33', borderRadius: 9, marginBottom: 16 }}>
-            {brand.charAt(0)}
-          </Avatar>
-          <span style={{ color: '#0b1f33', opacity: 0.5 }}>✕</span>
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{brand}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{greeting}</div>
-      </div>
-      <div style={{ padding: 16 }}>
-        {i18n.urgentEnabled && i18n.urgentNotice && (
-          <div style={{ background: '#fff7e6', border: '1px solid #ffe7ba', color: '#ad6800', borderRadius: 8, padding: '8px 12px', fontSize: 12, marginBottom: 12 }}>⚠ {i18n.urgentNotice}</div>
-        )}
-        <div style={{ border: '1px solid #eee', borderRadius: 12, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <div style={{ fontWeight: 600, fontSize: 13, color: '#222' }}>{greeting}</div>
-          <SendOutlined style={{ color: '#1677ff' }} />
-        </div>
+        <MessengerPreview mode="home" data={{
+          brandName: cfg.brandName, logo: cfg.logo,
+          greeting: i18nOf(previewLang).greeting,
+          replyTime: cfg.replyTime,
+          urgentNotice: i18nOf(previewLang).urgentNotice,
+          urgentEnabled: i18nOf(previewLang).urgentEnabled,
+        }} />
       </div>
     </div>
   )

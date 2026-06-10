@@ -30,7 +30,11 @@ function fmtTime(ms: number): string {
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
 export default function Chat({ data, messages, status, sending, onSend, onBack }: Props) {
   const [input, setInput] = useState('')
+  const [urgentClosed, setUrgentClosed] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
+
+  // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
+  const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -61,6 +65,14 @@ export default function Chat({ data, messages, status, sending, onSend, onBack }
           {status !== 'open' && <span className="chat-status">  {t('offline')}</span>}
         </div>
       </div>
+
+      {/* 紧急通知红条(对齐 ByteTrack:标题栏下方,可关闭) */}
+      {urgent && !urgentClosed && (
+        <div style={{ background: '#fff1f0', color: '#cf1322', padding: '12px 16px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <span>🔊 {urgent}</span>
+          <span style={{ cursor: 'pointer', opacity: 0.6, flexShrink: 0 }} onClick={() => setUrgentClosed(true)}>✕</span>
+        </div>
+      )}
 
       <div className="msg-list">
         {messages.map((m) => {
