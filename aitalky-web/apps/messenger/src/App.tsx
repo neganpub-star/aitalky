@@ -108,6 +108,8 @@ export default function App() {
         localMaxSeqRef.current = 0
         setData(d)
         setPhase('ready')
+        // 自定义网站标题(URL 接入,浏览器标签页)
+        if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
         messengerWs.connect(d.token)
         // 拉历史(最近 50);localMaxSeq = 最新 seq
         const history = await syncMessages(d.conversationId)

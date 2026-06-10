@@ -13,6 +13,9 @@ const dict = {
     loadFail: '初始化失败,请检查接入地址的 appId 是否正确',
     today: '今天',
     backHome: '返回',
+    replyTimeFew: '我们将在几分钟后回复',
+    replyTimeHours: '我们将在几小时后回复',
+    replyTimeDay: '我们将在一天内回复',
   },
   en_US: {
     greetingTitle: 'Hi there!',
@@ -27,6 +30,9 @@ const dict = {
     loadFail: 'Init failed — please check the appId in the access URL',
     today: 'Today',
     backHome: 'Back',
+    replyTimeFew: 'We will reply within a few minutes',
+    replyTimeHours: 'We will reply within a few hours',
+    replyTimeDay: 'We will reply within a day',
   },
 } as const
 

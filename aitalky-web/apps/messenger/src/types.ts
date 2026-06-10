@@ -1,5 +1,18 @@
 // 后端雪花ID序列化为字符串(避免 JS 丢精度)
 
+// 信使公开配置(对应后端 MessengerPublicVO):品牌/欢迎语/紧急通知,按客户语言
+export interface MessengerConfig {
+  brandName: string | null
+  logo: string | null
+  webTitle: string | null
+  webIcon: string | null
+  replyTime: string | null
+  greeting: string | null
+  teamIntro: string | null
+  urgentNotice: string | null
+  urgentEnabled: boolean
+}
+
 // 信使初始化结果(对应后端 MessengerInitVO)
 export interface MessengerInit {
   token: string
@@ -8,6 +21,7 @@ export interface MessengerInit {
   customerName: string
   customerAvatar: string | null
   lastSeq: number
+  config: MessengerConfig | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

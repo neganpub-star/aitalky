@@ -49,6 +49,7 @@ public class PublicMessengerController {
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
+    private final com.aitalky.messenger.service.MessengerConfigService messengerConfigService;
 
     /** 初始化会话:校验 appId,解析/创建客户与会话,签发客户令牌 */
     @PostMapping("/init")
@@ -68,8 +69,10 @@ public class PublicMessengerController {
         CnvConversation conv = conversationService.openOrCreate(new OpenConversationCmd(
                 project.getId(), customer.getId(), null, req.source(), null, clientIp(request), null));
         String token = customerTokenService.issue(project.getId(), customer.getId());
+        // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询
+        var config = messengerConfigService.getPublicConfig(project.getId(), req.lang());
         return R.ok(new MessengerInitVO(token, conv.getId(),
-                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq()));
+                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config));
     }
 
     /** 客户发送消息(客户令牌) */
