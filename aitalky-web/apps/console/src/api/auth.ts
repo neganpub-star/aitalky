@@ -19,9 +19,9 @@ export async function login(email: string, password: string, code: string) {
   return client.post<unknown, LoginResult>('/auth/login', { email, password: enc, code })
 }
 
-/** 创建项目 */
-export function createProject(name: string) {
-  return client.post<unknown, ProjectBrief>('/projects', { name })
+/** 创建项目(name=项目名;code=账号邮箱验证码) */
+export function createProject(name: string, code: string) {
+  return client.post<unknown, ProjectBrief>('/projects', { name, code })
 }
 
 /** 进入项目(换项目级 token) */

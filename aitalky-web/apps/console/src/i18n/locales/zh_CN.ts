@@ -571,5 +571,9 @@ export default {
     name: '项目名称',
     namePlaceholder: '例如:我的客服项目',
     empty: '还没有项目,先创建一个',
+    desc: '您正在 aitalky 云上创建项目,相关信息统一由 aitalky 托管维护。',
+    emailVerify: '邮箱验证',
+    codePh: '请输入验证码',
+    created: '项目创建成功',
   },
 }

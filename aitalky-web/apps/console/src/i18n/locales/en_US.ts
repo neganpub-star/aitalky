@@ -557,5 +557,9 @@ export default {
     name: 'Project name',
     namePlaceholder: 'e.g. My support project',
     empty: 'No project yet, create one',
+    desc: 'You are creating a project on aitalky Cloud, hosted and maintained by aitalky.',
+    emailVerify: 'Email verification',
+    codePh: 'Enter code',
+    created: 'Project created',
   },
 }

@@ -115,7 +115,7 @@ export default function MainLayout() {
         ))}
       </div>
       <Divider style={{ margin: '8px 0' }} />
-      <div style={styles.projItem} onClick={() => nav('/projects')}>
+      <div style={styles.projItem} onClick={() => nav('/projects/new')}>
         <PlusCircleOutlined style={{ color: token.colorPrimary }} />
         <span style={{ marginLeft: 8 }}>{t('nav.newProject')}</span>
       </div>

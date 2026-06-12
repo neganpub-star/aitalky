@@ -1,34 +1,21 @@
 import type { CSSProperties } from 'react'
-import { useState } from 'react'
-import { Avatar, Button, Card, Empty, Form, Input, List, Modal, Typography, message, theme } from 'antd'
+import { Avatar, Button, Card, Empty, List, Typography, theme } from 'antd'
 import { AppstoreOutlined, PlusOutlined, LogoutOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { createProject, enterProject } from '../api/auth'
-import { getCtx, logout, patchCtx, saveEnter } from '../auth/session'
+import { enterProject } from '../api/auth'
+import { getCtx, logout, saveEnter } from '../auth/session'
 import type { ProjectBrief } from '../types'
 
 const { Title, Text } = Typography
 
-// 选择/创建项目:登录后在此进入某个项目工作台(ByteTrack 经左上角切换;首登录在此建首个项目)
+// 选择项目:登录后在此进入某个项目工作台(创建项目走独立整页 /projects/new)
 export default function Projects() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
   const nav = useNavigate()
   const ctx = getCtx()
-  const [projects, setProjects] = useState<ProjectBrief[]>(ctx.projects || [])
-  const [open, setOpen] = useState(false)
-  const [form] = Form.useForm()
-
-  const onCreate = async (v: { name: string }) => {
-    const p = await createProject(v.name)
-    const next = [...projects, p]
-    setProjects(next)
-    patchCtx({ projects: next })
-    setOpen(false)
-    form.resetFields()
-    message.success(t('common.create') + ' ✓')
-  }
+  const projects: ProjectBrief[] = ctx.projects || []
 
   const onEnter = async (p: ProjectBrief) => {
     saveEnter(await enterProject(p.id), p.name, p.logo)
@@ -69,18 +56,10 @@ export default function Projects() {
           />
         )}
 
-        <Button type="dashed" icon={<PlusOutlined />} block style={{ marginTop: 12 }} onClick={() => setOpen(true)}>
+        <Button type="dashed" icon={<PlusOutlined />} block style={{ marginTop: 12 }} onClick={() => nav('/projects/new')}>
           {t('project.create')}
         </Button>
       </Card>
-
-      <Modal title={t('project.create')} open={open} onCancel={() => setOpen(false)} onOk={() => form.submit()} okText={t('common.create')}>
-        <Form form={form} layout="vertical" onFinish={onCreate} requiredMark={false}>
-          <Form.Item name="name" label={t('project.name')} rules={[{ required: true, message: t('project.name') }]}>
-            <Input placeholder={t('project.namePlaceholder')} maxLength={64} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   )
 }

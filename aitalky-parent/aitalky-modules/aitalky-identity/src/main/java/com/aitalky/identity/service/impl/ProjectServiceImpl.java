@@ -72,6 +72,13 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ProjectBrief create(Long ownerAccountId, CreateProjectCmd cmd) {
+        // 0) 邮箱验证码二次验证(发到账号自身邮箱;开发期万能码 888888 可过)
+        IdAccount account = accountMapper.selectById(ownerAccountId);
+        if (account == null) {
+            throw new BizException(ResultCode.NOT_FOUND);
+        }
+        verifyCodeService.verify(VerifyScene.SENSITIVE, account.getEmail(), cmd.code());
+
         // 1) 项目
         IdProject project = new IdProject();
         project.setId(idGenerator.nextId());

@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Join from './pages/Join'
 import Projects from './pages/Projects'
+import CreateProject from './pages/CreateProject'
 import Inbox from './pages/Inbox'
 import MainLayout from './layout/MainLayout'
 import SettingsLayout from './layout/SettingsLayout'
@@ -49,6 +50,7 @@ export const router = createHashRouter([
   { path: '/register', element: <Register /> },
   { path: '/join', element: <Join /> },
   { path: '/projects', element: <RequireAuth><Projects /></RequireAuth> },
+  { path: '/projects/new', element: <RequireAuth><CreateProject /></RequireAuth> },
   {
     path: '/',
     element: <RequireProject><MainLayout /></RequireProject>,
