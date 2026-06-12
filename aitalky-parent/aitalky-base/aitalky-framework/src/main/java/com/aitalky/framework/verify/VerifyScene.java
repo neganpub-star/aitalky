@@ -7,5 +7,7 @@ public enum VerifyScene {
     /** 登录(2FA) */
     LOGIN,
     /** 重置密码 */
-    RESET_PWD
+    RESET_PWD,
+    /** 负责人危险操作(转让/注销项目)二次校验 */
+    SENSITIVE
 }

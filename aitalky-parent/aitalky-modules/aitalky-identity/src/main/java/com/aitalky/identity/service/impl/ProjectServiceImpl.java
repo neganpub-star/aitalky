@@ -4,11 +4,19 @@ import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.framework.security.JwtUtil;
+import com.aitalky.framework.security.RsaCryptoService;
+import com.aitalky.framework.tenant.TenantContext;
+import com.aitalky.framework.verify.VerifyCodeService;
+import com.aitalky.framework.verify.VerifyScene;
 import com.aitalky.identity.domain.PermissionView;
 import com.aitalky.identity.domain.SystemRole;
 import com.aitalky.identity.dto.CreateProjectCmd;
+import com.aitalky.identity.dto.DeactivateProjectCmd;
 import com.aitalky.identity.dto.EnterResult;
 import com.aitalky.identity.dto.ProjectBrief;
+import com.aitalky.identity.dto.ProjectDetailVO;
+import com.aitalky.identity.dto.TransferOwnerCmd;
+import com.aitalky.identity.dto.UpdateProjectCmd;
 import com.aitalky.identity.entity.IdAccount;
 import com.aitalky.identity.entity.IdMember;
 import com.aitalky.identity.entity.IdProject;
@@ -22,6 +30,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +53,9 @@ public class ProjectServiceImpl implements ProjectService {
     private static final int APP_ID_LEN = 10;
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private static final String OWNER_ROLE_NAME = "负责人";
+    private static final String ADMIN_ROLE_NAME = "管理员";
+
     private final IdProjectMapper projectMapper;
     private final IdRoleMapper roleMapper;
     private final IdMemberMapper memberMapper;
@@ -51,6 +63,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final JwtUtil jwtUtil;
     private final SnowflakeIdGenerator idGenerator;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final RsaCryptoService rsaCryptoService;
+    private final VerifyCodeService verifyCodeService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -159,6 +174,117 @@ public class ProjectServiceImpl implements ProjectService {
             return at > 0 ? account.getEmail().substring(0, at) : account.getEmail();
         }
         return "负责人";
+    }
+
+    // ====================================================================
+    // 基本信息 / 负责人转让 / 注销(团队设置 → 基本信息)
+    // ====================================================================
+
+    @Override
+    public ProjectDetailVO currentDetail() {
+        Long projectId = TenantContext.getProjectId();
+        IdProject p = projectMapper.selectById(projectId);
+        if (p == null) {
+            throw new BizException(ResultCode.PROJECT_NOT_FOUND);
+        }
+        boolean isOwner = p.getOwnerAccountId().equals(TenantContext.getAccountId());
+        IdMember ownerMember = memberMapper.selectOne(Wrappers.<IdMember>lambdaQuery()
+                .eq(IdMember::getProjectId, projectId)
+                .eq(IdMember::getAccountId, p.getOwnerAccountId()).last("limit 1"));
+        return new ProjectDetailVO(p.getId(), p.getName(), p.getLogo(), p.getAppId(),
+                ownerMember == null ? null : ownerMember.getId(), isOwner);
+    }
+
+    @Override
+    public void update(UpdateProjectCmd cmd) {
+        IdProject p = requireOwnerProject();
+        p.setName(cmd.name());
+        p.setLogo(cmd.logo());
+        projectMapper.updateById(p);
+        log.info("更新项目基本信息 projectId={}", p.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void transferOwner(TransferOwnerCmd cmd) {
+        IdProject p = requireOwnerProject();
+        IdAccount owner = accountMapper.selectById(p.getOwnerAccountId());
+        verifyDanger(p, owner, cmd.projectName(), cmd.password(), cmd.code());
+
+        IdMember newOwner = memberMapper.selectById(cmd.newOwnerMemberId());
+        if (newOwner == null || !newOwner.getProjectId().equals(p.getId())) {
+            throw new BizException(ResultCode.MEMBER_NOT_FOUND);
+        }
+        if (newOwner.getAccountId().equals(p.getOwnerAccountId())) {
+            throw new BizException(ResultCode.PARAM_INVALID); // 不能转给自己
+        }
+        Long ownerRoleId = systemRoleId(p.getId(), OWNER_ROLE_NAME);
+        Long adminRoleId = systemRoleId(p.getId(), ADMIN_ROLE_NAME);
+
+        // 新负责人 → 负责人角色;原负责人 → 管理员角色
+        newOwner.setRoleId(ownerRoleId);
+        memberMapper.updateById(newOwner);
+        IdMember oldOwner = memberMapper.selectOne(Wrappers.<IdMember>lambdaQuery()
+                .eq(IdMember::getProjectId, p.getId())
+                .eq(IdMember::getAccountId, p.getOwnerAccountId()).last("limit 1"));
+        if (oldOwner != null) {
+            oldOwner.setRoleId(adminRoleId);
+            memberMapper.updateById(oldOwner);
+        }
+        p.setOwnerAccountId(newOwner.getAccountId());
+        projectMapper.updateById(p);
+        log.info("负责人转让 projectId={}, newOwnerMemberId={}", p.getId(), newOwner.getId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deactivate(DeactivateProjectCmd cmd) {
+        IdProject p = requireOwnerProject();
+        IdAccount owner = accountMapper.selectById(p.getOwnerAccountId());
+        verifyDanger(p, owner, cmd.projectName(), cmd.password(), cmd.code());
+        // 逻辑删除:项目 + 全部成员 + 全部角色(数据保留在库,del_flag=1)
+        memberMapper.delete(Wrappers.<IdMember>lambdaQuery().eq(IdMember::getProjectId, p.getId()));
+        roleMapper.delete(Wrappers.<IdRole>lambdaQuery().eq(IdRole::getProjectId, p.getId()));
+        projectMapper.deleteById(p.getId());
+        log.warn("项目已注销 projectId={}", p.getId());
+    }
+
+    /** 取当前项目并校验登录者为负责人,否则拒绝 */
+    private IdProject requireOwnerProject() {
+        IdProject p = projectMapper.selectById(TenantContext.getProjectId());
+        if (p == null) {
+            throw new BizException(ResultCode.PROJECT_NOT_FOUND);
+        }
+        if (!p.getOwnerAccountId().equals(TenantContext.getAccountId())) {
+            throw new BizException(ResultCode.OWNER_ONLY);
+        }
+        return p;
+    }
+
+    /** 危险操作二次校验:项目名一致 + 负责人登录密码 + 邮箱验证码 */
+    private void verifyDanger(IdProject project, IdAccount owner, String projectName, String passwordCipher, String code) {
+        if (projectName == null || !projectName.equals(project.getName())) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        if (owner == null) {
+            throw new BizException(ResultCode.SYSTEM_ERROR);
+        }
+        String raw = rsaCryptoService.decrypt(passwordCipher);
+        if (!passwordEncoder.matches(raw, owner.getPasswordHash())) {
+            throw new BizException(ResultCode.OLD_PASSWORD_ERROR);
+        }
+        verifyCodeService.verify(VerifyScene.SENSITIVE, owner.getEmail(), code);
+    }
+
+    private Long systemRoleId(Long projectId, String name) {
+        IdRole role = roleMapper.selectOne(Wrappers.<IdRole>lambdaQuery()
+                .eq(IdRole::getProjectId, projectId)
+                .eq(IdRole::getIsSystem, 1)
+                .eq(IdRole::getName, name).last("limit 1"));
+        if (role == null) {
+            throw new BizException(ResultCode.ROLE_NOT_FOUND);
+        }
+        return role.getId();
     }
 
     /** 生成全局唯一 appId(随机串,碰撞极低,仍做唯一性校验重试) */

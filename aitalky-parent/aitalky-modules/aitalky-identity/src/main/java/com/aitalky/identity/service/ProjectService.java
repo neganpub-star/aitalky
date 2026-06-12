@@ -1,10 +1,14 @@
 package com.aitalky.identity.service;
 
 import com.aitalky.identity.dto.CreateProjectCmd;
+import com.aitalky.identity.dto.DeactivateProjectCmd;
 import com.aitalky.identity.dto.EnterResult;
 import com.aitalky.identity.dto.ProjectBrief;
+import com.aitalky.identity.dto.ProjectDetailVO;
+import com.aitalky.identity.dto.TransferOwnerCmd;
+import com.aitalky.identity.dto.UpdateProjectCmd;
 
-/** 项目服务:创建 / 进入 */
+/** 项目服务:创建 / 进入 / 基本信息 / 转让 / 注销 */
 public interface ProjectService {
 
     /**
@@ -25,4 +29,16 @@ public interface ProjectService {
 
     /** 按 id 取项目(个人中心判断是否 owner 等) */
     com.aitalky.identity.entity.IdProject getById(Long id);
+
+    /** 当前项目基本信息(团队设置 → 基本信息) */
+    ProjectDetailVO currentDetail();
+
+    /** 更新项目基本信息(改名/换 Logo;仅负责人) */
+    void update(UpdateProjectCmd cmd);
+
+    /** 负责人转让(危险操作,仅负责人;需密码+邮箱码二次校验) */
+    void transferOwner(TransferOwnerCmd cmd);
+
+    /** 注销项目(危险操作,仅负责人;需密码+邮箱码二次校验) */
+    void deactivate(DeactivateProjectCmd cmd);
 }
