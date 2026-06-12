@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { useAdminStore } from '../store/useAdminStore'
 import { changeLang } from '../i18n'
 import { getMe } from '../api/auth'
+import { sidebarColors } from '../AppProviders'
 import logo from '../assets/logo.png'
 
 // 平台后管外壳(参考 RuoYi 风):深色侧栏+LOGO / 白顶栏(折叠+面包屑+用户菜单) / 多页签 tags-view / 浅灰内容区
@@ -32,11 +33,17 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   // 已打开页签(只存 key,标题随语言实时取);概览页常驻不可关
   const [tags, setTags] = useState<string[]>(['/dashboard'])
+  const siderBg = sidebarColors(themeMode === 'dark').bg
 
   // 登录后拉一次资料(刷新权限/角色名,防 token 内信息过期)
   useEffect(() => {
     getMe().then((p) => setProfile(p.realName, p.roleName, p.permissions)).catch(() => {})
   }, [setProfile])
+
+  // 兜底:整页底色随主题(防短内容时 body 露白)
+  useEffect(() => {
+    document.body.style.background = token.colorBgLayout
+  }, [token.colorBgLayout])
 
   // 菜单项(perm 为空=始终显示)
   const allItems = useMemo(() => [
@@ -95,14 +102,14 @@ export default function AdminLayout() {
   }
 
   return (
-    <Layout style={{ height: '100vh' }}>
+    <Layout style={{ height: '100vh', background: token.colorBgLayout }}>
       <Layout.Sider
         className="admin-sider"
         width={210}
         collapsedWidth={64}
         collapsed={collapsed}
         theme="dark"
-        style={{ background: '#1a1f2e', boxShadow: '2px 0 8px rgba(0,0,0,0.12)', overflow: 'hidden' }}
+        style={{ background: siderBg, boxShadow: '2px 0 8px rgba(0,0,0,0.12)', overflow: 'hidden' }}
       >
         {/* LOGO 区 */}
         <div style={{
@@ -115,7 +122,7 @@ export default function AdminLayout() {
         <Menu
           mode="inline"
           theme="dark"
-          style={{ background: '#1a1f2e', borderInlineEnd: 'none', height: 'calc(100% - 56px)', overflowY: 'auto' }}
+          style={{ background: siderBg, borderInlineEnd: 'none', height: 'calc(100% - 56px)', overflowY: 'auto' }}
           selectedKeys={[activeKey]}
           items={items}
           onClick={({ key }) => nav(key)}

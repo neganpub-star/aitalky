@@ -5,9 +5,17 @@ import enUS from 'antd/locale/en_US'
 import { useAdminStore } from './store/useAdminStore'
 
 // 统一注入主题(白天/黑夜)与 AntD 语言;随 store 响应式切换
+// 侧栏配色随主题:亮色用 RuoYi 深蓝,暗色更深(对齐参考后台);供布局/菜单共用
+export const sidebarColors = (dark: boolean) => ({
+  bg: dark ? '#141414' : '#1a1f2e',
+  subBg: dark ? '#0d0d0d' : '#141824',
+  hover: dark ? '#2d2d2d' : '#263445',
+})
+
 export default function AppProviders({ children }: { children: ReactNode }) {
   const themeMode = useAdminStore((s) => s.themeMode)
   const lang = useAdminStore((s) => s.lang)
+  const sc = sidebarColors(themeMode === 'dark')
   return (
     <ConfigProvider
       locale={lang === 'en_US' ? enUS : zhCN}
@@ -18,11 +26,11 @@ export default function AppProviders({ children }: { children: ReactNode }) {
         components: {
           // 深色侧栏菜单配色(RuoYi 风:深底 #1a1f2e、悬浮 #263445、子菜单更深、选中蓝)
           Menu: {
-            darkItemBg: '#1a1f2e',
-            darkSubMenuItemBg: '#141824',
-            darkPopupBg: '#1a1f2e',
+            darkItemBg: sc.bg,
+            darkSubMenuItemBg: sc.subBg,
+            darkPopupBg: sc.bg,
             darkItemColor: 'rgba(255,255,255,0.72)',
-            darkItemHoverBg: '#263445',
+            darkItemHoverBg: sc.hover,
             darkItemHoverColor: '#ffffff',
             darkItemSelectedBg: '#409eff',
             darkItemSelectedColor: '#ffffff',
