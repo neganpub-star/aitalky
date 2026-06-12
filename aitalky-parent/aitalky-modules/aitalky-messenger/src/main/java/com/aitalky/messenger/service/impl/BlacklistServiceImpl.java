@@ -84,10 +84,15 @@ public class BlacklistServiceImpl implements BlacklistService {
 
     @Override
     public boolean isBlocked(Long projectId, String externalUserId, String visitorId) {
+        return findBlockedId(projectId, externalUserId, visitorId) != null;
+    }
+
+    @Override
+    public Long findBlockedId(Long projectId, String externalUserId, String visitorId) {
         boolean hasUser = StringUtils.hasText(externalUserId);
         boolean hasVisitor = StringUtils.hasText(visitorId);
         if (!hasUser && !hasVisitor) {
-            return false;
+            return null;
         }
         var q = Wrappers.<SupBlacklist>lambdaQuery().eq(SupBlacklist::getProjectId, projectId);
         // (用户态 UID 命中) OR (游客 visitorId 命中)
@@ -102,7 +107,8 @@ public class BlacklistServiceImpl implements BlacklistService {
                 w.nested(n -> n.eq(SupBlacklist::getTargetType, 2).eq(SupBlacklist::getTargetValue, visitorId));
             }
         });
-        Long cnt = blacklistMapper.selectCount(q);
-        return cnt != null && cnt > 0;
+        q.orderByDesc(SupBlacklist::getCreateTime).last("limit 1");
+        SupBlacklist b = blacklistMapper.selectOne(q);
+        return b == null ? null : b.getId();
     }
 }

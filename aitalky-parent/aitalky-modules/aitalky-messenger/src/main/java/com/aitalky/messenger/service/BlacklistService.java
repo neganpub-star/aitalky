@@ -24,4 +24,7 @@ public interface BlacklistService {
      * 命中规则:用户(UID)拉黑 → 全设备生效;游客(visitorId)拉黑 → 仅该设备。
      */
     boolean isBlocked(Long projectId, String externalUserId, String visitorId);
+
+    /** 查客户命中的黑名单记录 id(供详情面板判断是否已拉黑 + 移除时用);未命中返回 null。命中规则同 isBlocked */
+    Long findBlockedId(Long projectId, String externalUserId, String visitorId);
 }
