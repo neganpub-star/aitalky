@@ -260,6 +260,23 @@ body {
   text-align: center;
 }
 
+/* 未读分割线:居中细线 + 文字(左右贯穿) */
+.msg-unread-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 14px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.4);
+}
+.msg-unread-divider::before,
+.msg-unread-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
 /* 对方正在输入中:左侧灰色小字提示 */
 .msg-typing {
   margin: 0 0 12px 4px;

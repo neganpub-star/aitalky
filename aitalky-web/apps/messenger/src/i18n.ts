@@ -24,6 +24,7 @@ const dict = {
     retractedByYou: '你撤回了一条消息',
     retractedByAgent: '客服撤回了一条消息',
     peerTyping: '对方正在输入中…',
+    unreadDivider: '以下为未读消息',
   },
   en_US: {
     greetingTitle: 'Hi there!',
@@ -47,6 +48,7 @@ const dict = {
     retractedByYou: 'You recalled a message',
     retractedByAgent: 'An agent recalled a message',
     peerTyping: 'Typing…',
+    unreadDivider: 'Unread messages below',
   },
   zh_TW: {
     greetingTitle: '您好!',

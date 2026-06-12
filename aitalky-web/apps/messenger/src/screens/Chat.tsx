@@ -9,6 +9,7 @@ interface Props {
   messages: MessageVO[]
   status: WsStatus
   pending: PendingMsg[]
+  unreadAfterSeq: number | null
   onSend: (text: string) => void
   onResend: (localId: string) => void
   onRetract: (msgId: string) => void
@@ -37,7 +38,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, pending, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, messages, status, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
@@ -48,6 +49,14 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
   const canCustomerRetract = data.config?.customerRetractEnabled ?? true
   // 坐席撤回是否显示系统消息(关则静默移除该气泡)
   const showAgentRetract = data.config?.sysMsgMemberRetract ?? true
+
+  // 未读分割线:界(unreadAfterSeq)之后首条消息上方画线。开关关、无界、或未读里无客服消息→不画
+  const showUnread = (data.config?.sysMsgUnread ?? true) && unreadAfterSeq != null
+  let firstUnreadId: string | null = null
+  if (showUnread) {
+    const unread = messages.filter((m) => m.seq > (unreadAfterSeq as number) && m.isVisible !== false)
+    if (unread.some((m) => m.senderType === 'agent')) firstUnreadId = unread[0]?.msgId ?? null
+  }
 
   // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
   const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
@@ -113,7 +122,9 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
           // 客户自己消息 + 权限开 + 2分钟内 → 可撤回
           const retractable = mine && canCustomerRetract && Date.now() - m.timestamp < RETRACT_WINDOW_MS
           return (
-            <div key={m.msgId} className={`msg-row ${mine ? 'mine' : ''}`}>
+            <Fragment key={m.msgId}>
+            {m.msgId === firstUnreadId && <div className="msg-unread-divider">{t('unreadDivider')}</div>}
+            <div className={`msg-row ${mine ? 'mine' : ''}`}>
               {/* 对齐 ByteTrack:客户(自己)消息不显头像,仅客服侧显头像 */}
               {!mine &&
                 (m.senderAvatar ? (
@@ -153,6 +164,7 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
                 <div className="msg-time">{fmtTime(m.timestamp)}</div>
               </div>
             </div>
+            </Fragment>
           )
         })}
 

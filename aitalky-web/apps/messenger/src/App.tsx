@@ -65,6 +65,8 @@ export default function App() {
   const [pending, setPending] = useState<PendingMsg[]>([])
   // 对方(客服)正在输入(瞬时,4s 无新事件自动消失;受 sysMsgTyping 开关控制)
   const [peerTyping, setPeerTyping] = useState(false)
+  // 未读分割:进入聊天时的"已读到 seq",界后首条画"以下为未读消息"(受 sysMsgUnread 控制)
+  const [unreadAfterSeq, setUnreadAfterSeq] = useState<number | null>(null)
 
   // 补漏对账基准:本地已收到的最大 seq(以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
@@ -74,6 +76,8 @@ export default function App() {
   const lastTypingRef = useRef(0)
   const typingClearRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const sysTypingRef = useRef(true)
+  // 已读水位:离开聊天时推进到当时最大 seq;进入聊天据此算未读分割线
+  const lastReadSeqRef = useRef(0)
 
   const applyIncoming = useCallback((incoming: MessageVO[]) => {
     if (incoming.length === 0) return
@@ -128,6 +132,8 @@ export default function App() {
         const sorted = mergeMessages([], history)
         setMessages(sorted)
         localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
+        // 历史视为已读:首次进聊天不显未读分割线(只标"离开后新来的")
+        lastReadSeqRef.current = localMaxSeqRef.current
       } catch {
         if (alive) setPhase('error')
       }
@@ -251,7 +257,11 @@ export default function App() {
       <Home
         data={data}
         lastMessage={last ? last.content : null}
-        onEnter={() => setScreen('chat')}
+        onEnter={() => {
+          // 进入聊天:以"上次离开的已读水位"为未读分割界
+          setUnreadAfterSeq(lastReadSeqRef.current)
+          setScreen('chat')
+        }}
       />
     )
   }
@@ -261,12 +271,18 @@ export default function App() {
       messages={messages}
       status={status}
       pending={pending}
+      unreadAfterSeq={unreadAfterSeq}
       onSend={onSend}
       onResend={onResend}
       onRetract={onRetract}
       onTyping={onTyping}
       peerTyping={peerTyping}
-      onBack={() => setScreen('home')}
+      onBack={() => {
+        // 离开聊天:推进已读水位,清除分割线
+        lastReadSeqRef.current = localMaxSeqRef.current
+        setUnreadAfterSeq(null)
+        setScreen('home')
+      }}
     />
   )
 }
