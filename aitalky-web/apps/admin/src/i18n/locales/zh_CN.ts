@@ -31,6 +31,9 @@ export default {
     on: '上架',
     off: '下架',
   },
+  roles: {
+    超级管理员: '超级管理员',
+  },
   form: {
     basic: '基本信息',
     priceSpec: '价格与规格',

@@ -172,7 +172,7 @@ export default function AdminLayout() {
               <Avatar size={30} style={{ background: token.colorPrimary, flexShrink: 0 }}>{display.charAt(0).toUpperCase()}</Avatar>
               <span style={{ color: token.colorText }}>
                 {display}
-                {roleName && <span style={{ color: token.colorTextSecondary, marginLeft: 6, fontSize: 12 }}>({roleName})</span>}
+                {roleName && <span style={{ color: token.colorTextSecondary, marginLeft: 6, fontSize: 12 }}>({t(`roles.${roleName}`, roleName)})</span>}
               </span>
             </span>
           </Dropdown>

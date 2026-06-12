@@ -31,6 +31,9 @@ export default {
     on: 'List',
     off: 'Unlist',
   },
+  roles: {
+    超级管理员: 'Super Admin',
+  },
   form: {
     basic: 'Basic Info',
     priceSpec: 'Price & Spec',
