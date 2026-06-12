@@ -41,10 +41,13 @@ export default function AdminLayout() {
     getMe().then((p) => setProfile(p.realName, p.roleName, p.permissions)).catch(() => {})
   }, [setProfile])
 
-  // 兜底:整页底色随主题(防短内容时 body 露白)
+  // 兜底:整页底色随主题(防短内容时 body 露白);同时挂表格斑马纹/悬停色变量(明暗自动适配)
   useEffect(() => {
     document.body.style.background = token.colorBgLayout
-  }, [token.colorBgLayout])
+    const root = document.documentElement
+    root.style.setProperty('--row-stripe', token.colorFillAlter)
+    root.style.setProperty('--row-hover', token.colorFillSecondary)
+  }, [token.colorBgLayout, token.colorFillAlter, token.colorFillSecondary])
 
   // 菜单项(perm 为空=始终显示)
   const allItems = useMemo(() => [

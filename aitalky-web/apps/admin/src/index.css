@@ -15,6 +15,15 @@ body {
     'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
+/* 列表斑马纹 + 行悬停:用 layout 挂的 CSS 变量,白天/黑夜自动适配 */
+.ant-table-tbody > tr:nth-child(even) > td {
+  background: var(--row-stripe);
+}
+.ant-table-tbody > tr:hover > td,
+.ant-table-tbody > tr.ant-table-row:hover > td {
+  background: var(--row-hover) !important;
+}
+
 /* 侧栏滚动条:深色细窄,贴合 RuoYi 风 */
 .admin-sider .ant-menu::-webkit-scrollbar {
   width: 6px;
