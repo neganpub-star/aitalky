@@ -10,6 +10,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
+import { playBeep, unlockAudio } from '../notify'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
   claimConversation, closeConversation, getConversation, getConversationCounts,
@@ -212,6 +213,10 @@ export default function Inbox() {
         if (msg.senderType === 'customer') setCustomerTyping(false) // 客户发出消息→输入态结束
         applyIncoming([msg])
       }
+      // 提示音:客户新消息且(不在该会话 或 标签页失焦)→ 响铃(对齐现网,在看该会话不打扰)
+      if (msg.senderType === 'customer' && (!isCurrent || document.hidden)) {
+        playBeep()
+      }
       setList((prev) =>
         prev.map((c) =>
           c.id === msg.conversationId
@@ -279,6 +284,7 @@ export default function Inbox() {
   // ===== 选中会话:订阅 WS + 拉详情/消息 + 清未读 =====
   const selectConversation = useCallback(
     async (conv: ConversationVO) => {
+      unlockAudio() // 用户手势内解锁音频,后续新消息提示音才能播放
       if (conv.id === selectedId) return
       if (selectedId) wsClient.unsubscribe(selectedId)
       setSelectedId(conv.id)

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
 import { init, retractMessage, sendMessage, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
-import { ensureNotifyPermission, playBeep, showPopup, unlockAudio } from './notify'
+import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
 import Chat from './screens/Chat'
@@ -82,6 +82,8 @@ export default function App() {
   // 弹窗提醒开关 + 品牌名(失焦时新消息通知用);避免 WS 监听依赖 data 重订阅
   const popupRef = useRef(true)
   const brandRef = useRef('')
+  // 失焦期间累计未读(标签页标题 "(N)" 提醒;聚焦清零)
+  const hiddenUnreadRef = useRef(0)
 
   const applyIncoming = useCallback((incoming: MessageVO[]) => {
     if (incoming.length === 0) return
@@ -161,6 +163,8 @@ export default function App() {
         // 失焦时新消息提醒:声效恒开,弹窗受 popupEnabled 控制(撤回的空消息不提醒)
         if (document.hidden && msg.isVisible !== false) {
           playBeep()
+          hiddenUnreadRef.current += 1
+          setTitleUnread(hiddenUnreadRef.current)
           if (popupRef.current) showPopup(brandRef.current || msg.senderName || '', msg.content || '')
         }
       }
@@ -176,10 +180,13 @@ export default function App() {
     // 网①重连补漏 + 网③周期对账/聚焦补漏
     const offOpen = messengerWs.onOpen(() => syncRef.current())
     const poll = setInterval(() => syncRef.current(), SYNC_POLL)
+    // 聚焦/可见:清标题未读数 + 对账补漏
+    const clearTitle = () => { hiddenUnreadRef.current = 0; setTitleUnread(0) }
     const onVisible = () => {
-      if (document.visibilityState === 'visible') syncRef.current()
+      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current() }
     }
-    window.addEventListener('focus', () => syncRef.current())
+    const onFocus = () => { clearTitle(); syncRef.current() }
+    window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
       offStatus()
@@ -188,6 +195,7 @@ export default function App() {
       offOpen()
       clearInterval(poll)
       clearTimeout(typingClearRef.current)
+      window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [applyIncoming])

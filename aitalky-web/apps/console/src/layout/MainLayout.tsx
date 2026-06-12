@@ -16,6 +16,7 @@ import { wsClient } from '../ws/client'
 import { getProfile } from '../api/account'
 import { fetchLanguages } from '../api/language'
 import { setLanguageDict } from '../constants/languages'
+import { setTitleUnread } from '../notify'
 import type { ProjectBrief } from '../types'
 
 // 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
@@ -53,6 +54,11 @@ export default function MainLayout() {
   useEffect(() => {
     fetchLanguages().then(setLanguageDict).catch(() => {})
   }, [])
+
+  // 浏览器标题未读数:有未读时标签页显示 "(N) 原标题"(对齐现网)
+  useEffect(() => {
+    setTitleUnread(unreadTotal)
+  }, [unreadTotal])
 
   // 菜单按权限显示:设置仅对有相关功能权限的成员可见
   const navItems = [

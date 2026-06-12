@@ -47,6 +47,18 @@ export function playBeep() {
   }
 }
 
+// —— 浏览器标题未读数:失焦时新消息让标签页显示 "(N) 原标题" ——
+let baseTitle = ''
+function ensureBase() {
+  if (!baseTitle) baseTitle = document.title.replace(/^\(\d+\)\s*/, '')
+}
+
+/** 设置标题未读数:n>0 显示 "(n) 标题",否则还原 */
+export function setTitleUnread(n: number) {
+  ensureBase()
+  document.title = n > 0 ? `(${n}) ${baseTitle}` : baseTitle
+}
+
 /** 浏览器弹窗通知(已授权才弹);点击聚焦回本页 */
 export function showPopup(title: string, body: string) {
   try {
