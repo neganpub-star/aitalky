@@ -50,6 +50,11 @@ export async function replyConversation(
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, payload))
 }
 
+/** 坐席撤回自己发送的消息(2分钟时限);返回已撤回 VO(isVisible=false) */
+export async function retractConversationMessage(id: string, msgId: string) {
+  return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages/${msgId}/retract`))
+}
+
 /** 更新客户联系方式/邮箱(详情面板编辑) */
 export function updateCustomerContact(id: string, contact: string, email: string) {
   return client.put<unknown, void>(`/conversations/${id}/customer`, { contact, email })

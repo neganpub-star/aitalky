@@ -42,6 +42,12 @@ public enum ResultCode {
     // ===== 信使/会话 102x =====
     /** 客户被拉黑,会话不可用(信使端发消息时拦截) */
     CONVERSATION_BLOCKED(1024, "conversation.blocked"),
+    /** 消息不存在(撤回时) */
+    MESSAGE_NOT_FOUND(1025, "message.not.found"),
+    /** 超过可撤回时限 */
+    RETRACT_EXPIRED(1026, "retract.expired"),
+    /** 无权撤回该消息(非本人发送 / 客户撤回权限未开启) */
+    RETRACT_FORBIDDEN(1027, "retract.forbidden"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");

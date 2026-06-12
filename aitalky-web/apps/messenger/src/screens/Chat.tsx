@@ -11,11 +11,14 @@ interface Props {
   pending: PendingMsg[]
   onSend: (text: string) => void
   onResend: (localId: string) => void
+  onRetract: (msgId: string) => void
   onBack: () => void
 }
 
 // 黑名单错误码:发消息被拦时,失败气泡上方加一条「会话暂不可用」系统提示(文案随信使语言)
 const CONVERSATION_BLOCKED = 1024
+// 可撤回时限:与后端一致(2分钟)
+const RETRACT_WINDOW_MS = 2 * 60 * 1000
 
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
 function fmtTime(ms: number): string {
@@ -32,10 +35,17 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, pending, onSend, onResend, onBack }: Props) {
+export default function Chat({ data, messages, status, pending, onSend, onResend, onRetract, onBack }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
+  // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
+  const [menuFor, setMenuFor] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
+
+  // 客户撤回权限(信使设置开关下发);关则不显示撤回入口
+  const canCustomerRetract = data.config?.customerRetractEnabled ?? true
+  // 坐席撤回是否显示系统消息(关则静默移除该气泡)
+  const showAgentRetract = data.config?.sysMsgMemberRetract ?? true
 
   // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
   const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
@@ -84,10 +94,22 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
         </div>
       )}
 
-      <div className="msg-list">
+      <div className="msg-list" onClick={() => menuFor && setMenuFor(null)}>
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
           const initial = (m.senderName || 'S').charAt(0).toUpperCase()
+          // 已撤回(isVisible=false):渲染居中系统行,不显气泡内容
+          if (m.isVisible === false) {
+            // 客服撤回且开关关闭→静默移除(不渲染任何行)
+            if (!mine && !showAgentRetract) return null
+            return (
+              <div key={m.msgId} className="msg-system">
+                {mine ? t('retractedByYou') : t('retractedByAgent')}
+              </div>
+            )
+          }
+          // 客户自己消息 + 权限开 + 2分钟内 → 可撤回
+          const retractable = mine && canCustomerRetract && Date.now() - m.timestamp < RETRACT_WINDOW_MS
           return (
             <div key={m.msgId} className={`msg-row ${mine ? 'mine' : ''}`}>
               {/* 对齐 ByteTrack:客户(自己)消息不显头像,仅客服侧显头像 */}
@@ -102,7 +124,30 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
               <div className="msg-body">
                 {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
-                <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
+                <div
+                  className={`bubble ${mine ? 'mine' : 'agent'}`}
+                  onClick={(e) => {
+                    if (!retractable) return
+                    e.stopPropagation()
+                    setMenuFor((cur) => (cur === m.msgId ? null : m.msgId))
+                  }}
+                  style={retractable ? { cursor: 'pointer' } : undefined}
+                >
+                  {m.content}
+                </div>
+                {/* 点开后在气泡下方显示"撤回"小按钮 */}
+                {retractable && menuFor === m.msgId && (
+                  <div
+                    className="msg-retract-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMenuFor(null)
+                      onRetract(m.msgId)
+                    }}
+                  >
+                    {t('retract')}
+                  </div>
+                )}
                 <div className="msg-time">{fmtTime(m.timestamp)}</div>
               </div>
             </div>

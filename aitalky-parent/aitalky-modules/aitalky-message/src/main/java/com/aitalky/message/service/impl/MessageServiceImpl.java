@@ -1,5 +1,7 @@
 package com.aitalky.message.service.impl;
 
+import com.aitalky.common.api.ResultCode;
+import com.aitalky.common.exception.BizException;
 import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.message.document.Message;
 import com.aitalky.message.dto.SendMessageCmd;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 消息服务实现。seq 用 Redisson 原子自增保证会话内单调(跨实例不重复)。
@@ -19,6 +22,9 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
+
+    /** 可撤回时限:2 分钟内(对齐常见即时通讯习惯) */
+    private static final long RETRACT_WINDOW_MS = 2 * 60 * 1000L;
 
     private final MessageRepository messageRepository;
     private final RedissonClient redisson;
@@ -60,5 +66,24 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<Message> sync(Long conversationId, long afterSeq) {
         return messageRepository.findByConversationIdAndSeqGreaterThanOrderBySeqAsc(conversationId, afterSeq);
+    }
+
+    @Override
+    public Message retract(Long conversationId, Long msgId, String operatorType, Long operatorId) {
+        Message m = messageRepository.findByConversationIdAndMsgId(conversationId, msgId)
+                .orElseThrow(() -> new BizException(ResultCode.MESSAGE_NOT_FOUND));
+        // 只能撤回本人发送的消息(类型 + 发送者id 双重匹配)
+        if (!operatorType.equals(m.getSenderType()) || !Objects.equals(operatorId, m.getSenderId())) {
+            throw new BizException(ResultCode.RETRACT_FORBIDDEN);
+        }
+        // 已撤回:幂等返回(并发重复点击不报错)
+        if (Boolean.FALSE.equals(m.getIsVisible())) {
+            return m;
+        }
+        if (System.currentTimeMillis() - m.getTimestamp() > RETRACT_WINDOW_MS) {
+            throw new BizException(ResultCode.RETRACT_EXPIRED);
+        }
+        m.setIsVisible(false);
+        return messageRepository.save(m);
     }
 }

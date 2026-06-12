@@ -132,6 +132,22 @@ public class ConversationController {
         return R.ok(vo);
     }
 
+    /** 坐席撤回自己发送的消息(2分钟时限);撤回后两端按 seq 替换原消息渲染"撤回了一条消息" */
+    @PostMapping("/{id}/messages/{msgId}/retract")
+    public R<MessageVO> retract(@PathVariable Long id, @PathVariable Long msgId) {
+        CnvConversation conv = conversationService.getById(id);
+        Message m = messageService.retract(id, msgId, "agent", TenantContext.getMemberId());
+        MessageVO vo = PublicMessengerController.toVO(m);
+        try {
+            // 内部消息撤回不推客户(customerId 传 null);普通消息推客户其他端
+            Long custTarget = Boolean.TRUE.equals(m.getInternal()) ? null : conv.getCustomerId();
+            pushPublisher.publish(new MsgPushEvent(id, conv.getAssigneeMemberId(), custTarget, objectMapper.writeValueAsString(vo)));
+        } catch (Exception ignore) {
+            // 序列化异常忽略:客户端重连按 seq 补拉即得撤回态
+        }
+        return R.ok(vo);
+    }
+
     /** 认领 */
     @PostMapping("/{id}/claim")
     public R<Void> claim(@PathVariable Long id) {

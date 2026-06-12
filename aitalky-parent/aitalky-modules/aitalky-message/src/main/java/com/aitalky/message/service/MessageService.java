@@ -16,4 +16,11 @@ public interface MessageService {
 
     /** 增量同步/补拉:seq 之后的消息(升序) */
     List<Message> sync(Long conversationId, long afterSeq);
+
+    /**
+     * 撤回消息:校验"本人发送"+ 时限(默认2分钟),置 isVisible=false(幂等)。
+     * @param operatorType 发起方类型 agent/customer;operatorId 对应 memberId/customerId
+     * @return 撤回后的消息(isVisible=false),供上层推 WS
+     */
+    Message retract(Long conversationId, Long msgId, String operatorType, Long operatorId);
 }

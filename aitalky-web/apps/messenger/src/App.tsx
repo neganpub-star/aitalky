@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { init, sendMessage, setToken, syncMessages } from './api'
+import { init, retractMessage, sendMessage, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
@@ -195,6 +195,22 @@ export default function App() {
     [pending, trySend],
   )
 
+  // 撤回自己的消息:成功后用返回的已撤回 VO(isVisible=false)按 seq 替换原消息;WS 回声同样幂等
+  const onRetract = useCallback(
+    (msgId: string) => {
+      const cid = convIdRef.current
+      if (!cid) return
+      void (async () => {
+        try {
+          applyIncoming([await retractMessage(cid, msgId)])
+        } catch {
+          // 撤回失败(超时/权限/网络)静默:信使端无 toast 体系,过期/无权点击无效即可
+        }
+      })()
+    },
+    [applyIncoming],
+  )
+
   if (phase === 'loading') {
     return <div className="center-tip">{t('connecting')}</div>
   }
@@ -220,6 +236,7 @@ export default function App() {
       pending={pending}
       onSend={onSend}
       onResend={onResend}
+      onRetract={onRetract}
       onBack={() => setScreen('home')}
     />
   )

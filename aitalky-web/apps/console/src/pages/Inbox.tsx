@@ -5,7 +5,7 @@ import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
-  ExclamationCircleFilled,
+  ExclamationCircleFilled, RollbackOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -13,7 +13,7 @@ import { useAppStore } from '../store/useAppStore'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
   claimConversation, closeConversation, getConversation, getConversationCounts,
-  listConversations, listMessages, replyConversation, updateCustomerContact,
+  listConversations, listMessages, replyConversation, retractConversationMessage, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
@@ -50,6 +50,9 @@ function langLabel(code: string | null): string {
   const map: Record<string, string> = { zh_CN: '简体中文', zh_TW: '繁體中文', en_US: 'English', en: 'English', ja_JP: '日本語', ko_KR: '한국어' }
   return map[code] || code
 }
+
+// 可撤回时限:与后端一致(2分钟)
+const RETRACT_WINDOW_MS = 2 * 60 * 1000
 
 // 合并消息:按 seq 去重(seq 会话内唯一)+ 升序插入。补漏拉回的旧 seq 会落到正确位置,而非追加到底。
 function mergeMessages(prev: MessageVO[], incoming: MessageVO[]): MessageVO[] {
@@ -97,6 +100,8 @@ export default function Inbox() {
 
   const [replyTab, setReplyTab] = useState<'reply' | 'internal'>('reply')
   const [input, setInput] = useState('')
+  // hover 在自己消息上时显示「撤回」入口(对齐桌面端交互)
+  const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
   // 本地待发/失败消息(乐观渲染,按会话隔离);成功后移除并以服务端消息按 seq 入列
   const [pending, setPending] = useState<PendingMsg[]>([])
   const [wsStatus, setWsStatus] = useState<WsStatus>(wsClient.getStatus())
@@ -322,6 +327,20 @@ export default function Inbox() {
     [pending, trySend],
   )
 
+  // 撤回自己发送的消息:成功后用返回的已撤回 VO(isVisible=false)按 seq 替换;WS 回声幂等
+  const onRetract = useCallback(
+    async (msgId: string) => {
+      if (!selectedId) return
+      try {
+        applyIncoming([await retractConversationMessage(selectedId, msgId)])
+      } catch (e) {
+        const code = (e as { code?: number })?.code
+        message.warning(code === 1026 ? t('inbox.retractExpired') : t('inbox.retractFailed'))
+      }
+    },
+    [selectedId, applyIncoming],
+  )
+
   const onInputKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -427,18 +446,45 @@ export default function Inbox() {
   // ===== 单条消息气泡(坐席右蓝 / 客户左白 / 内部消息黄)=====
   const renderMessage = (m: MessageVO) => {
     const mine = m.senderType === 'agent'
+    // 已撤回(isVisible=false):居中系统行,不显原文。坐席端始终显示(信使端开关只控信使侧)
+    if (m.isVisible === false) {
+      const txt = m.senderType === 'customer'
+        ? t('inbox.retractedByCustomer')
+        : String(m.senderId) === String(myMemberId)
+          ? t('inbox.retractedByYou')
+          : t('inbox.retractedByAgent')
+      return (
+        <div key={m.msgId} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
+          <span style={{ fontSize: 12, color: token.colorTextTertiary, background: token.colorFillTertiary, padding: '3px 12px', borderRadius: 6 }}>{txt}</span>
+        </div>
+      )
+    }
     const internal = !!m.internal
     const bubbleBg = internal ? (isDark ? '#5c4b1f' : '#fff7e6') : mine ? token.colorPrimary : token.colorBgContainer
     const bubbleColor = internal ? token.colorText : mine ? '#fff' : token.colorText
+    // 自己发的、2分钟内 → 可撤回(hover 显示入口)
+    const retractable = mine && String(m.senderId) === String(myMemberId) && Date.now() - m.timestamp < RETRACT_WINDOW_MS
     return (
-      <div key={m.msgId} style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', gap: 8, marginBottom: 16 }}>
+      <div key={m.msgId}
+        style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', gap: 8, marginBottom: 16 }}
+        onMouseEnter={() => retractable && setHoverMsgId(m.msgId)}
+        onMouseLeave={() => retractable && setHoverMsgId((cur) => (cur === m.msgId ? null : cur))}
+      >
         <Avatar size={32} src={m.senderAvatar || undefined} style={{ background: mine ? token.colorPrimary : token.colorTextQuaternary, flexShrink: 0 }}>
           {(m.senderName || (mine ? 'A' : 'U')).charAt(0).toUpperCase()}
         </Avatar>
         <div style={{ maxWidth: '62%', display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
           {internal && <span style={{ fontSize: 11, color: token.colorWarning, marginBottom: 2 }}>{t('inbox.internalNote')}</span>}
-          <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: !mine && !internal ? token.boxShadowTertiary : 'none' }}>
-            {m.content}
+          <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+            <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: !mine && !internal ? token.boxShadowTertiary : 'none' }}>
+              {m.content}
+            </div>
+            {/* hover 显示「撤回」:确认后调接口,撤回态按 seq 替换 */}
+            {retractable && hoverMsgId === m.msgId && (
+              <Popconfirm title={t('inbox.retract')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={() => onRetract(m.msgId)}>
+                <RollbackOutlined style={{ color: token.colorTextTertiary, fontSize: 14, cursor: 'pointer', flexShrink: 0 }} />
+              </Popconfirm>
+            )}
           </div>
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>{fmtMsgTime(m.timestamp)}</span>
         </div>

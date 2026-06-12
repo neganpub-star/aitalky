@@ -20,6 +20,9 @@ const dict = {
     replyTimeDay: '我们将在一天内回复',
     blocked: '会话暂不可用',
     resend: '点击重发',
+    retract: '撤回',
+    retractedByYou: '你撤回了一条消息',
+    retractedByAgent: '客服撤回了一条消息',
   },
   en_US: {
     greetingTitle: 'Hi there!',
@@ -39,6 +42,9 @@ const dict = {
     replyTimeDay: 'We will reply within a day',
     blocked: 'The conversation is temporarily unavailable',
     resend: 'Tap to resend',
+    retract: 'Recall',
+    retractedByYou: 'You recalled a message',
+    retractedByAgent: 'An agent recalled a message',
   },
   zh_TW: {
     greetingTitle: '您好!',

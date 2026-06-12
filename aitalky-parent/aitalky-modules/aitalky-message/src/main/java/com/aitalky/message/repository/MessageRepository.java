@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /** 消息仓库(MongoDB) */
 public interface MessageRepository extends MongoRepository<Message, String> {
@@ -14,4 +15,7 @@ public interface MessageRepository extends MongoRepository<Message, String> {
 
     /** 按会话取最近 N 条(seq 倒序),用于打开会话首屏 */
     List<Message> findByConversationIdOrderBySeqDesc(Long conversationId, Pageable pageable);
+
+    /** 按会话+业务消息ID定位单条(撤回用) */
+    Optional<Message> findByConversationIdAndMsgId(Long conversationId, Long msgId);
 }

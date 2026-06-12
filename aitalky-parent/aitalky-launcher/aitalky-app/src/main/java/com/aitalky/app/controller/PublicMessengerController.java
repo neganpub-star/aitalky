@@ -106,6 +106,27 @@ public class PublicMessengerController {
         return R.ok(vo);
     }
 
+    /** 客户撤回自己的消息(客户令牌):受信使设置「客户撤回权限」开关控制 + 2分钟时限 */
+    @PostMapping("/messages/{msgId}/retract")
+    public R<MessageVO> retract(@RequestHeader("Authorization") String auth,
+                                @RequestParam Long conversationId, @PathVariable Long msgId) {
+        var principal = customerTokenService.parse(auth);
+        CnvConversation conv = conversationService.getById(conversationId);
+        if (!conv.getCustomerId().equals(principal.customerId()) || !conv.getProjectId().equals(principal.projectId())) {
+            throw new BizException(ResultCode.FORBIDDEN);
+        }
+        // 客户撤回权限开关:未开启则拒绝(null 配置视为开,与下发默认一致)
+        var cfg = messengerConfigService.getPublicConfig(conv.getProjectId(), null);
+        if (cfg != null && !cfg.customerRetractEnabled()) {
+            throw new BizException(ResultCode.RETRACT_FORBIDDEN);
+        }
+        Message m = messageService.retract(conversationId, msgId, "customer", principal.customerId());
+        MessageVO vo = toVO(m);
+        // 撤回也走消息推送管线:坐席端 + 客户其他端按 seq 替换原消息,渲染"撤回了一条消息"
+        publishPush(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
+        return R.ok(vo);
+    }
+
     /** 客户拉消息(客户令牌):afterSeq 增量;不传则取最近 50 条。客户看不到内部消息 */
     @GetMapping("/messages")
     public R<List<MessageVO>> messages(@RequestHeader("Authorization") String auth,
@@ -135,9 +156,11 @@ public class PublicMessengerController {
     }
 
     static MessageVO toVO(Message m) {
+        // 已撤回(isVisible=false):内容置空,不向任何端泄露被撤回的原文;两端按 isVisible 渲染"撤回了一条消息"
+        boolean retracted = Boolean.FALSE.equals(m.getIsVisible());
         return new MessageVO(m.getMsgId(), m.getSeq(), m.getConversationId(),
                 m.getSenderType(), m.getSenderId(), m.getSenderName(), m.getSenderAvatar(),
-                m.getType(), m.getContent(), m.getInternal(), m.getIsVisible(), m.getTimestamp());
+                m.getType(), retracted ? null : m.getContent(), m.getInternal(), m.getIsVisible(), m.getTimestamp());
     }
 
     private static LocalDateTime toLdt(Long ts) {

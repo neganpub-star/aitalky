@@ -51,6 +51,13 @@ export async function sendMessage(conversationId: string, content: string, type 
   return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type }))
 }
 
+/** 客户撤回自己的消息(受信使设置「客户撤回权限」开关 + 2分钟时限控制) */
+export async function retractMessage(conversationId: string, msgId: string): Promise<MessageVO> {
+  return normMessage(
+    await client.post<unknown, MessageVO>(`/messages/${msgId}/retract`, undefined, { params: { conversationId } }),
+  )
+}
+
 /** 拉消息:afterSeq 增量(不传取最近 50 条);客户看不到内部消息(后端已过滤) */
 export async function syncMessages(conversationId: string, afterSeq?: number): Promise<MessageVO[]> {
   const list = await client.get<unknown, MessageVO[]>('/messages', {
