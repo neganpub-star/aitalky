@@ -9,6 +9,8 @@ type StatusListener = (status: WsStatus) => void
 type OpenListener = () => void
 // typing 瞬时事件:from=agent/customer,conversationId 字符串(与消息帧一致)
 type TypingListener = (e: { conversationId: string; from: string }) => void
+// 已读回执:客户已读到 readSeq(坐席端据此显示自己消息"已读")
+type ReadListener = (e: { conversationId: string; readSeq: number }) => void
 
 // 心跳间隔(后端读空闲 60s,这里 25s 发一次 ping 足够保活)
 const PING_INTERVAL = 25_000
@@ -36,6 +38,7 @@ class WsClient {
   private statusListeners = new Set<StatusListener>()
   private openListeners = new Set<OpenListener>()
   private typingListeners = new Set<TypingListener>()
+  private readListeners = new Set<ReadListener>()
   private status: WsStatus = 'closed'
 
   /** 建立连接(已连同一 token 则忽略);token 变更会重连 */
@@ -79,6 +82,11 @@ class WsClient {
       // typing 瞬时帧:分发给 typing 监听(上层按 from 过滤显示)
       if (data.evt === 'typing') {
         this.typingListeners.forEach((fn) => fn({ conversationId: String(data.conversationId), from: String(data.from) }))
+        return
+      }
+      // 已读回执帧:分发给 read 监听
+      if (data.evt === 'read') {
+        this.readListeners.forEach((fn) => fn({ conversationId: String(data.conversationId), readSeq: Number(data.readSeq) }))
         return
       }
       // 控制帧:connected / pong 直接忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
@@ -184,6 +192,12 @@ class WsClient {
   onTyping(fn: TypingListener): () => void {
     this.typingListeners.add(fn)
     return () => this.typingListeners.delete(fn)
+  }
+
+  /** 注册已读回执监听,返回取消函数 */
+  onRead(fn: ReadListener): () => void {
+    this.readListeners.add(fn)
+    return () => this.readListeners.delete(fn)
   }
 
   getStatus(): WsStatus {

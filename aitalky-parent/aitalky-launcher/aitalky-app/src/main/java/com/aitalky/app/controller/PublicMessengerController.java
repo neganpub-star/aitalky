@@ -145,6 +145,27 @@ public class PublicMessengerController {
         return R.ok();
     }
 
+    /** 客户上报已读位(已读回执;信使端聊天可见时静默调,无 UI):推坐席端显示自己消息"已读" */
+    @PostMapping("/read")
+    public R<Void> read(@RequestHeader("Authorization") String auth,
+                        @RequestParam Long conversationId, @RequestParam long seq) {
+        var principal = customerTokenService.parse(auth);
+        CnvConversation conv = conversationService.getById(conversationId);
+        if (!conv.getCustomerId().equals(principal.customerId()) || !conv.getProjectId().equals(principal.projectId())) {
+            throw new BizException(ResultCode.FORBIDDEN);
+        }
+        long readSeq = conversationService.markCustomerRead(conversationId, seq);
+        try {
+            // 已读回执只推坐席(assignee/订阅者/未分配走项目频道);customerId 传 null,不回推客户(信使端不显示)
+            String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                    "evt", "read", "conversationId", String.valueOf(conv.getId()), "readSeq", String.valueOf(readSeq)));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), null, payload));
+        } catch (Exception ignore) {
+            // 瞬时事件,失败无需补偿(坐席打开会话时 detail 会带 customerReadSeq 兜底)
+        }
+        return R.ok();
+    }
+
     /** 客户拉消息(客户令牌):afterSeq 增量;不传则取最近 50 条。客户看不到内部消息 */
     @GetMapping("/messages")
     public R<List<MessageVO>> messages(@RequestHeader("Authorization") String auth,

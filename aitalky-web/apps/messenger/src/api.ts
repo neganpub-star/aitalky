@@ -56,6 +56,11 @@ export async function sendTyping(conversationId: string): Promise<void> {
   await client.post<unknown, void>('/typing', undefined, { params: { conversationId } })
 }
 
+/** 客户上报已读位(静默,无 UI;聊天可见时调,坐席端据此显示"已读") */
+export async function sendRead(conversationId: string, seq: number): Promise<void> {
+  await client.post<unknown, void>('/read', undefined, { params: { conversationId, seq } })
+}
+
 /** 客户撤回自己的消息(受信使设置「客户撤回权限」开关 + 2分钟时限控制) */
 export async function retractMessage(conversationId: string, msgId: string): Promise<MessageVO> {
   return normMessage(

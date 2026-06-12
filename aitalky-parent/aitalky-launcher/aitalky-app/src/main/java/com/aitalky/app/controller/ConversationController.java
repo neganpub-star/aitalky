@@ -82,6 +82,7 @@ public class ConversationController {
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
                 cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName,
+                c.getCustomerReadSeq(),
                 blacklistId != null, blacklistId));
     }
 

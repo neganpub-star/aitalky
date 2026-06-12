@@ -158,6 +158,21 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public long markCustomerRead(Long conversationId, long seq) {
+        CnvConversation conv = conversationMapper.selectById(conversationId);
+        if (conv == null) {
+            return 0;
+        }
+        long cur = conv.getCustomerReadSeq() == null ? 0 : conv.getCustomerReadSeq();
+        if (seq <= cur) {
+            return cur; // 已读位只前进,不回退
+        }
+        conv.setCustomerReadSeq(seq);
+        conversationMapper.updateById(conv);
+        return seq;
+    }
+
+    @Override
     public void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time, boolean fromCustomer) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {

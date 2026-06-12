@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { init, retractMessage, sendMessage, sendTyping, setToken, syncMessages } from './api'
+import { init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
@@ -79,6 +79,8 @@ export default function App() {
   const sysTypingRef = useRef(true)
   // 已读水位:离开聊天时推进到当时最大 seq;进入聊天据此算未读分割线
   const lastReadSeqRef = useRef(0)
+  // 已读上报(静默):上次上报给后端的已读 seq(单调前进,去重)
+  const lastReadReportRef = useRef(0)
   // 弹窗提醒开关 + 品牌名(失焦时新消息通知用);避免 WS 监听依赖 data 重订阅
   const popupRef = useRef(true)
   const brandRef = useRef('')
@@ -107,6 +109,18 @@ export default function App() {
   }, [applyIncoming])
   const syncRef = useRef(syncNow)
   syncRef.current = syncNow
+
+  // 已读上报(静默,无 UI):仅"在聊天界面 + 标签页可见"时,把当前已读位推给后端(坐席端显示"已读")
+  const reportReadRef = useRef<() => void>(() => {})
+  reportReadRef.current = () => {
+    const cid = convIdRef.current
+    const seq = localMaxSeqRef.current
+    if (!cid || screen !== 'chat' || document.hidden || seq <= lastReadReportRef.current) return
+    lastReadReportRef.current = seq
+    void sendRead(cid, seq).catch(() => {})
+  }
+  // 进聊天 / 新消息到达(在看时)→ 上报已读
+  useEffect(() => { reportReadRef.current() }, [messages, screen])
 
   // ===== 启动:解析参数 → init → 连 WS → 拉历史 =====
   useEffect(() => {
@@ -183,9 +197,9 @@ export default function App() {
     // 聚焦/可见:清标题未读数 + 对账补漏
     const clearTitle = () => { hiddenUnreadRef.current = 0; setTitleUnread(0) }
     const onVisible = () => {
-      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current() }
+      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current(); reportReadRef.current() }
     }
-    const onFocus = () => { clearTitle(); syncRef.current() }
+    const onFocus = () => { clearTitle(); syncRef.current(); reportReadRef.current() }
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVisible)
     return () => {

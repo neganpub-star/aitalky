@@ -107,6 +107,8 @@ export default function Inbox() {
   const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
   // 客户正在输入(瞬时,4s 自动消失)
   const [customerTyping, setCustomerTyping] = useState(false)
+  // 当前会话客户已读到的 seq(已读回执:自己消息 seq<=此值显示"已读")
+  const [customerReadSeq, setCustomerReadSeq] = useState(0)
   const lastTypingRef = useRef(0)
   const typingClearRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   // 本地待发/失败消息(乐观渲染,按会话隔离);成功后移除并以服务端消息按 seq 入列
@@ -286,6 +288,14 @@ export default function Inbox() {
     })
   }, [])
 
+  // ===== 已读回执:客户已读位前进 → 更新当前会话已读 seq(自己消息据此显示已读) =====
+  useEffect(() => {
+    return wsClient.onRead((e) => {
+      if (e.conversationId !== selectedRef.current) return
+      setCustomerReadSeq((prev) => Math.max(prev, e.readSeq))
+    })
+  }, [])
+
   // 切换会话:清除上一个会话残留的输入态
   useEffect(() => {
     setCustomerTyping(false)
@@ -317,6 +327,7 @@ export default function Inbox() {
       setEditField(null)
       setDetail(null)
       setMessages([])
+      setCustomerReadSeq(0)
       localMaxSeqRef.current = 0
       wsClient.subscribe(conv.id)
       // 本地先清未读(后端拉消息时也会 resetUnread)
@@ -325,6 +336,7 @@ export default function Inbox() {
       try {
         const [d, msgs] = await Promise.all([getConversation(conv.id), listMessages(conv.id)])
         setDetail(d)
+        setCustomerReadSeq(d.customerReadSeq ?? 0)
         const sorted = mergeMessages([], msgs)
         setMessages(sorted)
         // localMaxSeq = 首屏最新 seq;首屏只取最近 50 条,更早的是历史(翻页另说),不影响实时补漏基准
@@ -577,7 +589,15 @@ export default function Inbox() {
             </div>
             {toolbar}
           </div>
-          <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>{fmtMsgTime(m.timestamp)}</span>
+          <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>
+            {/* 已读回执:自己(非内部)消息显示 已读/未读 */}
+            {mine && !internal && (
+              <span style={{ marginRight: 5, color: m.seq <= customerReadSeq ? token.colorTextTertiary : token.colorPrimary }}>
+                {m.seq <= customerReadSeq ? t('inbox.read') : t('inbox.unread')}
+              </span>
+            )}
+            {fmtMsgTime(m.timestamp)}
+          </span>
         </div>
       </div>
     )

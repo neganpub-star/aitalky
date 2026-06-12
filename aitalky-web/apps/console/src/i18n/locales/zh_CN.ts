@@ -376,6 +376,8 @@ export default {
     retractFailed: '撤回失败',
     copy: '复制',
     copied: '已复制',
+    read: '已读',
+    unread: '未读',
     customerTyping: '客户正在输入中…',
     replyPlaceholder: '请输入您的回复内容',
     internalPlaceholder: '内部消息仅团队可见,客户看不到',

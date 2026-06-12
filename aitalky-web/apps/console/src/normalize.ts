@@ -13,5 +13,9 @@ export function normConversation(c: ConversationVO): ConversationVO {
 }
 
 export function normDetail(d: ConversationDetailVO): ConversationDetailVO {
-  return { ...d, lastSeq: d.lastSeq == null ? null : Number(d.lastSeq) }
+  return {
+    ...d,
+    lastSeq: d.lastSeq == null ? null : Number(d.lastSeq),
+    customerReadSeq: d.customerReadSeq == null ? null : Number(d.customerReadSeq),
+  }
 }

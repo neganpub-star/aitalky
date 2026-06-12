@@ -39,6 +39,8 @@ public class CnvConversation extends BaseEntity {
     private Integer unreadCount;
     /** 会话内已分配最大消息序号 */
     private Long lastSeq;
+    /** 客户已读到的 seq(已读回执:坐席消息 seq<=此值即"已读") */
+    private Long customerReadSeq;
     /** 最后一条消息预览 */
     private String lastMessagePreview;
     /** 最后消息时间 */

@@ -367,6 +367,8 @@ export default {
     retractFailed: 'Failed to recall',
     copy: 'Copy',
     copied: 'Copied',
+    read: 'Read',
+    unread: 'Unread',
     customerTyping: 'The customer is typing…',
     replyPlaceholder: 'Type your reply',
     internalPlaceholder: 'Internal note — visible to your team only, not the customer',

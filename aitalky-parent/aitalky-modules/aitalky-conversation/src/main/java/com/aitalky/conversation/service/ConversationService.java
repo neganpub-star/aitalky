@@ -37,4 +37,10 @@ public interface ConversationService {
      * @param fromCustomer 是否客户发来(是则坐席侧未读+1)
      */
     void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time, boolean fromCustomer);
+
+    /**
+     * 客户上报已读位:customer_read_seq 单调前进(取 max)。
+     * @return 更新后的已读 seq(已是更大值则原样返回);供上层推已读回执给坐席
+     */
+    long markCustomerRead(Long conversationId, long seq);
 }
