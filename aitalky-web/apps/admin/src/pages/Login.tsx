@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, message, theme } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons'
+import { Button, Card, Form, Input, Tooltip, message, theme } from 'antd'
+import {
+  UserOutlined, LockOutlined, SafetyOutlined, SunOutlined, MoonOutlined, GlobalOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getCaptcha, login } from '../api/auth'
+import { changeLang } from '../i18n'
 import { useAdminStore } from '../store/useAdminStore'
 import logo from '../assets/logo.png'
 
@@ -12,6 +15,9 @@ export default function Login() {
   const { token } = theme.useToken()
   const nav = useNavigate()
   const saveLogin = useAdminStore((s) => s.saveLogin)
+  const themeMode = useAdminStore((s) => s.themeMode)
+  const toggleTheme = useAdminStore((s) => s.toggleTheme)
+  const lang = useAdminStore((s) => s.lang)
   const [captchaId, setCaptchaId] = useState('')
   const [captchaImg, setCaptchaImg] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,18 +47,46 @@ export default function Login() {
     }
   }
 
+  const dark = themeMode === 'dark'
+  // 登录 hero 始终深色渐变(主题切换时卡片明暗变化即可见);夜间更深一档
+  const bg = dark
+    ? 'linear-gradient(135deg, #0d1119 0%, #182542 55%, #1f5aa8 150%)'
+    : 'linear-gradient(135deg, #1a1f2e 0%, #2b3a67 55%, #409eff 140%)'
+
   return (
     <div style={{
-      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24,
-      background: 'linear-gradient(135deg, #1a1f2e 0%, #2b3a67 55%, #409eff 140%)',
+      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28,
+      background: bg, position: 'relative',
     }}>
-      {/* 品牌区:LOGO + 名称(对齐坐席端 LOGO) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src={logo} alt="aitalky" style={{ width: 44, height: 44, borderRadius: 10 }} />
-        <span style={{ color: '#fff', fontSize: 26, fontWeight: 700, letterSpacing: 1 }}>aitalky 平台后管</span>
+      {/* 右上角:主题 / 语言切换(登录页也可用) */}
+      <div style={{ position: 'absolute', top: 20, right: 24, display: 'flex', gap: 14 }}>
+        <Tooltip title={dark ? t('common.lightMode') : t('common.darkMode')}>
+          <span onClick={toggleTheme} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, cursor: 'pointer', display: 'flex' }}>
+            {dark ? <SunOutlined /> : <MoonOutlined />}
+          </span>
+        </Tooltip>
+        <Tooltip title={lang === 'en_US' ? '切换中文' : 'Switch to English'}>
+          <span
+            onClick={() => changeLang(lang === 'en_US' ? 'zh_CN' : 'en_US')}
+            style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+          >
+            <GlobalOutlined style={{ fontSize: 16 }} />
+            {lang === 'en_US' ? '中文' : 'EN'}
+          </span>
+        </Tooltip>
       </div>
-      <Card style={{ width: 380, boxShadow: '0 12px 40px rgba(0,0,0,0.25)', borderRadius: 12 }}>
-        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 600, marginBottom: 24, color: token.colorText }}>
+
+      {/* 品牌区:LOGO + 名称(对齐坐席端 LOGO)+ 副标语 */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src={logo} alt="aitalky" style={{ width: 46, height: 46, borderRadius: 11 }} />
+          <span style={{ color: '#fff', fontSize: 28, fontWeight: 700, letterSpacing: 1 }}>aitalky</span>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, letterSpacing: 2 }}>{t('login.brandTagline')}</span>
+      </div>
+
+      <Card style={{ width: 388, boxShadow: '0 16px 48px rgba(0,0,0,0.28)', borderRadius: 14 }} styles={{ body: { padding: '32px 32px 28px' } }}>
+        <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 700, marginBottom: 24, color: token.colorText }}>
           {t('login.title')}
         </div>
         <Form layout="vertical" onFinish={onFinish}>

@@ -42,7 +42,8 @@ export default {
     statusGroup: '状态设置',
   },
   login: {
-    title: 'aitalky 平台运营后台',
+    title: '欢迎登录',
+    brandTagline: '平台运营后台',
     username: '用户名',
     password: '密码',
     captcha: '验证码',

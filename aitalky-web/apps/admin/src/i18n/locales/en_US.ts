@@ -42,7 +42,8 @@ export default {
     statusGroup: 'Status',
   },
   login: {
-    title: 'aitalky Platform Admin',
+    title: 'Welcome Back',
+    brandTagline: 'Platform Console',
     username: 'Username',
     password: 'Password',
     captcha: 'Captcha',
