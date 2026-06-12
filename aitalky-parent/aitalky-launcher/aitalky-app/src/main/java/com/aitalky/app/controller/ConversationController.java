@@ -45,6 +45,7 @@ public class ConversationController {
     private final CustomerService customerService;
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
+    private final com.aitalky.messenger.service.BlacklistService blacklistService;
 
     /** 收件箱列表 */
     @GetMapping
@@ -71,13 +72,17 @@ public class ConversationController {
             MemberBrief m = memberService.brief(c.getAssigneeMemberId());
             assigneeName = m == null ? null : m.nickname();
         }
+        // 黑名单状态:命中记录 id(无则 null),供详情面板「加入/移除黑名单」切换
+        Long blacklistId = cu == null ? null
+                : blacklistService.findBlockedId(c.getProjectId(), cu.getExternalUserId(), cu.getVisitorId());
         return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
                 c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
                 cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
                 cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
-                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName));
+                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName,
+                blacklistId != null, blacklistId));
     }
 
     /** 更新客户联系方式/邮箱(详情面板编辑) */
