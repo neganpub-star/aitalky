@@ -78,6 +78,9 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    // 输入法候选框打开时(拼音/中文组词中)按回车是"选词"而非"发送":
+    // isComposing 或 keyCode 229 表示正在组词,直接放行交给输入法,避免误发+二次发送
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       submit()
