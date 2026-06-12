@@ -57,7 +57,9 @@ public class MyBatisPlusConfig {
                 if (TenantContext.getProjectId() == null) {
                     return true;
                 }
-                return IGNORE_TABLES.contains(tableName.toLowerCase());
+                String t = tableName.toLowerCase();
+                // 平台级表（pf_ 前缀）本就无 project_id 列，一律忽略；防止新增 pf_ 表漏配 IGNORE_TABLES 踩坑
+                return t.startsWith("pf_") || IGNORE_TABLES.contains(t);
             }
         }));
 
