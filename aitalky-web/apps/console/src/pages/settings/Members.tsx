@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Avatar, Button, Card, Dropdown, Form, Input, Modal, Select, Space, Table, Tag, message,
+  Avatar, Button, Dropdown, Form, Input, Modal, Select, Space, Table, message, theme,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CrownFilled, MoreOutlined, PlusOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
+import {
+  CrownFilled, DeleteOutlined, EditOutlined, LockOutlined, MoreOutlined, PictureOutlined,
+  PlusOutlined, SearchOutlined, UserOutlined,
+} from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import {
   deleteMember, listRoles, pageMembers, renameMember,
   updateMemberAvatar, updateMemberRole, updateMemberStatus, type MemberQuery,
@@ -11,8 +15,22 @@ import {
 import InviteMemberModal from './InviteMemberModal'
 import type { MemberVO, RoleVO } from '../../types'
 
-// 成员管理:列表 + 筛选 + 调整角色/重命名/改头像/禁用启用/删除(参照 ByteTrack 成员管理页)
+const OWNER_ROLE = '负责人'
+
+// 邮箱脱敏:本地部分保留前 3 位 + ****,与现网展示一致(wky****@126.com)
+function maskEmail(email?: string) {
+  if (!email) return '-'
+  const at = email.indexOf('@')
+  if (at <= 0) return email
+  const local = email.slice(0, at)
+  const keep = local.slice(0, Math.min(3, local.length))
+  return `${keep}****${email.slice(at)}`
+}
+
+// 成员管理(对齐现网):扁平页(标题+邀请成员) + 筛选 + 成员表(调整角色/重命名/禁用启用/改头像/删除)
 export default function Members() {
+  const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [inviteOpen, setInviteOpen] = useState(false)
   const [data, setData] = useState<MemberVO[]>([])
   const [total, setTotal] = useState(0)
@@ -46,92 +64,95 @@ export default function Members() {
     const { roleId } = await form.validateFields()
     await updateMemberRole(roleModal!.id, roleId)
     setRoleModal(null)
-    message.success('角色已调整')
+    message.success(t('member.roleAdjusted'))
     reload()
   }
   const onSubmitRename = async () => {
     const { nickname } = await form.validateFields()
     await renameMember(renameModal!.id, nickname)
     setRenameModal(null)
-    message.success('已重命名')
+    message.success(t('member.renamed'))
     reload()
   }
   const onSubmitAvatar = async () => {
     const { avatar } = await form.validateFields()
     await updateMemberAvatar(avatarModal!.id, avatar)
     setAvatarModal(null)
-    message.success('头像已更新')
+    message.success(t('member.avatarUpdated'))
     reload()
   }
 
   const toggleStatus = (m: MemberVO) => {
     Modal.confirm({
-      title: m.status === 1 ? '禁用该成员?' : '启用该成员?',
+      title: m.status === 1 ? t('member.confirmDisable') : t('member.confirmEnable'),
       onOk: async () => {
         await updateMemberStatus(m.id, m.status === 1 ? 0 : 1)
-        message.success('操作成功')
+        message.success(t('common.ok'))
         reload()
       },
     })
   }
   const removeMember = (m: MemberVO) => {
     Modal.confirm({
-      title: `删除成员「${m.nickname}」?`,
+      title: t('member.confirmDelete', { name: m.nickname }),
       okButtonProps: { danger: true },
       onOk: async () => {
         await deleteMember(m.id)
-        message.success('已删除')
+        message.success(t('member.deleted'))
         reload()
       },
     })
   }
 
+  const openRename = (m: MemberVO) => { setRenameModal(m); form.setFieldsValue({ nickname: m.nickname }) }
+
   const columns: ColumnsType<MemberVO> = [
     {
-      title: '成员信息', dataIndex: 'nickname',
+      title: t('member.colInfo'), dataIndex: 'nickname',
       render: (_, m) => (
         <Space>
-          <Avatar src={m.avatar || undefined} icon={<UserOutlined />} />
+          <Avatar size={32} src={m.avatar || undefined} icon={<UserOutlined />} />
           <span>{m.nickname || '-'}</span>
-          {m.roleName === '负责人' && <CrownFilled style={{ color: '#faad14' }} />}
+          {m.roleName === OWNER_ROLE && <CrownFilled style={{ color: '#faad14' }} />}
         </Space>
       ),
     },
-    { title: '邮箱', dataIndex: 'email' },
-    { title: '角色', dataIndex: 'roleName', render: (v) => <Tag color="blue">{v}</Tag> },
+    { title: t('member.colEmail'), dataIndex: 'email', render: (v) => maskEmail(v) },
+    { title: t('member.colRole'), dataIndex: 'roleName', render: (v) => v || '-' },
     {
-      title: '在线状态', dataIndex: 'onlineStatus',
-      render: (v) => (v === 1
-        ? <Tag color="green">在线</Tag>
-        : <Tag>离线</Tag>),
+      title: t('member.colOnline'), dataIndex: 'onlineStatus', width: 140,
+      render: (v) => (
+        <Space size={6}>
+          <span style={{
+            display: 'inline-block', width: 6, height: 6, borderRadius: '50%',
+            background: v === 1 ? token.colorSuccess : token.colorTextQuaternary,
+          }} />
+          <span style={{ color: v === 1 ? token.colorText : token.colorTextSecondary }}>
+            {v === 1 ? t('member.online') : t('member.offline')}
+          </span>
+        </Space>
+      ),
     },
     {
-      title: '账号状态', dataIndex: 'status',
-      render: (v) => (v === 1 ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag>),
-    },
-    {
-      title: '操作', width: 180,
+      title: t('common.action'), width: 160, align: 'right',
       render: (_, m) => {
-        // 负责人:仅可重命名;其他成员:调整角色 + 更多(重命名/禁用启用/改头像/删除)
-        if (m.roleName === '负责人') {
-          return (
-            <Button type="link" onClick={() => { setRenameModal(m); form.setFieldsValue({ nickname: m.nickname }) }}>
-              重命名
-            </Button>
-          )
+        // 负责人:仅可重命名;其他成员:调整角色 | 更多(重命名/禁用启用/改头像/删除)
+        if (m.roleName === OWNER_ROLE) {
+          return <Button type="link" style={{ padding: 0 }} onClick={() => openRename(m)}>{t('member.rename')}</Button>
         }
         return (
-          <Space>
-            <Button type="link" onClick={() => { setRoleModal(m); form.setFieldsValue({ roleId: m.roleId }) }}>调整角色</Button>
+          <Space split={<span style={{ color: token.colorSplit }}>|</span>} size={4}>
+            <Button type="link" style={{ padding: 0 }}
+              onClick={() => { setRoleModal(m); form.setFieldsValue({ roleId: m.roleId }) }}>{t('member.adjustRole')}</Button>
             <Dropdown menu={{
               items: [
-                { key: 'rename', label: '重命名', onClick: () => { setRenameModal(m); form.setFieldsValue({ nickname: m.nickname }) } },
-                { key: 'status', label: m.status === 1 ? '禁用' : '启用', onClick: () => toggleStatus(m) },
-                { key: 'avatar', label: '修改头像', onClick: () => { setAvatarModal(m); form.setFieldsValue({ avatar: m.avatar }) } },
-                { key: 'delete', label: '删除', danger: true, onClick: () => removeMember(m) },
+                { key: 'rename', icon: <EditOutlined />, label: t('member.rename'), onClick: () => openRename(m) },
+                { key: 'status', icon: <LockOutlined />, label: m.status === 1 ? t('member.disable') : t('member.enable'), onClick: () => toggleStatus(m) },
+                { key: 'avatar', icon: <PictureOutlined />, label: t('member.changeAvatar'), onClick: () => { setAvatarModal(m); form.setFieldsValue({ avatar: m.avatar }) } },
+                { key: 'delete', icon: <DeleteOutlined />, label: t('member.delete'), danger: true, onClick: () => removeMember(m) },
               ],
             }}>
-              <Button type="text" icon={<MoreOutlined />} />
+              <Button type="text" size="small" icon={<MoreOutlined />} />
             </Dropdown>
           </Space>
         )
@@ -140,32 +161,35 @@ export default function Members() {
   ]
 
   return (
-    <Card
-      title="成员管理"
-      variant="borderless"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>邀请成员</Button>}
-    >
-      <Space style={{ marginBottom: 16 }} wrap>
-        <Select
-          placeholder="角色" allowClear style={{ width: 140 }}
-          options={roles.map((r) => ({ value: r.id, label: r.name }))}
-          onChange={(roleId) => setQuery((q) => ({ ...q, roleId, page: 1 }))}
-        />
-        <Select
-          placeholder="在线状态" allowClear style={{ width: 120 }}
-          options={[{ value: 1, label: '在线' }, { value: 0, label: '离线' }]}
-          onChange={(onlineStatus) => setQuery((q) => ({ ...q, onlineStatus, page: 1 }))}
-        />
-        <Select
-          placeholder="账号状态" allowClear style={{ width: 120 }}
-          options={[{ value: 1, label: '启用' }, { value: 0, label: '禁用' }]}
-          onChange={(status) => setQuery((q) => ({ ...q, status, page: 1 }))}
-        />
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <span style={{ fontSize: 18, fontWeight: 600 }}>{t('settings.members')}</span>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>{t('member.invite')}</Button>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <Space wrap>
+          <Select
+            placeholder={t('member.filterRole')} allowClear style={{ width: 140 }}
+            options={roles.map((r) => ({ value: r.id, label: r.name }))}
+            onChange={(roleId) => setQuery((q) => ({ ...q, roleId, page: 1 }))}
+          />
+          <Select
+            placeholder={t('member.filterOnline')} allowClear style={{ width: 130 }}
+            options={[{ value: 1, label: t('member.online') }, { value: 0, label: t('member.offline') }]}
+            onChange={(onlineStatus) => setQuery((q) => ({ ...q, onlineStatus, page: 1 }))}
+          />
+          <Select
+            placeholder={t('member.filterStatus')} allowClear style={{ width: 130 }}
+            options={[{ value: 1, label: t('member.enabled') }, { value: 0, label: t('member.disabled') }]}
+            onChange={(status) => setQuery((q) => ({ ...q, status, page: 1 }))}
+          />
+        </Space>
         <Input.Search
-          placeholder="请输入成员昵称" allowClear style={{ width: 220 }} enterButton={<SearchOutlined />}
+          placeholder={t('member.searchPh')} allowClear style={{ width: 260 }} enterButton={<SearchOutlined />}
           onSearch={(keyword) => setQuery((q) => ({ ...q, keyword, page: 1 }))}
         />
-      </Space>
+      </div>
 
       <Table<MemberVO>
         rowKey="id"
@@ -174,34 +198,34 @@ export default function Members() {
         dataSource={data}
         pagination={{
           current: query.page, pageSize: query.size, total,
-          showTotal: (t) => `共 ${t} 条`,
+          showTotal: (n) => t('common.totalN', { n }),
           onChange: (page, size) => setQuery((q) => ({ ...q, page, size })),
         }}
       />
 
-      <Modal title="调整角色" open={!!roleModal} onCancel={() => setRoleModal(null)} onOk={onSubmitRole} destroyOnClose>
+      <Modal title={t('member.adjustRole')} open={!!roleModal} onCancel={() => setRoleModal(null)} onOk={onSubmitRole} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Form.Item name="roleId" label="角色" rules={[{ required: true }]}>
+          <Form.Item name="roleId" label={t('member.role')} rules={[{ required: true }]}>
             <Select options={roles.map((r) => ({ value: r.id, label: r.name }))} />
           </Form.Item>
         </Form>
       </Modal>
-      <Modal title="重命名" open={!!renameModal} onCancel={() => setRenameModal(null)} onOk={onSubmitRename} destroyOnClose>
+      <Modal title={t('member.rename')} open={!!renameModal} onCancel={() => setRenameModal(null)} onOk={onSubmitRename} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Form.Item name="nickname" label="昵称" rules={[{ required: true, max: 64 }]}>
+          <Form.Item name="nickname" label={t('member.nickname')} rules={[{ required: true, max: 64 }]}>
             <Input />
           </Form.Item>
         </Form>
       </Modal>
-      <Modal title="修改头像" open={!!avatarModal} onCancel={() => setAvatarModal(null)} onOk={onSubmitAvatar} destroyOnClose>
+      <Modal title={t('member.changeAvatar')} open={!!avatarModal} onCancel={() => setAvatarModal(null)} onOk={onSubmitAvatar} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Form.Item name="avatar" label="头像 URL" rules={[{ required: true }]}>
+          <Form.Item name="avatar" label={t('member.avatarUrl')} rules={[{ required: true }]}>
             <Input placeholder="https://..." />
           </Form.Item>
         </Form>
       </Modal>
 
       <InviteMemberModal open={inviteOpen} onClose={() => setInviteOpen(false)} onDone={reload} />
-    </Card>
+    </div>
   )
 }
