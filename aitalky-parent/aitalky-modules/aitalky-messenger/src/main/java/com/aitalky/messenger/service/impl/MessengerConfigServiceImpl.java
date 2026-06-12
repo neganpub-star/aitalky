@@ -207,7 +207,19 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
                 i == null ? null : i.getTeamIntro(),
                 i == null ? null : i.getUrgentNotice(),
                 i != null && Boolean.TRUE.equals(i.getUrgentEnabled()),
+                // 行为开关:null 视为开(与后管默认一致,仅显式 false 才关)
+                onByDefault(m.getSysMsgUnread()),
+                onByDefault(m.getSysMsgTyping()),
+                onByDefault(m.getSysMsgMemberRetract()),
+                onByDefault(m.getPopupEnabled()),
+                onByDefault(m.getPopupAllowClose()),
+                onByDefault(m.getCustomerRetractEnabled()),
                 useLang); // 最终生效语言,信使端据此选系统提示文案语言
+    }
+
+    /** 开关默认开:仅当显式存为 false 才关(null/未配置→开,与后管 getConfig 默认一致) */
+    private static boolean onByDefault(Boolean v) {
+        return !Boolean.FALSE.equals(v);
     }
 
     /** 查启用语种(projectId 非空=显式过滤,用于无上下文的 init;为空=靠租户拦截器自动过滤)。默认语种排前 */

@@ -11,6 +11,13 @@ export interface MessengerConfig {
   teamIntro: string | null
   urgentNotice: string | null
   urgentEnabled: boolean
+  // —— 行为开关(信使设置,后端 init 下发)——
+  sysMsgUnread: boolean        // 信使侧显示"未读"分割
+  sysMsgTyping: boolean        // 信使侧显示"对方正在输入中"
+  sysMsgMemberRetract: boolean // 坐席撤回时显示系统消息(关则静默移除)
+  popupEnabled: boolean        // 新消息弹窗提醒
+  popupAllowClose: boolean     // 允许客户手动关闭弹窗
+  customerRetractEnabled: boolean // 客户可撤回自己消息
   // 信使端最终生效语言(URL ?lang= 优先,否则信使设置默认语言);前端据此选系统提示文案语言
   lang: string | null
 }

@@ -73,6 +73,8 @@ public class PublicMessengerController {
             config = new com.aitalky.messenger.dto.MessengerPublicVO(
                     project.getName(), null, config.webTitle(), config.webIcon(), config.replyTime(),
                     config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled(),
+                    config.sysMsgUnread(), config.sysMsgTyping(), config.sysMsgMemberRetract(),
+                    config.popupEnabled(), config.popupAllowClose(), config.customerRetractEnabled(),
                     config.lang());
         }
         return R.ok(new MessengerInitVO(token, conv.getId(),
