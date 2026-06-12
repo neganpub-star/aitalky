@@ -170,7 +170,7 @@ export default function Messenger() {
                   )}
                 </div>
                 <Input size="large" maxLength={100} showCount value={i18nOf(lang).greeting ?? ''} placeholder={t('mse.greetingPh')}
-                  style={{ maxWidth: 420 }}
+                  style={{ maxWidth: 420, fontSize: 13 }}
                   onChange={(e) => patchI18n(lang, { greeting: e.target.value })} />
               </div>
             ))}
