@@ -22,17 +22,16 @@ public final class PermissionCatalog {
     private static final String FUNC = "function";
 
     private static final List<PermModule> MODULES = List.of(
+            // 收件箱:对齐参考——页面列=全部/未分配/数字员工/会话搜索,功能列留空。
+            // 我的/提及我的为恒有(不作勾选项);全部=inbox.viewAll、未分配=inbox.viewUnassigned(前端真在用);
+            // 数字员工/会话搜索为占位项(我们暂无该功能,勾选不生效,仅与参考保持一致)。
             new PermModule("inbox", "收件箱",
                     List.of(
-                            new PermNode("inbox", "收件箱", PAGE),
-                            new PermNode("inbox.viewAll", "全部会话", FUNC),
-                            new PermNode("inbox.viewUnassigned", "未分配", FUNC)),
-                    List.of(
-                            new PermNode("conversation.send", "发送消息", FUNC),
-                            new PermNode("conversation.withdraw", "撤回消息", FUNC),
-                            new PermNode("conversation.transfer", "转接会话", FUNC),
-                            new PermNode("conversation.close", "结束会话", FUNC),
-                            new PermNode("conversation.blacklist", "加入黑名单", FUNC))),
+                            new PermNode("inbox.viewAll", "全部", FUNC),
+                            new PermNode("inbox.viewUnassigned", "未分配", FUNC),
+                            new PermNode("inbox.digitalEmployee", "数字员工", PAGE),
+                            new PermNode("inbox.search", "会话搜索", PAGE)),
+                    List.of()),
             new PermModule("customers", "客户",
                     List.of(new PermNode("customers", "客户", PAGE)),
                     List.of()),
