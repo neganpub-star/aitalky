@@ -37,6 +37,16 @@ export default function AppProviders({ children }: { children: ReactNode }) {
             itemMarginInline: 0,
             itemBorderRadius: 0,
           },
+          // 表格更舒展:行高加大、表头分隔线隐藏、表头字重加粗(颜色仍随明暗算法)
+          Table: {
+            cellPaddingBlock: 14,
+            headerSplitColor: 'transparent',
+            headerBorderRadius: 8,
+            fontWeightStrong: 600,
+          },
+          Card: { borderRadiusLG: 10 },
+          // 列表操作链接更紧凑
+          Tag: { borderRadiusSM: 4 },
         },
       }}
     >

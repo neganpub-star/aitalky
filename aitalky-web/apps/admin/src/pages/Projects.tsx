@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Card, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { Input, Popconfirm, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageProjects, setProjectStatus } from '../api/resources'
 import type { AdminProjectVO } from '../types'
+import PageCard from '../components/PageCard'
 
 export default function Projects() {
   const { t } = useTranslation()
@@ -62,12 +63,13 @@ export default function Projects() {
   ]
 
   return (
-    <Card title={t('nav.projects')}>
+    <PageCard title={t('nav.projects')}>
       <Space style={{ marginBottom: 16 }}>
         <Input.Search
           placeholder={t('projects.keyword')}
           allowClear
-          style={{ width: 260 }}
+          enterButton
+          style={{ width: 300 }}
           onSearch={(v) => { setKeyword(v); load(1, v) }}
         />
       </Space>
@@ -78,6 +80,6 @@ export default function Projects() {
         dataSource={data}
         pagination={{ current: page, total, pageSize: 10, onChange: (p) => load(p) }}
       />
-    </Card>
+    </PageCard>
   )
 }

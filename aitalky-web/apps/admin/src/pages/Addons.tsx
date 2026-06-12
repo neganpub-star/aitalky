@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteAddon, listAddons, saveAddon, setAddonStatus } from '../api/resources'
 import type { AddonVO } from '../types'
+import PageCard from '../components/PageCard'
 
 const RESOURCE_TYPES = ['translate_char', 'seat']
 
@@ -60,7 +61,7 @@ export default function Addons() {
   ]
 
   return (
-    <Card title={t('nav.addons')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
+    <PageCard title={t('nav.addons')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
       <Modal title={t('nav.addons')} open={open} onOk={submit} onCancel={() => setOpen(false)} destroyOnClose>
         <Form form={form} layout="vertical">
@@ -76,6 +77,6 @@ export default function Addons() {
           </Space>
         </Form>
       </Modal>
-    </Card>
+    </PageCard>
   )
 }

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Card, Drawer, Descriptions, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { Drawer, Descriptions, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageUsers, setUserStatus, userDetail } from '../api/resources'
 import type { AdminAccountDetailVO, AdminAccountVO } from '../types'
+import PageCard from '../components/PageCard'
 
 export default function Users() {
   const { t } = useTranslation()
@@ -61,12 +62,13 @@ export default function Users() {
   ]
 
   return (
-    <Card title={t('nav.users')}>
+    <PageCard title={t('nav.users')}>
       <Space style={{ marginBottom: 16 }}>
         <Input.Search
           placeholder={t('users.keyword')}
           allowClear
-          style={{ width: 260 }}
+          enterButton
+          style={{ width: 300 }}
           onSearch={(v) => { setKeyword(v); load(1, v) }}
         />
       </Space>
@@ -108,6 +110,6 @@ export default function Users() {
           </>
         )}
       </Drawer>
-    </Card>
+    </PageCard>
   )
 }

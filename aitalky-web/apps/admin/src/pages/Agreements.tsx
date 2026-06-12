@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteAgreement, listAgreements, saveAgreement } from '../api/resources'
 import type { AgreementVO } from '../types'
+import PageCard from '../components/PageCard'
 
 const TYPES = ['terms', 'privacy', 'subscription']
 
@@ -60,7 +61,7 @@ export default function Agreements() {
   ]
 
   return (
-    <Card title={t('nav.agreements')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
+    <PageCard title={t('nav.agreements')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
       <Modal title={t('nav.agreements')} open={open} onOk={submit} onCancel={() => setOpen(false)} width={680} destroyOnClose>
         <Form form={form} layout="vertical">
@@ -75,6 +76,6 @@ export default function Agreements() {
           <Form.Item name="content" label={t('agreements.content')}><Input.TextArea rows={8} /></Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </PageCard>
   )
 }

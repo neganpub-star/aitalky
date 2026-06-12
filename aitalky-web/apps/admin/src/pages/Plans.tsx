@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
-  Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Table, Tag, message,
+  Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Table, Tag, message,
 } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deletePlan, listPlans, savePlan, setPlanStatus } from '../api/resources'
 import type { PlanVO } from '../types'
+import PageCard from '../components/PageCard'
 
 const RESOURCE_TYPES = ['seat', 'translate_char', 'customer']
 
@@ -78,7 +79,7 @@ export default function Plans() {
   ]
 
   return (
-    <Card
+    <PageCard
       title={t('nav.plans')}
       extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}
     >
@@ -133,6 +134,6 @@ export default function Plans() {
           </Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </PageCard>
   )
 }

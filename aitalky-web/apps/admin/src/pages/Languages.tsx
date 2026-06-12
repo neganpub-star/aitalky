@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Tag, message } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteLanguage, listLanguages, saveLanguage, setLanguageStatus } from '../api/resources'
 import type { LanguageVO } from '../types'
+import PageCard from '../components/PageCard'
 
 export default function Languages() {
   const { t } = useTranslation()
@@ -57,7 +58,7 @@ export default function Languages() {
   ]
 
   return (
-    <Card title={t('nav.languages')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
+    <PageCard title={t('nav.languages')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
       <Modal title={t('nav.languages')} open={open} onOk={submit} onCancel={() => setOpen(false)} destroyOnClose>
         <Form form={form} layout="vertical">
@@ -67,6 +68,6 @@ export default function Languages() {
           <Form.Item name="sort" label={t('languages.sort')}><InputNumber min={0} /></Form.Item>
         </Form>
       </Modal>
-    </Card>
+    </PageCard>
   )
 }
