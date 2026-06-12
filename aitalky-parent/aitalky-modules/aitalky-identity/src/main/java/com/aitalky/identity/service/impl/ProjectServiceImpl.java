@@ -26,6 +26,7 @@ import com.aitalky.identity.mapper.IdMemberMapper;
 import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.mapper.IdRoleMapper;
 import com.aitalky.identity.service.ProjectService;
+import com.aitalky.identity.support.DefaultAvatar;
 import com.baomidou.mybatisplus.core.plugins.IgnoreStrategy;
 import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -112,6 +113,7 @@ public class ProjectServiceImpl implements ProjectService {
         owner.setAccountId(ownerAccountId);
         owner.setRoleId(ownerRoleId);
         owner.setNickname(project.getName()); // 默认成员昵称用项目名(对齐参考系统)
+        owner.setAvatar(DefaultAvatar.urlFor(owner.getId())); // 默认头像
         owner.setStatus(1);
         owner.setOnlineStatus(0);
         owner.setWorkStatus(0);

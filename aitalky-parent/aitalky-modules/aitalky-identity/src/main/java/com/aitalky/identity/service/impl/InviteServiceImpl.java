@@ -31,6 +31,7 @@ import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.mapper.IdRoleMapper;
 import com.aitalky.identity.service.InviteService;
 import com.aitalky.identity.service.ProjectService;
+import com.aitalky.identity.support.DefaultAvatar;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
@@ -442,6 +443,7 @@ public class InviteServiceImpl implements InviteService {
         member.setAccountId(accountId);
         member.setRoleId(roleId);
         member.setNickname(nickname);
+        member.setAvatar(DefaultAvatar.urlFor(member.getId())); // 默认头像(对齐参考)
         member.setStatus(1);
         member.setOnlineStatus(0);
         member.setWorkStatus(0);
