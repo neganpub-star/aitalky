@@ -33,36 +33,47 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
   )
 
   if (mode === 'home') {
-    // 首页问候卡:渐变头 + 品牌/欢迎语 + 联系我们卡 + 消息卡
+    // 首页问候卡(1:1 对齐 ByteTrack img_1):整卡渐变上深下浅、白色子卡浮于其上
+    // 顶部 LOGO+关闭 → 大号品牌/欢迎语 → 联系我们卡(团队头像组+消息预览+品牌·时间) → 消息卡(右箭头)
     return (
-      <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)', background: '#fff' }}>
-        <div style={{ padding: '24px 20px 26px', background: 'linear-gradient(135deg,#cfe0ff 0%,#e7d9ff 100%)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-            {logoEl(34)}
-            <CloseOutlined style={{ color: '#0b1f33', opacity: 0.5 }} />
-          </div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{brand}</div>
-          <div style={{ fontSize: 21, fontWeight: 800, color: '#0b1f33', lineHeight: 1.3 }}>{greeting}</div>
+      <div style={{
+        borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+        // 双层渐变:底层斜向蓝→薄荷色,上层自上而下渐隐到白(子卡区域回到纯白)
+        background: 'linear-gradient(180deg, rgba(255,255,255,0) 32%, #ffffff 64%), linear-gradient(120deg,#c7dcff 0%,#dcebe0 100%)',
+      }}>
+        {/* 顶部:品牌 LOGO + 关闭 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 18px 0' }}>
+          {logoEl(30)}
+          <CloseOutlined style={{ color: '#0b1f33', opacity: 0.5, fontSize: 16 }} />
         </div>
-        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* 联系我们卡 */}
-          <div style={{ borderRadius: 12, padding: '12px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t('mse.pvContact')}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Avatar size={26} style={{ background: '#7aa7ff' }}>U</Avatar>
+        {/* 大号品牌 + 欢迎语 */}
+        <div style={{ padding: '40px 20px 28px' }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#0b1f33', lineHeight: 1.32 }}>{brand}</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: '#0b1f33', lineHeight: 1.32 }}>{greeting}</div>
+        </div>
+        {/* 子卡区 */}
+        <div style={{ padding: '0 14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* 联系我们卡:团队头像组 + 消息预览 + 品牌·时间 + 未读红点 */}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>{t('mse.pvContact')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Avatar.Group size={26}>
+                {TEAM_FACES.map((src, i) => <Avatar key={i} size={26} src={src} />)}
+              </Avatar.Group>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('mse.pvContactPreview')}</div>
+                <div style={{ fontSize: 13, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('mse.pvContactPreview')}</div>
+                <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{brand} · {t('mse.pvContactTime')}</div>
               </div>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff4d4f' }} />
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ff4d4f', flexShrink: 0 }} />
             </div>
           </div>
-          {/* 消息卡 */}
-          <div style={{ borderRadius: 12, padding: '12px 14px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+          {/* 消息卡:标题 + 引导语 + 右箭头 */}
+          <div style={{ background: '#fff', borderRadius: 12, padding: '12px 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 13 }}>{t('mse.pvMessage')}</div>
-              <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{t('mse.pvMessageDesc')}</div>
+              <div style={{ fontSize: 12, color: '#999', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('mse.pvMessageDesc')}</div>
             </div>
-            <SendOutlined style={{ color: '#1677ff' }} />
+            <RightOutlined style={{ color: '#bbb', fontSize: 14, flexShrink: 0 }} />
           </div>
         </div>
       </div>

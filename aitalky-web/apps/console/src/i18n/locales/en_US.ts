@@ -235,6 +235,7 @@ export default {
     pvReplyLabel: 'Expected reply time',
     pvContact: 'Contact us',
     pvContactPreview: 'Asking about the product...',
+    pvContactTime: '20 minutes ago',
     pvMessage: 'Messages',
     pvMessageDesc: 'Type your question and we will reply soon',
     pvInput: 'Type a message...',

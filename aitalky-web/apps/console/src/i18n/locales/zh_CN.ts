@@ -242,6 +242,7 @@ export default {
     pvReplyLabel: '预计回复时间',
     pvContact: '联系我们',
     pvContactPreview: '询问关于产品的概况...',
+    pvContactTime: '20 分钟前',
     pvMessage: '消息',
     pvMessageDesc: '请输入您想咨询,我们将尽快联系',
     pvInput: '说点什么......',
