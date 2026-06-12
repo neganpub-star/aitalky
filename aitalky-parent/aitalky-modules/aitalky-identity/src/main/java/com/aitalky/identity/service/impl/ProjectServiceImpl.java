@@ -26,6 +26,8 @@ import com.aitalky.identity.mapper.IdMemberMapper;
 import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.mapper.IdRoleMapper;
 import com.aitalky.identity.service.ProjectService;
+import com.baomidou.mybatisplus.core.plugins.IgnoreStrategy;
+import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -117,14 +119,28 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public EnterResult enter(Long accountId, Long projectId) {
-        IdMember member = memberMapper.selectOne(Wrappers.<IdMember>lambdaQuery()
-                .eq(IdMember::getProjectId, projectId)
-                .eq(IdMember::getAccountId, accountId)
-                .eq(IdMember::getStatus, 1));
-        if (member == null) {
-            throw new BizException(ResultCode.NOT_PROJECT_MEMBER);
+        // 进入/切换项目是「跨项目」查询:用 token 里的 accountId 找目标项目的成员行。
+        // 此处临时关闭租户过滤——否则带项目级令牌切到别的项目时,插件会拼上旧 project_id 致查不到。
+        // 安全:where 同时锁定 project_id=目标 且 account_id=本账号,只命中本账号在目标项目的成员,不泄露他人/他项目数据。
+        // 成员行 + 角色都按目标 projectId 显式查询,跨项目查 id_role 同样要绕过租户(否则角色查不到→无功能权限)
+        IdMember member;
+        IdRole role;
+        InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            member = memberMapper.selectOne(Wrappers.<IdMember>lambdaQuery()
+                    .eq(IdMember::getProjectId, projectId)
+                    .eq(IdMember::getAccountId, accountId)
+                    .eq(IdMember::getStatus, 1));
+            if (member == null) {
+                throw new BizException(ResultCode.NOT_PROJECT_MEMBER);
+            }
+            // 角色额外校验属于目标项目,杜绝越权拿到别项目同 id 角色
+            role = roleMapper.selectOne(Wrappers.<IdRole>lambdaQuery()
+                    .eq(IdRole::getId, member.getRoleId())
+                    .eq(IdRole::getProjectId, projectId));
+        } finally {
+            InterceptorIgnoreHelper.clearIgnoreStrategy();
         }
-        IdRole role = roleMapper.selectById(member.getRoleId());
         Set<String> functions = parseFunctions(role);
 
         // 项目级令牌:携带租户隔离与功能鉴权所需信息
