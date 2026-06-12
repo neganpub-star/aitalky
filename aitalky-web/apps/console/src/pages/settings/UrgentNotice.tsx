@@ -81,24 +81,22 @@ export default function UrgentNotice() {
             <DownOutlined style={{ color: token.colorTextQuaternary, fontSize: 13 }} />
           </div>
 
-          {/* 各语种通知内容平铺 */}
-          {enabled && (
-            <div style={{ paddingTop: 16 }}>
-              {cfg.enabledLanguages.map((lang) => (
-                <div key={lang} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, marginBottom: 6 }}>
-                    {langLabel(lang, lng)}
-                    {lang === cfg.defaultLanguage && (
-                      <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
-                    )}
-                  </div>
-                  <Input.TextArea rows={3} maxLength={500} showCount value={i18nOf(lang).urgentNotice ?? ''}
-                    placeholder={t('mse.urgentContentPh')}
-                    onChange={(e) => patchI18n(lang, { urgentNotice: e.target.value })} />
+          {/* 各语种通知内容平铺(对齐现网 img.png:与总开关无关,恒显示可编辑;开关只控是否在信使端展示) */}
+          <div style={{ paddingTop: 16 }}>
+            {cfg.enabledLanguages.map((lang) => (
+              <div key={lang} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, marginBottom: 6 }}>
+                  {langLabel(lang, lng)}
+                  {lang === cfg.defaultLanguage && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                <Input.TextArea rows={3} maxLength={500} showCount value={i18nOf(lang).urgentNotice ?? ''}
+                  placeholder={t('mse.urgentContentPh')}
+                  onChange={(e) => patchI18n(lang, { urgentNotice: e.target.value })} />
+              </div>
+            ))}
+          </div>
 
           <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
             <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
