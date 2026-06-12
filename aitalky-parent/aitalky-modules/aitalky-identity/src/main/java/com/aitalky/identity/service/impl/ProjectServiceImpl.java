@@ -111,7 +111,7 @@ public class ProjectServiceImpl implements ProjectService {
         owner.setProjectId(project.getId());
         owner.setAccountId(ownerAccountId);
         owner.setRoleId(ownerRoleId);
-        owner.setNickname(defaultNickname(ownerAccountId));
+        owner.setNickname(project.getName()); // 默认成员昵称用项目名(对齐参考系统)
         owner.setStatus(1);
         owner.setOnlineStatus(0);
         owner.setWorkStatus(0);
@@ -187,16 +187,6 @@ public class ProjectServiceImpl implements ProjectService {
             log.warn("角色权限解析失败 roleId={}", role.getId());
             return Set.of();
         }
-    }
-
-    /** 取账号邮箱前缀作为 owner 默认昵称;取不到则用通用名 */
-    private String defaultNickname(Long accountId) {
-        IdAccount account = accountMapper.selectById(accountId);
-        if (account != null && account.getEmail() != null) {
-            int at = account.getEmail().indexOf('@');
-            return at > 0 ? account.getEmail().substring(0, at) : account.getEmail();
-        }
-        return "负责人";
     }
 
     // ====================================================================
