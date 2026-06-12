@@ -23,7 +23,6 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
   const greeting = cfg?.greeting?.trim()
   const teamIntro = cfg?.teamIntro?.trim()
   const replyTime = cfg?.replyTime && REPLY_TIME_KEYS[cfg.replyTime] ? t(REPLY_TIME_KEYS[cfg.replyTime]) : null
-  const showUrgent = cfg?.urgentEnabled && cfg.urgentNotice?.trim()
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
@@ -42,16 +41,7 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
       </div>
 
       <div className="home-cards">
-        {/* 紧急通知(开启且有内容时) */}
-        {showUrgent && (
-          <div
-            className="card"
-            style={{ background: '#fff7e6', border: '1px solid #ffe7ba', color: '#ad6800', fontSize: 13 }}
-          >
-            ⚠ {cfg!.urgentNotice}
-          </div>
-        )}
-
+        {/* 紧急通知不在首页展示,仅在聊天窗顶部红条提示(对齐参考系统) */}
         <div className="card" onClick={onEnter}>
           <div className="card-label">{t('recent')}</div>
           <div className="recent-row">

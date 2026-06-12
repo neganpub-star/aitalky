@@ -3,9 +3,11 @@ import { Button, Card, Select, Spin, message } from 'antd'
 import { GlobalOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
-  getMessengerLanguages, saveMessengerLanguages, type MessengerLanguageVO,
+  getMessengerConfig, getMessengerLanguages, saveMessengerLanguages,
+  type MessengerConfigVO, type MessengerLanguageVO,
 } from '../../api/messengerConfig'
 import { allLanguages, langLabel } from '../../constants/languages'
+import MessengerPreview from './MessengerPreview'
 
 // 会话服务 - 常规设置:选择支持的语言(默认语言 + 其他语言),对齐 ByteTrack img_24。
 // 语种以后端 mse_messenger_language 表为准;可选语种全集来自后端语种字典 /api/languages(MainLayout 启动拉取)
@@ -13,6 +15,8 @@ export default function General() {
   const { t, i18n } = useTranslation()
   const lng = i18n.language
   const [langs, setLangs] = useState<MessengerLanguageVO[]>([])
+  const [cfg, setCfg] = useState<MessengerConfigVO | null>(null)
+  const [previewLang, setPreviewLang] = useState('zh_CN')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [addCode, setAddCode] = useState<string | undefined>()
@@ -20,7 +24,9 @@ export default function General() {
   const load = async () => {
     setLoading(true)
     try {
-      setLangs(await getMessengerLanguages())
+      const [ls, c] = await Promise.all([getMessengerLanguages(), getMessengerConfig().catch(() => null)])
+      setLangs(ls)
+      if (c) { setCfg(c); if (c.defaultLanguage) setPreviewLang(c.defaultLanguage) }
     } finally {
       setLoading(false)
     }
@@ -66,8 +72,12 @@ export default function General() {
   const sectionTitle: React.CSSProperties = { fontWeight: 600, fontSize: 14, margin: '20px 0 4px' }
   const sectionDesc: React.CSSProperties = { color: 'rgba(0,0,0,0.45)', fontSize: 12, marginBottom: 12 }
 
+  // 预览语种问候语(取自信使配置 i18n)
+  const previewGreeting = cfg?.i18n.find((x) => x.language === previewLang)?.greeting ?? null
+
   return (
-    <Card variant="borderless" style={{ maxWidth: 720 }}>
+    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+    <Card variant="borderless" style={{ flex: 1, minWidth: 0, maxWidth: 680 }}>
       {/* 卡片头 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
         <GlobalOutlined style={{ fontSize: 20 }} />
@@ -119,5 +129,24 @@ export default function General() {
         <Button type="primary" disabled={!addCode || saving} onClick={add}>{t('gen.add')}</Button>
       </div>
     </Card>
+
+      {/* 右:信使端首页预览(布局对齐紧急通知设置:占满剩余宽、预览卡居中) */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13 }}>{t('mse.preview')}</span>
+          <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
+            options={langs.map((l) => ({ value: l.language, label: langLabel(l.language, lng) }))} />
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 80 }}>
+          <div style={{ width: 372 }}>
+            <MessengerPreview mode="home" data={{
+              brandName: cfg?.brandName ?? null, logo: cfg?.logo ?? null,
+              greeting: previewGreeting, replyTime: cfg?.replyTime ?? null,
+              urgentNotice: null, urgentEnabled: false,
+            }} />
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

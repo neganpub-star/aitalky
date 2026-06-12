@@ -18,6 +18,8 @@ import QuickReplies from './pages/settings/QuickReplies'
 import Messenger from './pages/settings/Messenger'
 import UrgentNotice from './pages/settings/UrgentNotice'
 import General from './pages/settings/General'
+import ConversationSettings from './pages/settings/ConversationSettings'
+import ApiManage from './pages/settings/ApiManage'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -70,6 +72,8 @@ export const router = createHashRouter([
           { path: 'general', element: <General /> },
           { path: 'blacklist', element: <Blacklist /> },
           { path: 'quick-replies', element: <QuickReplies /> },
+          { path: 'conversation', element: <ConversationSettings /> },
+          { path: 'api', element: <ApiManage /> },
           { path: 'team', element: <Placeholder title="基本信息" /> },
           { path: 'roles', element: <Placeholder title="角色管理" /> },
           { path: 'data', element: <Placeholder title="数据管理" /> },

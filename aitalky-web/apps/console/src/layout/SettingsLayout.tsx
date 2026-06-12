@@ -21,9 +21,11 @@ export default function SettingsLayout() {
     {
       key: 'mse', icon: <MessageOutlined />, label: t('settings.messengerSetting'),
       children: [
-        { key: '/settings/messenger', label: t('settings.basicSetting'), func: 'messenger.setting' },
+        // 完全对齐参考系统:紧急通知 → 信使设置 → 会话设置 → API管理 → 黑名单 → 常规设置
         { key: '/settings/urgent-notice', label: t('settings.urgentNotice'), func: 'messenger.setting' },
-        { key: '/settings/quick-replies', label: t('settings.quickReply'), func: 'messenger.setting' },
+        { key: '/settings/messenger', label: t('settings.basicSetting'), func: 'messenger.setting' },
+        { key: '/settings/conversation', label: t('settings.conversationSetting'), func: 'messenger.setting' },
+        { key: '/settings/api', label: t('settings.apiManage'), func: 'messenger.setting' },
         { key: '/settings/blacklist', label: t('settings.blacklist'), func: 'messenger.setting' },
         { key: '/settings/general', label: t('settings.general'), func: 'messenger.setting' },
       ],
@@ -66,7 +68,7 @@ export default function SettingsLayout() {
     <div style={styles.root}>
       <div style={styles.side}>
         <div style={styles.title}>{t('settings.title')}</div>
-        <Menu mode="inline" selectedKeys={[loc.pathname]} defaultOpenKeys={['team']} items={items}
+        <Menu mode="inline" selectedKeys={[loc.pathname]} defaultOpenKeys={['mse']} items={items}
           style={{ border: 'none', background: 'transparent' }} onClick={({ key }) => nav(key)} />
       </div>
       <div style={styles.content}>

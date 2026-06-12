@@ -85,12 +85,18 @@ export default function Messenger() {
     return <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><Spin /></div>
   }
 
+  // 预览形态随当前展开卡片切换(对齐现网):系统消息/客户撤回→会话演示;偏好设置→浏览器弹窗;其余→首页
+  const previewMode: 'home' | 'demo' | 'popup' =
+    openKey === 'sysmsg' || openKey === 'retract' ? 'demo'
+      : openKey === 'pref' ? 'popup'
+        : 'home'
+
   const styles: Record<string, CSSProperties> = {
     root: { display: 'flex', gap: 24, alignItems: 'flex-start' },
     left: { flex: 1, minWidth: 0, maxWidth: 680 },
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
-    right: { width: 340, flexShrink: 0 },
-    previewLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13, marginBottom: 12 },
+    right: { flex: 1, minWidth: 0 },
+    previewLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13 },
     cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', cursor: 'pointer' },
     cardTitle: { fontWeight: 600, fontSize: 14, color: 'rgba(0,0,0,0.88)' },
     cardDesc: { fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 },
@@ -276,20 +282,27 @@ export default function Messenger() {
         } />
       </div>
 
-      {/* 右:信使端 widget 预览(随表单 + 预览语种实时变) */}
+      {/* 右:信使端预览 —— 按当前展开卡片切换形态(对齐现网):
+          系统消息显示/客户撤回→会话演示;偏好设置→浏览器弹窗;其余→首页问候卡 */}
       <div style={styles.right}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={styles.previewLabel}>{t('mse.preview')}</span>
-          <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
-            options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <span style={styles.previewLabel}>{previewMode === 'home' ? t('mse.preview') : t('mse.previewSide')}</span>
+          {previewMode === 'home' && (
+            <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
+              options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
+          )}
         </div>
-        <MessengerPreview mode="home" data={{
-          brandName: cfg.brandName, logo: cfg.logo,
-          greeting: i18nOf(previewLang).greeting,
-          replyTime: cfg.replyTime,
-          urgentNotice: i18nOf(previewLang).urgentNotice,
-          urgentEnabled: i18nOf(previewLang).urgentEnabled,
-        }} />
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 80 }}>
+          <div style={{ width: 372 }}>
+            <MessengerPreview mode={previewMode} data={{
+              brandName: cfg.brandName, logo: cfg.logo,
+              greeting: i18nOf(previewLang).greeting,
+              replyTime: cfg.replyTime,
+              urgentNotice: i18nOf(previewLang).urgentNotice,
+              urgentEnabled: i18nOf(previewLang).urgentEnabled,
+            }} />
+          </div>
+        </div>
       </div>
     </div>
   )
