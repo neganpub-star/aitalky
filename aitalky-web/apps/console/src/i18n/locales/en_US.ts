@@ -365,6 +365,8 @@ export default {
     retractedByCustomer: 'The customer recalled a message',
     retractExpired: 'Message can no longer be recalled',
     retractFailed: 'Failed to recall',
+    copy: 'Copy',
+    copied: 'Copied',
     customerTyping: 'The customer is typing…',
     replyPlaceholder: 'Type your reply',
     internalPlaceholder: 'Internal note — visible to your team only, not the customer',

@@ -284,18 +284,50 @@ body {
   color: rgba(0, 0, 0, 0.45);
 }
 
-/* 撤回操作小按钮:点自己气泡后在下方弹出(右对齐,跟随气泡) */
-.msg-retract-btn {
-  align-self: flex-end;
-  margin-top: 4px;
-  padding: 3px 10px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  font-size: 12px;
-  line-height: 1.4;
-  border-radius: 6px;
+/* 气泡 + ··· 触发器容器(自己消息:··· 在气泡左侧) */
+.bubble-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg-row.mine .bubble-wrap {
+  flex-direction: row-reverse;
+}
+/* ··· 触发器:默认半透明,hover 加深 */
+.msg-more {
+  flex-shrink: 0;
+  color: rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+  letter-spacing: 1px;
   cursor: pointer;
+  padding: 0 2px;
   user-select: none;
+}
+.msg-more:hover {
+  color: rgba(0, 0, 0, 0.55);
+}
+/* 复制/撤回 菜单:深色圆角浮层,定位在 ··· 上方 */
+.msg-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  background: #4b4f56;
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 0;
+  min-width: 92px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.msg-menu-item {
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.msg-menu-item:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .chat-input {

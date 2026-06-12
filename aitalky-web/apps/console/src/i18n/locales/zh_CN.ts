@@ -374,6 +374,8 @@ export default {
     retractedByCustomer: '客户撤回了一条消息',
     retractExpired: '超过可撤回时限',
     retractFailed: '撤回失败',
+    copy: '复制',
+    copied: '已复制',
     customerTyping: '客户正在输入中…',
     replyPlaceholder: '请输入您的回复内容',
     internalPlaceholder: '内部消息仅团队可见,客户看不到',

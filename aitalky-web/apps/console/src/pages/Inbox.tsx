@@ -5,7 +5,7 @@ import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
-  ExclamationCircleFilled, RollbackOutlined,
+  ExclamationCircleFilled, RollbackOutlined, CopyOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -388,6 +388,11 @@ export default function Inbox() {
     [pending, trySend],
   )
 
+  // 复制消息文本到剪贴板
+  const copyMsg = useCallback((text: string) => {
+    navigator.clipboard?.writeText(text).then(() => message.success(t('inbox.copied'))).catch(() => {})
+  }, [t])
+
   // 输入中:节流 3s 通知客户(瞬时,不落库);失败静默
   const onTypingSend = useCallback(() => {
     if (!selectedId) return
@@ -539,27 +544,37 @@ export default function Inbox() {
     const bubbleColor = internal ? token.colorText : mine ? '#fff' : token.colorText
     // 自己发的、2分钟内 → 可撤回(hover 显示入口)
     const retractable = mine && String(m.senderId) === String(myMemberId) && Date.now() - m.timestamp < RETRACT_WINDOW_MS
+    const iconStyle = { fontSize: 14, color: token.colorTextSecondary, cursor: 'pointer', padding: 4 }
+    // hover 工具条:自己消息=复制+撤回(限时);别人消息=复制(翻译待 AI 翻译模块)
+    const toolbar = hoverMsgId === m.msgId && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '1px 4px', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, boxShadow: token.boxShadowTertiary, flexShrink: 0 }}>
+        <Tooltip title={t('inbox.copy')}>
+          <CopyOutlined style={iconStyle} onClick={() => copyMsg(m.content)} />
+        </Tooltip>
+        {retractable && (
+          <Popconfirm title={t('inbox.retract')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={() => onRetract(m.msgId)}>
+            <Tooltip title={t('inbox.retract')}><RollbackOutlined style={iconStyle} /></Tooltip>
+          </Popconfirm>
+        )}
+      </div>
+    )
     return (
       <div key={m.msgId}
         style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', gap: 8, marginBottom: 16 }}
-        onMouseEnter={() => retractable && setHoverMsgId(m.msgId)}
-        onMouseLeave={() => retractable && setHoverMsgId((cur) => (cur === m.msgId ? null : cur))}
+        onMouseEnter={() => setHoverMsgId(m.msgId)}
+        onMouseLeave={() => setHoverMsgId((cur) => (cur === m.msgId ? null : cur))}
       >
         <Avatar size={32} src={m.senderAvatar || undefined} style={{ background: mine ? token.colorPrimary : token.colorTextQuaternary, flexShrink: 0 }}>
           {(m.senderName || (mine ? 'A' : 'U')).charAt(0).toUpperCase()}
         </Avatar>
         <div style={{ maxWidth: '62%', display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
           {internal && <span style={{ fontSize: 11, color: token.colorWarning, marginBottom: 2 }}>{t('inbox.internalNote')}</span>}
-          <div style={{ display: 'flex', flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+          {/* 自己消息:工具条在气泡左侧;别人消息:在气泡右侧(都朝会话中心) */}
+          <div style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
             <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: !mine && !internal ? token.boxShadowTertiary : 'none' }}>
               {m.content}
             </div>
-            {/* hover 显示「撤回」:确认后调接口,撤回态按 seq 替换 */}
-            {retractable && hoverMsgId === m.msgId && (
-              <Popconfirm title={t('inbox.retract')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={() => onRetract(m.msgId)}>
-                <RollbackOutlined style={{ color: token.colorTextTertiary, fontSize: 14, cursor: 'pointer', flexShrink: 0 }} />
-              </Popconfirm>
-            )}
+            {toolbar}
           </div>
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>{fmtMsgTime(m.timestamp)}</span>
         </div>

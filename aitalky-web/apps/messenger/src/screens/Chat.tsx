@@ -23,6 +23,11 @@ const CONVERSATION_BLOCKED = 1024
 // 可撤回时限:与后端一致(2分钟)
 const RETRACT_WINDOW_MS = 2 * 60 * 1000
 
+// 复制文本到剪贴板(降级忽略异常)
+function copyText(text: string) {
+  navigator.clipboard?.writeText(text).catch(() => {})
+}
+
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
 function fmtTime(ms: number): string {
   const d = new Date(ms)
@@ -137,30 +142,24 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
               <div className="msg-body">
                 {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
-                <div
-                  className={`bubble ${mine ? 'mine' : 'agent'}`}
-                  onClick={(e) => {
-                    if (!retractable) return
-                    e.stopPropagation()
-                    setMenuFor((cur) => (cur === m.msgId ? null : m.msgId))
-                  }}
-                  style={retractable ? { cursor: 'pointer' } : undefined}
-                >
-                  {m.content}
+                <div className="bubble-wrap">
+                  <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
+                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack) */}
+                  {mine && (
+                    <span
+                      className="msg-more"
+                      onClick={(e) => { e.stopPropagation(); setMenuFor((cur) => (cur === m.msgId ? null : m.msgId)) }}
+                    >···</span>
+                  )}
+                  {mine && menuFor === m.msgId && (
+                    <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
+                      <div className="msg-menu-item" onClick={() => { copyText(m.content); setMenuFor(null) }}>{t('copy')}</div>
+                      {retractable && (
+                        <div className="msg-menu-item" onClick={() => { setMenuFor(null); onRetract(m.msgId) }}>{t('retract')}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {/* 点开后在气泡下方显示"撤回"小按钮 */}
-                {retractable && menuFor === m.msgId && (
-                  <div
-                    className="msg-retract-btn"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setMenuFor(null)
-                      onRetract(m.msgId)
-                    }}
-                  >
-                    {t('retract')}
-                  </div>
-                )}
                 <div className="msg-time">{fmtTime(m.timestamp)}</div>
               </div>
             </div>
