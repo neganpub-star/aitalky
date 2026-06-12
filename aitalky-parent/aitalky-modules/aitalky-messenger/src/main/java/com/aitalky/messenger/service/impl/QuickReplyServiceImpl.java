@@ -1,5 +1,6 @@
 package com.aitalky.messenger.service.impl;
 
+import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.messenger.dto.QuickReplyCategoryVO;
 import com.aitalky.messenger.dto.QuickReplyVO;
 import com.aitalky.messenger.entity.SupQuickReply;
@@ -23,6 +24,7 @@ public class QuickReplyServiceImpl implements QuickReplyService {
 
     private final SupQuickReplyMapper replyMapper;
     private final SupQuickReplyCategoryMapper categoryMapper;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public List<QuickReplyCategoryVO> listCategories() {
@@ -36,6 +38,7 @@ public class QuickReplyServiceImpl implements QuickReplyService {
         SupQuickReplyCategory c = new SupQuickReplyCategory();
         c.setName(name);
         c.setSort(0);
+        c.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
         categoryMapper.insert(c);
         return c.getId();
     }
@@ -63,6 +66,7 @@ public class QuickReplyServiceImpl implements QuickReplyService {
         r.setTitle(title);
         r.setContent(content);
         r.setSort(0);
+        r.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
         replyMapper.insert(r);
         return r.getId();
     }
