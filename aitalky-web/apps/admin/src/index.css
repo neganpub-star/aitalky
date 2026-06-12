@@ -14,3 +14,71 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
     'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
+
+/* 侧栏滚动条:深色细窄,贴合 RuoYi 风 */
+.admin-sider .ant-menu::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-sider .ant-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.admin-sider .ant-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* tags-view 页签条 */
+.tags-view {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+.tags-view::-webkit-scrollbar {
+  height: 0;
+}
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  line-height: 26px;
+  border: 1px solid var(--tag-border);
+  border-radius: 3px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.tag-item:hover {
+  color: #409eff;
+}
+.tag-item.active {
+  color: #fff;
+  background: #409eff;
+  border-color: #409eff;
+}
+.tag-item.active::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  margin-right: 2px;
+}
+.tag-item .tag-close {
+  font-size: 10px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.tag-item .tag-close:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+}

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { getCaptcha, login } from '../api/auth'
 import { useAdminStore } from '../store/useAdminStore'
+import logo from '../assets/logo.png'
 
 export default function Login() {
   const { t } = useTranslation()
@@ -41,9 +42,17 @@ export default function Login() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: token.colorBgLayout }}>
-      <Card style={{ width: 380, boxShadow: token.boxShadowSecondary }}>
-        <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 700, marginBottom: 24, color: token.colorPrimary }}>
+    <div style={{
+      height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24,
+      background: 'linear-gradient(135deg, #1a1f2e 0%, #2b3a67 55%, #409eff 140%)',
+    }}>
+      {/* 品牌区:LOGO + 名称(对齐坐席端 LOGO) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <img src={logo} alt="aitalky" style={{ width: 44, height: 44, borderRadius: 10 }} />
+        <span style={{ color: '#fff', fontSize: 26, fontWeight: 700, letterSpacing: 1 }}>aitalky 平台后管</span>
+      </div>
+      <Card style={{ width: 380, boxShadow: '0 12px 40px rgba(0,0,0,0.25)', borderRadius: 12 }}>
+        <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 600, marginBottom: 24, color: token.colorText }}>
           {t('login.title')}
         </div>
         <Form layout="vertical" onFinish={onFinish}>
