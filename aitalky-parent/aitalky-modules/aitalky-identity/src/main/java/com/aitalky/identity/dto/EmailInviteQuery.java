@@ -5,7 +5,7 @@ import lombok.Data;
 /** 邮箱邀请记录查询 */
 @Data
 public class EmailInviteQuery {
-    /** 状态筛选 0待接受 1已接受 2已撤销 3已过期(空=全部) */
+    /** 状态筛选 1有效(待接受未过期) 0失效(已接受/撤销/过期)(空=全部) */
     private Integer status;
     /** 创建时间起(yyyy-MM-dd) */
     private String startDate;

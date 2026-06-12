@@ -178,9 +178,14 @@ public class InviteServiceImpl implements InviteService {
                     .stream().map(IdMember::getId).toList();
         }
         final List<Long> finalInviterIds = inviterIds;
+        LocalDateTime now = LocalDateTime.now();
+        // status: 1有效(待接受且未过期) / 0失效(已接受/撤销/过期),与链接邀请一致
         Page<IdInvite> page = inviteMapper.selectPage(Page.of(q.getPage(), q.getSize()),
                 Wrappers.<IdInvite>lambdaQuery()
-                        .eq(q.getStatus() != null, IdInvite::getStatus, q.getStatus())
+                        .eq(q.getStatus() != null && q.getStatus() == 1, IdInvite::getStatus, 0)
+                        .gt(q.getStatus() != null && q.getStatus() == 1, IdInvite::getExpireTime, now)
+                        .and(q.getStatus() != null && q.getStatus() == 0,
+                                w -> w.ne(IdInvite::getStatus, 0).or().le(IdInvite::getExpireTime, now))
                         .ge(StringUtils.hasText(q.getStartDate()), IdInvite::getCreateTime, startOfDay(q.getStartDate()))
                         .le(StringUtils.hasText(q.getEndDate()), IdInvite::getCreateTime, endOfDay(q.getEndDate()))
                         .and(StringUtils.hasText(q.getKeyword()), w -> w
