@@ -169,7 +169,8 @@ export default function Messenger() {
                     <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
                   )}
                 </div>
-                <Input maxLength={100} showCount value={i18nOf(lang).greeting ?? ''} placeholder={t('mse.greetingPh')}
+                <Input size="large" maxLength={100} showCount value={i18nOf(lang).greeting ?? ''} placeholder={t('mse.greetingPh')}
+                  style={{ maxWidth: 420 }}
                   onChange={(e) => patchI18n(lang, { greeting: e.target.value })} />
               </div>
             ))}
