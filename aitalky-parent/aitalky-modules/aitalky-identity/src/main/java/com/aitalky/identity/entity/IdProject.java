@@ -16,6 +16,9 @@ public class IdProject extends BaseEntity {
     /** 项目名称 */
     private String name;
 
+    /** 项目 Logo(对象存储URL) */
+    private String logo;
+
     /** 对外接入标识 appId(信使 URL 携带) */
     private String appId;
 

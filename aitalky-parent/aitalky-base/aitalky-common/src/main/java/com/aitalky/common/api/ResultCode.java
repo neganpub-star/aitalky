@@ -36,6 +36,28 @@ public enum ResultCode {
     CAPTCHA_ERROR(1022, "captcha.error"),
     DATA_DUPLICATED(1023, "data.duplicated"),
 
+    // ===== 团队/邀请/角色 103x =====
+    /** 邀请不存在 */
+    INVITE_NOT_FOUND(1030, "invite.not.found"),
+    /** 邀请已失效(撤销/过期/禁用) */
+    INVITE_INVALID(1031, "invite.invalid"),
+    /** 邀请验证码错误(私密链接) */
+    INVITE_CODE_WRONG(1032, "invite.code.wrong"),
+    /** 已是该项目成员 */
+    ALREADY_MEMBER(1033, "already.member"),
+    /** 注册/登录邮箱与受邀邮箱不一致 */
+    INVITE_EMAIL_MISMATCH(1034, "invite.email.mismatch"),
+    /** 角色不存在 */
+    ROLE_NOT_FOUND(1035, "role.not.found"),
+    /** 系统预置角色不可修改/删除 */
+    ROLE_SYSTEM_READONLY(1036, "role.system.readonly"),
+    /** 角色下仍有成员,不可删除 */
+    ROLE_IN_USE(1037, "role.in.use"),
+    /** 角色名重复 */
+    ROLE_NAME_DUPLICATED(1038, "role.name.duplicated"),
+    /** 仅项目负责人可操作 */
+    OWNER_ONLY(1039, "owner.only"),
+
     // ===== 限流 102x =====
     RATE_LIMITED(1020, "rate.limited"),
 
