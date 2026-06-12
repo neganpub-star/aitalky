@@ -63,7 +63,7 @@ export default function Plans() {
       )),
     },
     {
-      title: t('common.status'), dataIndex: 'status', width: 90,
+      title: t('common.status'), dataIndex: 'status', width: 110,
       render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} />,
     },
     {

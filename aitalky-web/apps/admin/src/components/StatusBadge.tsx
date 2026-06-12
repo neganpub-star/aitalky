@@ -7,5 +7,11 @@ export default function StatusBadge({ active, on, off, offDanger }: {
   off: string
   offDanger?: boolean
 }) {
-  return <Badge status={active ? 'success' : offDanger ? 'error' : 'default'} text={active ? on : off} />
+  // 文案套 nowrap:英文较长(Enabled/Disabled)时防止圆点与文字换行堆叠
+  return (
+    <Badge
+      status={active ? 'success' : offDanger ? 'error' : 'default'}
+      text={<span style={{ whiteSpace: 'nowrap' }}>{active ? on : off}</span>}
+    />
+  )
 }

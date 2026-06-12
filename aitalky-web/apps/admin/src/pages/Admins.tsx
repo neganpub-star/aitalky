@@ -46,7 +46,7 @@ export default function Admins() {
     load(1)
   }, [])
 
-  const roleOptions = roles.map((r) => ({ value: r.id, label: r.name }))
+  const roleOptions = roles.map((r) => ({ value: r.id, label: t(`roleNames.${r.name}`, r.name) }))
 
   const openModal = (a?: AdminVO) => {
     setEditing(a || null)
@@ -80,9 +80,9 @@ export default function Admins() {
   const columns: ColumnsType<AdminVO> = [
     { title: t('admins.username'), dataIndex: 'username', width: 160 },
     { title: t('admins.realName'), dataIndex: 'realName', render: (v) => v || '-' },
-    { title: t('admins.role'), dataIndex: 'roleName', render: (v) => v || '-' },
+    { title: t('admins.role'), dataIndex: 'roleName', render: (v) => (v ? t(`roleNames.${v}`, v) : '-') },
     {
-      title: t('common.status'), dataIndex: 'status', width: 90,
+      title: t('common.status'), dataIndex: 'status', width: 110,
       render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} offDanger />,
     },
     {

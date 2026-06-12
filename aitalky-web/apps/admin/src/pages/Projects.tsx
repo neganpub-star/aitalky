@@ -46,7 +46,7 @@ export default function Projects() {
       render: (v: number) => (v === 1 ? <Tag color="purple">{t('common.yes')}</Tag> : '-'),
     },
     {
-      title: t('common.status'), dataIndex: 'status', width: 90,
+      title: t('common.status'), dataIndex: 'status', width: 110,
       render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} offDanger />,
     },
     {

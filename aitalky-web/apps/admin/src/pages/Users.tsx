@@ -42,7 +42,7 @@ export default function Users() {
     { title: t('users.inviteCode'), dataIndex: 'inviteCode', render: (v) => v || '-' },
     { title: t('users.projectCount'), dataIndex: 'projectCount', width: 110 },
     {
-      title: t('common.status'), dataIndex: 'status', width: 90,
+      title: t('common.status'), dataIndex: 'status', width: 110,
       render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} offDanger />,
     },
     {

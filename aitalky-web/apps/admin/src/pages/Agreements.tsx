@@ -46,7 +46,7 @@ export default function Agreements() {
     { title: t('agreements.title'), dataIndex: 'title', render: (v) => v || '-' },
     { title: t('agreements.version'), dataIndex: 'version', render: (v) => v || '-' },
     {
-      title: t('common.status'), dataIndex: 'status', width: 90,
+      title: t('common.status'), dataIndex: 'status', width: 110,
       render: (s: number) => <StatusBadge active={s === 1} on="发布" off="草稿" />,
     },
     {
