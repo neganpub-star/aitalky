@@ -1,6 +1,7 @@
 package com.aitalky.messenger.service.impl;
 
 import com.aitalky.common.api.PageResult;
+import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.messenger.dto.BlacklistVO;
 import com.aitalky.messenger.entity.SupBlacklist;
 import com.aitalky.messenger.mapper.SupBlacklistMapper;
@@ -22,6 +23,7 @@ import java.util.List;
 public class BlacklistServiceImpl implements BlacklistService {
 
     private final SupBlacklistMapper blacklistMapper;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     public PageResult<BlacklistVO> page(long page, long size, String keyword) {
@@ -71,6 +73,7 @@ public class BlacklistServiceImpl implements BlacklistService {
         b.setEmail(email);
         b.setLocation(location);
         b.setOperatorName(operatorName);
+        b.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
         blacklistMapper.insert(b); // project_id / 审计字段由拦截器与填充器自动写入
     }
 
