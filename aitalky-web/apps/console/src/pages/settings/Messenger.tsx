@@ -113,7 +113,7 @@ export default function Messenger() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 14, border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
         <div style={styles.cardHead}
           onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}>
           <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
