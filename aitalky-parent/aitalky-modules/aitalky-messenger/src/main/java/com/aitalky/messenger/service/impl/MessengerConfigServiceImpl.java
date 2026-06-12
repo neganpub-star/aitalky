@@ -1,5 +1,6 @@
 package com.aitalky.messenger.service.impl;
 
+import com.aitalky.common.id.SnowflakeIdGenerator;
 import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.messenger.dto.MessengerConfigVO;
 import com.aitalky.messenger.dto.MessengerI18nVO;
@@ -43,6 +44,7 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
 
     private final MseMessengerMapper messengerMapper;
     private final MseMessengerI18nMapper i18nMapper;
+    private final SnowflakeIdGenerator idGenerator;
     private final MseMessengerLanguageMapper langMapper;
 
     @Override
@@ -97,7 +99,8 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
         m.setSysMsgMemberRetract(vo.sysMsgMemberRetract());
         m.setCustomerRetractEnabled(vo.customerRetractEnabled());
         if (isNew) {
-            messengerMapper.insert(m); // project_id / 审计 / id 由拦截器与填充器自动写入
+            m.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
+            messengerMapper.insert(m); // project_id / 审计由拦截器与填充器自动写入
         } else {
             messengerMapper.updateById(m);
         }
@@ -163,7 +166,8 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
                 e.setLanguage(lang);
                 e.setType(type);
                 e.setSort(sort);
-                langMapper.insert(e); // project_id/审计/id 自动写入
+                e.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
+                langMapper.insert(e); // project_id/审计由拦截器自动写入
             } else {
                 e.setType(type);
                 e.setSort(sort);
@@ -228,6 +232,7 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
             e.setTeamIntro(item.teamIntro());
             e.setUrgentNotice(item.urgentNotice());
             e.setUrgentEnabled(item.urgentEnabled());
+            e.setId(idGenerator.nextId()); // 主键 IdType.INPUT,需手动注入雪花ID
             i18nMapper.insert(e);
         } else {
             existing.setGreeting(item.greeting());
