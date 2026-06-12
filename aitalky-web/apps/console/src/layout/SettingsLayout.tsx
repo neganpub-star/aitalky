@@ -37,6 +37,7 @@ export default function SettingsLayout() {
         { key: '/settings/members', label: t('settings.members'), func: 'member.manage' },
         { key: '/settings/invites', label: t('settings.invites'), func: 'member.manage' },
         { key: '/settings/roles', label: t('settings.roles'), func: 'role.manage' },
+        { key: '/settings/deactivate', label: t('settings.deactivate'), func: 'project.setting' },
       ],
     },
     {

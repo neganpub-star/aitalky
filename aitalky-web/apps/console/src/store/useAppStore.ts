@@ -24,6 +24,7 @@ interface AppState {
   setUnreadTotal: (n: number) => void
   saveEnter: (r: EnterResult, projectName: string) => void
   setProjects: (projects: ProjectBrief[]) => void
+  setProjectName: (projectName: string) => void
   setMember: (nickname?: string, avatar?: string) => void
   logout: () => void
   toggleTheme: () => void
@@ -53,6 +54,7 @@ export const useAppStore = create<AppState>()(
           functions: r.functions,
         }),
       setProjects: (projects) => set({ projects }),
+      setProjectName: (projectName) => set({ projectName }),
       setMember: (nickname, avatar) => set({ nickname, avatar }),
       logout: () =>
         set({

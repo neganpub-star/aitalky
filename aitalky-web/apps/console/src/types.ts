@@ -29,7 +29,17 @@ export interface WhoAmI {
   lang: string | null
 }
 
-export type VerifyScene = 'REGISTER' | 'LOGIN' | 'RESET_PWD'
+export type VerifyScene = 'REGISTER' | 'LOGIN' | 'RESET_PWD' | 'SENSITIVE'
+
+// 项目基本信息(对应后端 ProjectDetailVO)
+export interface ProjectDetailVO {
+  id: string
+  name: string
+  logo: string | null
+  appId: string
+  ownerMemberId: string | null
+  isOwner: boolean
+}
 
 export interface PageResult<T> {
   records: T[]
