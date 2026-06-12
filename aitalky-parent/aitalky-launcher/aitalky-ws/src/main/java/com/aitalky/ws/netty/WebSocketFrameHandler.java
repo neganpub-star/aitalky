@@ -49,14 +49,18 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof WebSocketServerProtocolHandler.HandshakeComplete handshake) {
             // 从 URL query 取 token：ws://host/ws?token=xxx（坐席）或 ?appId=&userId=（信使客户，此处简化）
-            String identity = resolveIdentity(handshake.requestUri());
-            if (identity == null) {
+            Identity id = resolveIdentity(handshake.requestUri());
+            if (id == null) {
                 log.warn("WS 握手鉴权失败，关闭连接 uri={}", handshake.requestUri());
                 ctx.close();
                 return;
             }
             String connId = String.valueOf(idGenerator.nextId());
-            registry.register(connId, identity, ctx.channel());
+            registry.register(connId, id.identity(), ctx.channel());
+            // 坐席额外加入项目频道:接收"未分配新会话"广播(无负责人、未订阅时也能实时收到)
+            if (id.projectChannel() != null) {
+                registry.joinChannel(connId, id.projectChannel(), ctx.channel());
+            }
             ctx.writeAndFlush(new TextWebSocketFrame("{\"type\":\"connected\",\"connId\":\"" + connId + "\"}"));
         } else if (evt instanceof IdleStateEvent) {
             // 读空闲超时：客户端掉线，主动关闭释放连接
@@ -101,8 +105,11 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         ctx.close();
     }
 
-    /** 解析身份:坐席项目级令牌→member:{id};客户令牌(scope=customer)→cust:{customerId} */
-    private String resolveIdentity(String uri) {
+    /** WS 身份:identity=推送主键(member:{id}/cust:{id});projectChannel=坐席的项目广播频道(客户为 null) */
+    private record Identity(String identity, String projectChannel) {}
+
+    /** 解析身份:坐席项目级令牌→member:{id}(+project:{pid});客户令牌(scope=customer)→cust:{customerId} */
+    private Identity resolveIdentity(String uri) {
         Map<String, List<String>> params = new QueryStringDecoder(uri).parameters();
         List<String> tokens = params.get("token");
         if (tokens == null || tokens.isEmpty()) {
@@ -111,10 +118,14 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
         try {
             Claims claims = jwtUtil.parse(tokens.get(0));
             if ("customer".equals(claims.get("scope"))) {
-                return "cust:" + claims.get("customerId");
+                return new Identity("cust:" + claims.get("customerId"), null);
             }
             Object memberId = claims.get("memberId");
-            return memberId != null ? "member:" + memberId : null; // 账号级令牌(未进项目)不允许连 WS
+            if (memberId == null) {
+                return null; // 账号级令牌(未进项目)不允许连 WS
+            }
+            Object projectId = claims.get("projectId");
+            return new Identity("member:" + memberId, projectId != null ? "project:" + projectId : null);
         } catch (Exception e) {
             return null;
         }

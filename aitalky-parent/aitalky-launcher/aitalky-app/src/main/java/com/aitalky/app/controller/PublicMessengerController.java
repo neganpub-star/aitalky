@@ -102,7 +102,7 @@ public class PublicMessengerController {
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), true);
         // 推送:坐席侧(assignee 全部连接 + 会话订阅者)+ 客户其他端
         MessageVO vo = toVO(m);
-        publishPush(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
+        publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
         return R.ok(vo);
     }
 
@@ -123,7 +123,7 @@ public class PublicMessengerController {
         Message m = messageService.retract(conversationId, msgId, "customer", principal.customerId());
         MessageVO vo = toVO(m);
         // 撤回也走消息推送管线:坐席端 + 客户其他端按 seq 替换原消息,渲染"撤回了一条消息"
-        publishPush(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
+        publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
         return R.ok(vo);
     }
 
@@ -138,7 +138,7 @@ public class PublicMessengerController {
         try {
             String payload = objectMapper.writeValueAsString(java.util.Map.of(
                     "evt", "typing", "conversationId", String.valueOf(conv.getId()), "from", "customer"));
-            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
         } catch (Exception ignore) {
             // 瞬时事件,失败无需补偿
         }
@@ -164,10 +164,10 @@ public class PublicMessengerController {
     }
 
     /** 发布消息推送事件(供 ws 下发);序列化失败仅告警,不影响已落库消息 */
-    private void publishPush(Long conversationId, Long assigneeMemberId, Long customerId, MessageVO vo) {
+    private void publishPush(Long conversationId, Long projectId, Long assigneeMemberId, Long customerId, MessageVO vo) {
         try {
             String payload = objectMapper.writeValueAsString(vo);
-            pushPublisher.publish(new MsgPushEvent(conversationId, assigneeMemberId, customerId, payload));
+            pushPublisher.publish(new MsgPushEvent(conversationId, projectId, assigneeMemberId, customerId, payload));
         } catch (Exception ignore) {
             // 序列化异常忽略:客户端重连可按 seq 补拉
         }

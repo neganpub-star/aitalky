@@ -9,6 +9,7 @@ import java.io.Serializable;
  */
 public record MsgPushEvent(
         Long conversationId,
+        Long projectId,
         Long assigneeMemberId,
         Long customerId,
         String payload) implements Serializable {

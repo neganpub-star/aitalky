@@ -125,7 +125,7 @@ public class ConversationController {
         try {
             // 内部消息不推客户;customerId 传 null 让 ws 跳过客户下发
             Long custTarget = internal ? null : conv.getCustomerId();
-            pushPublisher.publish(new MsgPushEvent(id, targetAssignee, custTarget, objectMapper.writeValueAsString(vo)));
+            pushPublisher.publish(new MsgPushEvent(id, conv.getProjectId(), targetAssignee, custTarget, objectMapper.writeValueAsString(vo)));
         } catch (Exception ignore) {
             // 序列化异常忽略
         }
@@ -141,7 +141,7 @@ public class ConversationController {
         try {
             // 内部消息撤回不推客户(customerId 传 null);普通消息推客户其他端
             Long custTarget = Boolean.TRUE.equals(m.getInternal()) ? null : conv.getCustomerId();
-            pushPublisher.publish(new MsgPushEvent(id, conv.getAssigneeMemberId(), custTarget, objectMapper.writeValueAsString(vo)));
+            pushPublisher.publish(new MsgPushEvent(id, conv.getProjectId(), conv.getAssigneeMemberId(), custTarget, objectMapper.writeValueAsString(vo)));
         } catch (Exception ignore) {
             // 序列化异常忽略:客户端重连按 seq 补拉即得撤回态
         }
@@ -161,7 +161,7 @@ public class ConversationController {
         try {
             String payload = objectMapper.writeValueAsString(java.util.Map.of(
                     "evt", "typing", "conversationId", String.valueOf(conv.getId()), "from", from));
-            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
         } catch (Exception ignore) {
             // 瞬时事件,失败无需补偿
         }

@@ -128,6 +128,8 @@ export default function Inbox() {
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
   selectedRef.current = selectedId
+  // 当前列表镜像(WS 处理器里判断"未知会话"用,避免闭包拿到旧 list)
+  const listRef = useRef<ConversationVO[]>([])
   const msgEndRef = useRef<HTMLDivElement>(null)
   // 当前会话「本地已收到的最大 seq」——补漏对账基准(§3 铁律:以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
@@ -217,6 +219,12 @@ export default function Inbox() {
       if (msg.senderType === 'customer' && (!isCurrent || document.hidden)) {
         playBeep()
       }
+      // 未知会话(如未分配新会话经项目频道广播来)→ 列表里没有,刷新列表+计数让它实时出现
+      const known = listRef.current.some((c) => c.id === msg.conversationId)
+      if (!known) {
+        if (msg.senderType === 'customer') loadListRef.current()
+        return
+      }
       setList((prev) =>
         prev.map((c) =>
           c.id === msg.conversationId
@@ -277,6 +285,7 @@ export default function Inbox() {
 
   // 未读总数同步到全局(图标栏「收件箱」红点 + 标题提醒);离开收件箱清零
   useEffect(() => {
+    listRef.current = list
     setUnreadTotal(list.reduce((s, c) => s + (c.unreadCount || 0), 0))
   }, [list, setUnreadTotal])
   useEffect(() => () => setUnreadTotal(0), [setUnreadTotal])

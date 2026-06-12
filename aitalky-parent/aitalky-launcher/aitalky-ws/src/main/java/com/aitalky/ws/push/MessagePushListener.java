@@ -25,6 +25,10 @@ public class MessagePushListener implements RocketMQListener<MsgPushEvent> {
                 event.conversationId(), event.assigneeMemberId(), event.customerId());
         // 坐席:assignee 全部连接 + 正在查看该会话的订阅者
         pushService.pushToConversation(event.conversationId(), event.assigneeMemberId(), event.payload());
+        // 未分配会话(无负责人):广播给项目内全部在线坐席,确保"新会话"实时进列表+铃声(无人订阅时的唯一触达)
+        if (event.assigneeMemberId() == null && event.projectId() != null) {
+            pushService.pushToIdentity("project:" + event.projectId(), event.payload());
+        }
         // 客户:其全部连接(internal 消息时 customerId 为空,跳过)
         if (event.customerId() != null) {
             pushService.pushToIdentity("cust:" + event.customerId(), event.payload());

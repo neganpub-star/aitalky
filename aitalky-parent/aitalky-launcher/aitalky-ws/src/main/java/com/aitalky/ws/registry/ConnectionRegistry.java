@@ -32,6 +32,7 @@ public class ConnectionRegistry {
     /** Channel 上绑定的元数据 key */
     public static final AttributeKey<String> ATTR_CONN_ID = AttributeKey.valueOf("connId");
     public static final AttributeKey<String> ATTR_IDENTITY = AttributeKey.valueOf("identity"); // member:{id} / cust:{id}
+    public static final AttributeKey<String> ATTR_CHANNEL = AttributeKey.valueOf("channel"); // 附加频道 project:{id}(坐席收未分配广播)
 
     /** 本实例 ID（横向扩展时每实例唯一，配置注入） */
     private final String instanceId;
@@ -57,10 +58,17 @@ public class ConnectionRegistry {
         log.info("WS 连接建立 identity={}, connId={}, 当前该身份在线连接数={}", identity, connId, connSet(identity).size());
     }
 
+    /** 加入附加频道(如 project:{id});连接断开时一并清理 */
+    public void joinChannel(String connId, String channelKey, Channel channel) {
+        connSet(channelKey).add(node(connId));
+        channel.attr(ATTR_CHANNEL).set(channelKey);
+    }
+
     /** 连接断开：清理本地 + Redis；订阅关系一并清掉 */
     public void unregister(Channel channel) {
         String connId = channel.attr(ATTR_CONN_ID).get();
         String identity = channel.attr(ATTR_IDENTITY).get();
+        String channelKey = channel.attr(ATTR_CHANNEL).get();
         if (connId == null) {
             return;
         }
@@ -68,6 +76,9 @@ public class ConnectionRegistry {
         String node = node(connId);
         if (identity != null) {
             connSet(identity).remove(node);
+        }
+        if (channelKey != null) {
+            connSet(channelKey).remove(node);
         }
         redisson.getBucket(routeKey(node)).delete();
         log.info("WS 连接断开 identity={}, connId={}, 剩余在线连接数={}",
