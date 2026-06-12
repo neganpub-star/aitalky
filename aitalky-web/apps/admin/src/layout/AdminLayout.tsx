@@ -126,7 +126,7 @@ export default function AdminLayout() {
           borderBottom: dark ? 'none' : `1px solid ${token.colorSplit}`,
         }}>
           <img src={logo} alt="aitalky" style={{ width: 30, height: 30, borderRadius: 7, flexShrink: 0, objectFit: 'cover' }} />
-          {!collapsed && <span style={{ color: token.colorText, fontWeight: 700, fontSize: 16, letterSpacing: 0.5 }}>aitalky 后管</span>}
+          {!collapsed && <span style={{ color: token.colorText, fontWeight: 700, fontSize: 16, letterSpacing: 0.5 }}>aitalky</span>}
         </div>
         <Menu
           mode="inline"
