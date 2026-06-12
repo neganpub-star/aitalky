@@ -10,11 +10,16 @@ import com.aitalky.message.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * 消息服务实现。seq 用 Redisson 原子自增保证会话内单调(跨实例不重复)。
@@ -29,6 +34,7 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final RedissonClient redisson;
     private final SnowflakeIdGenerator idGenerator;
+    private final MongoTemplate mongoTemplate;
 
     @Override
     public Message send(SendMessageCmd cmd) {
@@ -66,6 +72,21 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public List<Message> sync(Long conversationId, long afterSeq) {
         return messageRepository.findByConversationIdAndSeqGreaterThanOrderBySeqAsc(conversationId, afterSeq);
+    }
+
+    @Override
+    public List<Long> searchConversationIds(Long projectId, String keyword, int limit) {
+        if (!StringUtils.hasText(keyword)) {
+            return List.of();
+        }
+        // 关键词按字面量匹配(转义正则特殊字符,避免注入/异常);只搜本项目、可见、非内部消息
+        Query q = new Query(Criteria.where("projectId").is(projectId)
+                .and("content").regex(Pattern.quote(keyword), "i")
+                .and("isVisible").ne(false)
+                .and("internal").ne(true));
+        @SuppressWarnings("unchecked")
+        List<Long> ids = (List<Long>) (List<?>) mongoTemplate.findDistinct(q, "conversationId", Message.class, Long.class);
+        return ids.size() > limit ? ids.subList(0, limit) : ids;
     }
 
     @Override

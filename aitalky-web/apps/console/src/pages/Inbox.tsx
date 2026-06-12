@@ -1,11 +1,11 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Badge, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Badge, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
-  ExclamationCircleFilled, RollbackOutlined, CopyOutlined,
+  ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -15,7 +15,7 @@ import { wsClient, type WsStatus } from '../ws/client'
 import {
   claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, replyConversation, retractConversationMessage,
-  sendConversationTyping, updateCustomerContact,
+  searchConversations, sendConversationTyping, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
@@ -90,6 +90,15 @@ export default function Inbox() {
   const [active, setActive] = useState<CategoryKey>('mine')
   const [tab, setTab] = useState<TabKey>('open')
   const [collapsed, setCollapsed] = useState(false)
+
+  // 会话搜索:type=uid 业务系统UID / content 会话内容
+  const canSearch = hasFunction('inbox.search')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchType, setSearchType] = useState<'uid' | 'content'>('uid')
+  const [searchKw, setSearchKw] = useState('')
+  const [searchResults, setSearchResults] = useState<ConversationVO[]>([])
+  const [searching, setSearching] = useState(false)
+  const [searched, setSearched] = useState(false)
 
   const [list, setList] = useState<ConversationVO[]>([])
   const [total, setTotal] = useState(0)
@@ -350,6 +359,26 @@ export default function Inbox() {
     [selectedId],
   )
 
+  // ===== 会话搜索 =====
+  const openSearch = () => { setSearchOpen(true); setSearchKw(''); setSearchResults([]); setSearched(false) }
+  const closeSearch = () => { setSearchOpen(false); setSearchKw(''); setSearchResults([]); setSearched(false) }
+
+  const doSearch = useCallback(async () => {
+    const kw = searchKw.trim()
+    if (!kw) { setSearchResults([]); setSearched(false); return }
+    setSearching(true)
+    setSearched(true)
+    try {
+      const r = await searchConversations({ type: searchType, keyword: kw, page: 1, size: 50 })
+      setSearchResults(r.records)
+    } finally {
+      setSearching(false)
+    }
+  }, [searchKw, searchType])
+
+  // 命中点击:打开该会话并退出搜索
+  const openFromSearch = (c: ConversationVO) => { closeSearch(); selectConversation(c) }
+
   // 离开收件箱时退订当前会话
   useEffect(() => {
     return () => {
@@ -469,7 +498,7 @@ export default function Inbox() {
   }, [selectedId, detail, editField, editVal])
 
   const styles: Record<string, CSSProperties> = {
-    root: { display: 'flex', height: '100%' },
+    root: { display: 'flex', height: '100%', position: 'relative' },
     col1: { width: 224, flexShrink: 0, background: panelGray, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col2: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col3: { flex: 1, minWidth: 0, background: panelGray, display: 'flex', flexDirection: 'column' },
@@ -641,7 +670,12 @@ export default function Inbox() {
         <div style={styles.col1}>
           <div style={styles.colHeader}>
             <span style={styles.colTitle}>{t('inbox.title')}</span>
-            <SearchOutlined style={{ fontSize: 16, color: token.colorTextSecondary, cursor: 'pointer' }} />
+            {canSearch && (
+              <SearchOutlined
+                onClick={openSearch}
+                style={{ fontSize: 16, color: searchOpen ? token.colorPrimary : token.colorTextSecondary, cursor: 'pointer' }}
+              />
+            )}
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
             <div style={styles.groupLabel}>{t('inbox.categoryView')}</div>
@@ -964,6 +998,69 @@ export default function Inbox() {
               >
                 {t('inbox.detail.blacklist')}
               </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 会话搜索:覆盖列表/聊天/详情区(分类视图保留),退出回到原会话 */}
+      {searchOpen && (
+        <div style={{
+          position: 'absolute', top: 0, bottom: 0, right: 0, left: collapsed ? 0 : 224,
+          background: token.colorBgContainer, zIndex: 10, display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={styles.colHeader}>
+            <span style={styles.colTitle}>{t('inbox.searchTitle')}</span>
+            <CloseOutlined onClick={closeSearch} style={{ cursor: 'pointer', color: token.colorTextSecondary }} />
+          </div>
+          <div style={{ padding: '16px 24px' }}>
+            <Input
+              style={{ maxWidth: 560 }}
+              value={searchKw}
+              onChange={(e) => setSearchKw(e.target.value)}
+              onPressEnter={doSearch}
+              allowClear
+              placeholder={t('inbox.searchPh')}
+              addonBefore={
+                <Select<'uid' | 'content'>
+                  value={searchType} onChange={setSearchType} style={{ width: 130 }}
+                  options={[
+                    { value: 'uid', label: t('inbox.searchByUid') },
+                    { value: 'content', label: t('inbox.searchByContent') },
+                  ]}
+                />
+              }
+              suffix={<SearchOutlined onClick={doSearch} style={{ cursor: 'pointer', color: token.colorTextTertiary }} />}
+            />
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {searching ? (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}><Spin /></div>
+            ) : !searched ? (
+              <div style={{ textAlign: 'center', color: token.colorTextTertiary, paddingTop: '16vh' }}>
+                <SearchOutlined style={{ fontSize: 26 }} />
+                <div style={{ marginTop: 12, lineHeight: 1.9 }}>{t('inbox.searchHint')}</div>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
+                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.searchNoResult')} />
+              </div>
+            ) : (
+              searchResults.map((c) => (
+                <div key={c.id} className="at-row" onClick={() => openFromSearch(c)}
+                  style={{ display: 'flex', gap: 10, padding: '12px 24px', cursor: 'pointer' }}>
+                  <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+                    {(c.customerName || 'U').charAt(0).toUpperCase()}
+                  </Avatar>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 600, fontSize: 15, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.customerName || c.customerId}</span>
+                      <span style={{ fontSize: 12, color: token.colorTextTertiary, marginLeft: 8 }}>{fmtListTime(c.lastMessageAt)}</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>{c.lastMessagePreview || ''}</div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>

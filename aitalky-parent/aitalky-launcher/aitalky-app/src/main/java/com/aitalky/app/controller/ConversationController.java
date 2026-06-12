@@ -61,6 +61,19 @@ public class ConversationController {
         return R.ok(conversationService.counts(TenantContext.getMemberId(), canViewAll));
     }
 
+    /** 会话搜索:type=uid 按客户业务UID;type=content 按消息内容(Mongo)。需 inbox.search */
+    @GetMapping("/search")
+    @com.aitalky.framework.web.RequiresFunction("inbox.search")
+    public R<PageResult<ConversationVO>> search(com.aitalky.conversation.dto.ConversationSearchQuery query) {
+        boolean canViewAll = TenantContext.hasFunction("inbox.viewAll");
+        Long memberId = TenantContext.getMemberId();
+        // 内容搜索先用 Mongo 命中会话ids(本项目、可见、非内部),再交会话模块按可见范围分页
+        List<Long> contentConvIds = "content".equals(query.getType())
+                ? messageService.searchConversationIds(TenantContext.getProjectId(), query.getKeyword(), 500)
+                : null;
+        return R.ok(conversationService.search(query, contentConvIds, memberId, canViewAll));
+    }
+
     /** 会话详情(含客户信息) */
     @GetMapping("/{id}")
     public R<ConversationDetailVO> detail(@PathVariable Long id) {

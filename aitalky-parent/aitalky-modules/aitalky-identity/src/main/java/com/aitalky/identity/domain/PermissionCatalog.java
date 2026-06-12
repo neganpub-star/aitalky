@@ -30,7 +30,7 @@ public final class PermissionCatalog {
                             new PermNode("inbox.viewAll", "全部", FUNC),
                             new PermNode("inbox.viewUnassigned", "未分配", FUNC),
                             new PermNode("inbox.digitalEmployee", "数字员工", PAGE),
-                            new PermNode("inbox.search", "会话搜索", PAGE)),
+                            new PermNode("inbox.search", "会话搜索", FUNC)),
                     List.of()),
             new PermModule("customers", "客户",
                     List.of(new PermNode("customers", "客户", PAGE)),

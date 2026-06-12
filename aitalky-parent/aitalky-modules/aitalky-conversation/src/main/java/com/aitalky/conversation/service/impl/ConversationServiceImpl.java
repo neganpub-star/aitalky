@@ -102,6 +102,49 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public PageResult<ConversationVO> search(com.aitalky.conversation.dto.ConversationSearchQuery q,
+                                             List<Long> contentConvIds, Long memberId, boolean canViewAll) {
+        String keyword = q.getKeyword() == null ? "" : q.getKeyword().trim();
+        if (keyword.isEmpty()) {
+            return PageResult.of(List.of(), 0, q.getPage(), q.getSize());
+        }
+        var wrapper = Wrappers.<CnvConversation>lambdaQuery();
+        if ("content".equals(q.getType())) {
+            // 内容搜索:命中会话ids 由上层 Mongo 预查;空命中直接返回空
+            if (contentConvIds == null || contentConvIds.isEmpty()) {
+                return PageResult.of(List.of(), 0, q.getPage(), q.getSize());
+            }
+            wrapper.in(CnvConversation::getId, contentConvIds);
+        } else {
+            // UID 搜索:按客户业务UID 模糊匹配(租户自动过滤本项目);无命中客户直接返回空
+            List<Long> customerIds = customerMapper.selectList(Wrappers.<CusCustomer>lambdaQuery()
+                            .select(CusCustomer::getId)
+                            .like(CusCustomer::getExternalUserId, keyword))
+                    .stream().map(CusCustomer::getId).toList();
+            if (customerIds.isEmpty()) {
+                return PageResult.of(List.of(), 0, q.getPage(), q.getSize());
+            }
+            wrapper.in(CnvConversation::getCustomerId, customerIds);
+        }
+        // 可见范围:看不到全部的只搜自己负责的会话(隔离)
+        if (!canViewAll) {
+            wrapper.eq(CnvConversation::getAssigneeMemberId, memberId);
+        }
+        wrapper.orderByDesc(CnvConversation::getLastMessageAt).orderByDesc(CnvConversation::getCreateTime);
+
+        Page<CnvConversation> page = conversationMapper.selectPage(Page.of(q.getPage(), q.getSize()), wrapper);
+        Map<Long, CusCustomer> custMap = batchCustomers(page.getRecords());
+        List<ConversationVO> vos = page.getRecords().stream().map(c -> {
+            CusCustomer cu = custMap.get(c.getCustomerId());
+            return new ConversationVO(c.getId(), c.getCustomerId(),
+                    cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
+                    c.getAssigneeMemberId(), c.getStatus(),
+                    c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
+        }).toList();
+        return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
+    }
+
+    @Override
     public com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll) {
         // 进行中(status=1);project_id 由多租户拦截器自动过滤
         long mine = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()

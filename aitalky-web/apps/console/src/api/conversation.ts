@@ -32,6 +32,20 @@ export async function listConversations(query: ConversationListQuery) {
   return { ...res, records: res.records.map(normConversation) }
 }
 
+// 会话搜索查询。type: uid(业务系统UID) / content(会话内容)
+export interface ConversationSearchQuery {
+  type: 'uid' | 'content'
+  keyword: string
+  page?: number
+  size?: number
+}
+
+/** 会话搜索(需 inbox.search 权限) */
+export async function searchConversations(query: ConversationSearchQuery) {
+  const res = await client.get<unknown, PageResult<ConversationVO>>('/conversations/search', { params: query })
+  return { ...res, records: res.records.map(normConversation) }
+}
+
 /** 会话详情(含客户信息) */
 export async function getConversation(id: string) {
   return normDetail(await client.get<unknown, ConversationDetailVO>(`/conversations/${id}`))

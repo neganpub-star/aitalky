@@ -10,7 +10,7 @@ public enum SystemRole {
     /** 负责人:全部权限(billing 仅其可用) */
     OWNER("负责人", """
             {"pages":["inbox","customers","statistics","settings"],\
-            "functions":["inbox.viewAll","inbox.viewUnassigned","conversation.send","conversation.withdraw",\
+            "functions":["inbox.viewAll","inbox.viewUnassigned","inbox.search","conversation.send","conversation.withdraw",\
             "conversation.transfer","conversation.close","conversation.blacklist","member.manage","role.manage",\
             "messenger.setting","assign.setting","group.manage","quickreply.manage","blacklist.manage",\
             "project.setting","billing.manage"]}"""),
@@ -18,14 +18,14 @@ public enum SystemRole {
     /** 管理员:除 billing.manage 外的全部 */
     ADMIN("管理员", """
             {"pages":["inbox","customers","statistics","settings"],\
-            "functions":["inbox.viewAll","inbox.viewUnassigned","conversation.send","conversation.withdraw",\
+            "functions":["inbox.viewAll","inbox.viewUnassigned","inbox.search","conversation.send","conversation.withdraw",\
             "conversation.transfer","conversation.close","conversation.blacklist","member.manage","role.manage",\
             "messenger.setting","assign.setting","group.manage","quickreply.manage","blacklist.manage","project.setting"]}"""),
 
     /** 普通成员:只看 我的/提及我的;能回复/撤回/结束;无管理与设置 */
     MEMBER("普通成员", """
             {"pages":["inbox","customers"],\
-            "functions":["conversation.send","conversation.withdraw","conversation.close"]}""");
+            "functions":["inbox.search","conversation.send","conversation.withdraw","conversation.close"]}""");
 
     /** 角色显示名 */
     private final String roleName;

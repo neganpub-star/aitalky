@@ -16,6 +16,15 @@ public interface ConversationService {
     /** 收件箱列表(view: mine/unassigned/all/mention) */
     PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll);
 
+    /**
+     * 会话搜索:type=uid 按客户业务UID(本模块查 cus_customer);type=content 用上层 Mongo 命中的会话ids。
+     * 可见范围:canViewAll=全项目,否则仅自己负责的会话。
+     *
+     * @param contentConvIds type=content 时由上层(MessageService)预查的命中会话ids;type=uid 时忽略
+     */
+    PageResult<ConversationVO> search(com.aitalky.conversation.dto.ConversationSearchQuery query,
+                                      java.util.List<Long> contentConvIds, Long memberId, boolean canViewAll);
+
     /** 各视图进行中会话数(分类徽标) */
     com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll);
 
