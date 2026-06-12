@@ -17,8 +17,11 @@ interface AppState {
   functions: string[]
   themeMode: 'light' | 'dark'
   lang: string
+  // 未读消息总数(瞬时,不持久化):图标栏「收件箱」红点 + 浏览器标题未读提醒
+  unreadTotal: number
 
   saveLogin: (r: LoginResult) => void
+  setUnreadTotal: (n: number) => void
   saveEnter: (r: EnterResult, projectName: string) => void
   setProjects: (projects: ProjectBrief[]) => void
   setMember: (nickname?: string, avatar?: string) => void
@@ -35,9 +38,11 @@ export const useAppStore = create<AppState>()(
       functions: [],
       themeMode: 'light',
       lang: 'zh_CN',
+      unreadTotal: 0,
 
       saveLogin: (r) =>
         set({ token: r.token, email: r.email, accountId: r.accountId, projects: r.projects }),
+      setUnreadTotal: (n) => set({ unreadTotal: n }),
       saveEnter: (r, projectName) =>
         set({
           token: r.token,

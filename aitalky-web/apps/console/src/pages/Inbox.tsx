@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Badge, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
@@ -81,6 +81,7 @@ export default function Inbox() {
   const { token } = theme.useToken()
   const isDark = useAppStore((s) => s.themeMode) === 'dark'
   const myMemberId = useAppStore((s) => s.memberId)
+  const setUnreadTotal = useAppStore((s) => s.setUnreadTotal)
 
   const panelGray = isDark ? token.colorBgLayout : '#f7f7f7'
   const splitBorder = `0.5px solid ${isDark ? token.colorSplit : 'rgba(0,0,0,0.1)'}`
@@ -269,6 +270,12 @@ export default function Inbox() {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, pending, customerTyping])
 
+  // 未读总数同步到全局(图标栏「收件箱」红点 + 标题提醒);离开收件箱清零
+  useEffect(() => {
+    setUnreadTotal(list.reduce((s, c) => s + (c.unreadCount || 0), 0))
+  }, [list, setUnreadTotal])
+  useEffect(() => () => setUnreadTotal(0), [setUnreadTotal])
+
   // ===== 选中会话:订阅 WS + 拉详情/消息 + 清未读 =====
   const selectConversation = useCallback(
     async (conv: ConversationVO) => {
@@ -425,9 +432,11 @@ export default function Inbox() {
 
   const renderCat = (c: { key: CategoryKey; label: string; icon: ReactNode }) => {
     const on = c.key === active
+    // 红点:当前视图下有未读(且不在该会话内即亮);跨视图未读暂以当前列表为准
+    const dot = on && list.some((x) => x.unreadCount > 0)
     return (
       <div key={c.key} className="at-row" style={{ ...styles.catItem, ...(on ? styles.catActive : {}) }} onClick={() => { setActive(c.key); setSelectedId(null) }}>
-        <span style={{ width: 18, textAlign: 'center' }}>{c.icon}</span>
+        <Badge dot count={dot ? 1 : 0} offset={[2, 2]}><span style={{ width: 18, textAlign: 'center', display: 'inline-block' }}>{c.icon}</span></Badge>
         <span>{c.label}</span>
         {/* 各视图进行中会话数(真实计数,来自 /conversations/counts) */}
         <span style={styles.count}>{counts[c.key]}</span>
@@ -449,9 +458,12 @@ export default function Inbox() {
           borderLeft: `3px solid ${on ? token.colorPrimary : 'transparent'}`,
         }}
       >
-        <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
-          {(c.customerName || 'U').charAt(0).toUpperCase()}
-        </Avatar>
+        {/* 头像未读红点:该会话有未读即亮,进入会话(清未读)才消(对齐现网) */}
+        <Badge dot count={c.unreadCount > 0 ? 1 : 0} offset={[-4, 4]}>
+          <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+            {(c.customerName || 'U').charAt(0).toUpperCase()}
+          </Avatar>
+        </Badge>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: 15, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

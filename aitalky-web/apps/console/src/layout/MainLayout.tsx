@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
-import { Avatar, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
+import { Avatar, Badge, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
 import {
   InboxOutlined, SettingOutlined, PoweroffOutlined, GlobalOutlined, UserOutlined,
   PlusCircleOutlined, CheckOutlined, UsergroupAddOutlined, BulbOutlined,
@@ -34,6 +34,7 @@ export default function MainLayout() {
   const nickname = useAppStore((s) => s.nickname)
   const avatar = useAppStore((s) => s.avatar)
   const setMember = useAppStore((s) => s.setMember)
+  const unreadTotal = useAppStore((s) => s.unreadTotal)
 
   // 进入项目即建立 WS 长连接(项目级令牌带 memberId);退出/卸载时断开
   useEffect(() => {
@@ -188,7 +189,8 @@ export default function MainLayout() {
                 style={{ ...styles.navItem, ...(loc.pathname.startsWith(n.key) ? styles.navItemActive : {}) }}
                 onClick={() => nav(n.key)}
               >
-                {n.icon}
+                {/* 收件箱:有未读时图标右上角红点(对齐现网,进入对应会话才清) */}
+                {n.key === '/inbox' && unreadTotal > 0 ? <Badge dot offset={[2, 0]}>{n.icon}</Badge> : n.icon}
               </div>
             </Tooltip>
           ))}
