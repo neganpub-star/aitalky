@@ -206,7 +206,8 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
                 i == null ? null : i.getGreeting(),
                 i == null ? null : i.getTeamIntro(),
                 i == null ? null : i.getUrgentNotice(),
-                i != null && Boolean.TRUE.equals(i.getUrgentEnabled()));
+                i != null && Boolean.TRUE.equals(i.getUrgentEnabled()),
+                useLang); // 最终生效语言,信使端据此选系统提示文案语言
     }
 
     /** 查启用语种(projectId 非空=显式过滤,用于无上下文的 init;为空=靠租户拦截器自动过滤)。默认语种排前 */

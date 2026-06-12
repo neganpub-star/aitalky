@@ -75,7 +75,8 @@ public class PublicMessengerController {
         if (config != null) {
             config = new com.aitalky.messenger.dto.MessengerPublicVO(
                     project.getName(), null, config.webTitle(), config.webIcon(), config.replyTime(),
-                    config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled());
+                    config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled(),
+                    config.lang());
         }
         return R.ok(new MessengerInitVO(token, conv.getId(),
                 customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config));
@@ -91,6 +92,10 @@ public class PublicMessengerController {
             throw new BizException(ResultCode.FORBIDDEN);
         }
         CusCustomer customer = customerService.getById(principal.customerId());
+        // 黑名单拦截:被拉黑的用户/游客发消息返回会话不可用(init 时已拦,此处拦"已建会话后才被拉黑"的情况)
+        if (blacklistService.isBlocked(conv.getProjectId(), customer.getExternalUserId(), customer.getVisitorId())) {
+            throw new BizException(ResultCode.CONVERSATION_BLOCKED);
+        }
         Message m = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), customer.getId(),
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),

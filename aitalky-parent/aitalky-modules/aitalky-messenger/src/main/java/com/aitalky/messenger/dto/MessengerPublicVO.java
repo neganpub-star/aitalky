@@ -13,5 +13,7 @@ public record MessengerPublicVO(
         String greeting,
         String teamIntro,
         String urgentNotice,
-        boolean urgentEnabled) {
+        boolean urgentEnabled,
+        // 信使端最终生效语言(URL ?lang= 优先,否则信使设置默认语言);信使端据此显示系统提示文案
+        String lang) {
 }

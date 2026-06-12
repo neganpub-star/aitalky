@@ -39,6 +39,10 @@ public enum ResultCode {
     // ===== 限流 102x =====
     RATE_LIMITED(1020, "rate.limited"),
 
+    // ===== 信使/会话 102x =====
+    /** 客户被拉黑,会话不可用(信使端发消息时拦截) */
+    CONVERSATION_BLOCKED(1024, "conversation.blocked"),
+
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
 
