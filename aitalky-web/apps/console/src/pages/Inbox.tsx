@@ -16,7 +16,7 @@ import {
   listConversations, listMessages, replyConversation, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
-import { blockCustomer } from '../api/blacklist'
+import { blockCustomer, removeBlacklist } from '../api/blacklist'
 import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
 import type { ConversationDetailVO, ConversationVO, MessageVO, PendingMsg } from '../types'
 
@@ -745,33 +745,58 @@ export default function Inbox() {
             )}
           </div>
 
-          {/* 加入黑名单:详细确认弹窗,区分用户(全设备)/游客(该设备 MID),对齐参考系统 */}
+          {/* 黑名单按钮:按 detail.blocked 切换「加入/移除」,操作后回刷 detail 同步状态(对齐参考系统) */}
           <div style={{ padding: '16px' }}>
-            <Button
-              block
-              danger
-              onClick={() => {
-                const cid = detail.customerId
-                if (!cid) return
-                const isVisitor = detail.customerType === 1
-                const name = detail.customerName || cid
-                Modal.confirm({
-                  title: t('inbox.detail.blacklist'),
-                  icon: <ExclamationCircleFilled style={{ color: '#faad14' }} />,
-                  content: isVisitor
-                    ? t('inbox.detail.blacklistDescVisitor', { name })
-                    : t('inbox.detail.blacklistDescUser', { name }),
-                  okText: t('common.confirm'),
-                  cancelText: t('common.cancel'),
-                  onOk: async () => {
-                    await blockCustomer(cid, detail.id)
-                    message.success(t('inbox.detail.blacklisted'))
-                  },
-                })
-              }}
-            >
-              {t('inbox.detail.blacklist')}
-            </Button>
+            {detail.blocked ? (
+              <Button
+                block
+                onClick={() => {
+                  const bid = detail.blacklistId
+                  if (!bid) return
+                  Modal.confirm({
+                    title: t('inbox.detail.unblock'),
+                    icon: <ExclamationCircleFilled style={{ color: '#faad14' }} />,
+                    content: t('inbox.detail.unblockConfirm'),
+                    okText: t('common.confirm'),
+                    cancelText: t('common.cancel'),
+                    onOk: async () => {
+                      await removeBlacklist(bid)
+                      message.success(t('inbox.detail.unblocked'))
+                      if (selectedId) setDetail(await getConversation(selectedId))
+                    },
+                  })
+                }}
+              >
+                {t('inbox.detail.unblock')}
+              </Button>
+            ) : (
+              <Button
+                block
+                danger
+                onClick={() => {
+                  const cid = detail.customerId
+                  if (!cid) return
+                  const isVisitor = detail.customerType === 1
+                  const name = detail.customerName || cid
+                  Modal.confirm({
+                    title: t('inbox.detail.blacklist'),
+                    icon: <ExclamationCircleFilled style={{ color: '#faad14' }} />,
+                    content: isVisitor
+                      ? t('inbox.detail.blacklistDescVisitor', { name })
+                      : t('inbox.detail.blacklistDescUser', { name }),
+                    okText: t('common.confirm'),
+                    cancelText: t('common.cancel'),
+                    onOk: async () => {
+                      await blockCustomer(cid, detail.id)
+                      message.success(t('inbox.detail.blacklisted'))
+                      if (selectedId) setDetail(await getConversation(selectedId))
+                    },
+                  })
+                }}
+              >
+                {t('inbox.detail.blacklist')}
+              </Button>
+            )}
           </div>
         </div>
       )}
