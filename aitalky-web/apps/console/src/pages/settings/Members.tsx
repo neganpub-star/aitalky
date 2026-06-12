@@ -4,16 +4,16 @@ import {
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { CrownFilled, MoreOutlined, PlusOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
 import {
   deleteMember, listRoles, pageMembers, renameMember,
   updateMemberAvatar, updateMemberRole, updateMemberStatus, type MemberQuery,
 } from '../../api/member'
+import InviteMemberModal from './InviteMemberModal'
 import type { MemberVO, RoleVO } from '../../types'
 
 // 成员管理:列表 + 筛选 + 调整角色/重命名/改头像/禁用启用/删除(参照 ByteTrack 成员管理页)
 export default function Members() {
-  const nav = useNavigate()
+  const [inviteOpen, setInviteOpen] = useState(false)
   const [data, setData] = useState<MemberVO[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -143,7 +143,7 @@ export default function Members() {
     <Card
       title="成员管理"
       variant="borderless"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => nav('/settings/invites')}>邀请成员</Button>}
+      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>邀请成员</Button>}
     >
       <Space style={{ marginBottom: 16 }} wrap>
         <Select
@@ -200,6 +200,8 @@ export default function Members() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <InviteMemberModal open={inviteOpen} onClose={() => setInviteOpen(false)} onDone={reload} />
     </Card>
   )
 }

@@ -57,6 +57,59 @@ export interface RoleVO {
   isSystem: number
 }
 
+// 邮箱邀请记录行(对应后端 EmailInviteVO)。status: 0待接受 1已接受 2已撤销 3已过期
+export interface EmailInviteVO {
+  id: string
+  inviterName: string | null
+  email: string
+  roleName: string | null
+  memberNickname: string | null
+  status: number
+  valid: boolean
+  sendCount: number
+  createTime: string
+}
+
+// 链接邀请记录行(对应后端 LinkInviteVO)。accessType: 0公开 1私密
+export interface LinkInviteVO {
+  id: string
+  inviterName: string | null
+  roleName: string | null
+  joinCount: number
+  accessType: number
+  valid: boolean
+  token: string
+  createTime: string
+}
+
+// 链接邀请详情
+export interface LinkInviteDetailVO {
+  id: string
+  projectName: string | null
+  roleName: string | null
+  joinCount: number
+  accessType: number
+  accessCode: string | null
+  valid: boolean
+  token: string
+  createTime: string
+  expireTime: string | null
+}
+
+// 邀请落地页信息(公开接口)。type: email/link
+export interface InviteInfoVO {
+  type: 'email' | 'link'
+  projectId: string
+  projectName: string | null
+  projectLogo: string | null
+  roleName: string | null
+  email: string | null
+  inviterName: string | null
+  needCode: boolean
+  valid: boolean
+  reason: string | null
+}
+
 // 会话列表项(对应后端 ConversationVO)。status: 0等待 1进行中 2已结束
 export interface ConversationVO {
   id: string

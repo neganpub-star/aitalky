@@ -2,6 +2,7 @@ import { createHashRouter, Navigate } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Join from './pages/Join'
 import Projects from './pages/Projects'
 import Inbox from './pages/Inbox'
 import MainLayout from './layout/MainLayout'
@@ -43,6 +44,7 @@ function RequireSettings({ children }: { children: ReactNode }) {
 export const router = createHashRouter([
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
+  { path: '/join', element: <Join /> },
   { path: '/projects', element: <RequireAuth><Projects /></RequireAuth> },
   {
     path: '/',
