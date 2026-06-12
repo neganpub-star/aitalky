@@ -56,7 +56,14 @@ export const useAppStore = create<AppState>()(
           functions: r.functions,
         }),
       setProjects: (projects) => set({ projects }),
-      setProject: (projectName, projectLogo) => set({ projectName, projectLogo: projectLogo || undefined }),
+      // 同步顶部项目名/Logo,并改写 projects[] 里当前项目那条(切换列表也要跟着变)
+      setProject: (projectName, projectLogo) =>
+        set((s) => ({
+          projectName,
+          projectLogo: projectLogo || undefined,
+          projects: s.projects.map((p) =>
+            p.id === s.projectId ? { ...p, name: projectName, logo: projectLogo || null } : p),
+        })),
       setMember: (nickname, avatar) => set({ nickname, avatar }),
       logout: () =>
         set({
