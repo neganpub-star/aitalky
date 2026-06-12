@@ -31,7 +31,7 @@ export default {
     on: 'List',
     off: 'Unlist',
   },
-  roles: {
+  roleNames: {
     超级管理员: 'Super Admin',
   },
   form: {
@@ -60,6 +60,8 @@ export default {
     addons: 'Add-on Packs',
     agreements: 'Agreements',
     languages: 'Languages',
+    admins: 'Admins',
+    roles: 'Roles',
     group: 'Platform',
     group2: 'Operations',
   },
@@ -132,5 +134,27 @@ export default {
     zhName: 'Chinese Name',
     enName: 'English Name',
     sort: 'Sort',
+  },
+  admins: {
+    username: 'Username',
+    realName: 'Name',
+    role: 'Role',
+    password: 'Password',
+    keyword: 'Username / Name',
+    resetPassword: 'Reset Password',
+    newPassword: 'New Password',
+    newPasswordPlaceholder: 'Enter new password',
+    passwordPlaceholder: 'Enter login password',
+    enableConfirm: 'Enable this account?',
+    disableConfirm: 'Disable this account?',
+    resetPwdSuccess: 'Password reset',
+    selfForbidden: 'Cannot perform this on the current account',
+  },
+  roles: {
+    name: 'Role Name',
+    permissions: 'Permissions',
+    adminCount: 'Admins',
+    permTip: 'Select the admin menus/features this role can access',
+    inUse: 'Role is in use by admins and cannot be deleted',
   },
 }

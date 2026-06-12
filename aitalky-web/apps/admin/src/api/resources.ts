@@ -1,7 +1,8 @@
 import client from './client'
+import { encryptPassword } from './crypto'
 import type {
   AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminProjectVO,
-  AgreementVO, LanguageVO, PageResult, PlanVO,
+  AdminVO, AgreementVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
 } from '../types'
 
 // ===== 用户 =====
@@ -76,4 +77,49 @@ export function setLanguageStatus(id: string, status: number) {
 }
 export function deleteLanguage(id: string) {
   return client.delete<unknown, void>(`/admin/languages/${id}`)
+}
+
+// ===== 后管账号 =====
+export interface AdminListQuery { keyword?: string; status?: number; page?: number; size?: number }
+export interface SaveAdminBody {
+  id?: string
+  username: string
+  /** 明文,提交前 RSA 加密;仅新增必填 */
+  password?: string
+  realName?: string
+  roleId?: string
+  status?: number
+}
+export function pageAdmins(q: AdminListQuery) {
+  return client.get<unknown, PageResult<AdminVO>>('/admin/admins', { params: q })
+}
+export async function saveAdmin(body: SaveAdminBody) {
+  // 新增带明文密码时 RSA 加密传输(与登录同一公钥)
+  const payload: SaveAdminBody = { ...body }
+  if (body.password) payload.password = await encryptPassword(body.password)
+  return client.post<unknown, string>('/admin/admins', payload)
+}
+export function setAdminStatus(id: string, status: number) {
+  return client.put<unknown, void>(`/admin/admins/${id}/status`, null, { params: { status } })
+}
+export async function resetAdminPassword(id: string, password: string) {
+  const cipher = await encryptPassword(password)
+  return client.put<unknown, void>(`/admin/admins/${id}/password`, { password: cipher })
+}
+export function deleteAdmin(id: string) {
+  return client.delete<unknown, void>(`/admin/admins/${id}`)
+}
+
+// ===== 后管角色 =====
+export function listRoles() {
+  return client.get<unknown, RoleVO[]>('/admin/roles')
+}
+export function listFunctions() {
+  return client.get<unknown, FunctionDef[]>('/admin/roles/functions')
+}
+export function saveRole(body: Partial<RoleVO>) {
+  return client.post<unknown, string>('/admin/roles', body)
+}
+export function deleteRole(id: string) {
+  return client.delete<unknown, void>(`/admin/roles/${id}`)
 }

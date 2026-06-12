@@ -5,6 +5,7 @@ import {
   AppstoreOutlined, FileTextOutlined, TranslationOutlined,
   GlobalOutlined, PoweroffOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
   CloseOutlined, HomeOutlined, SunOutlined, MoonOutlined, ReloadOutlined,
+  TeamOutlined, SafetyCertificateOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -58,6 +59,8 @@ export default function AdminLayout() {
     { key: '/addons', icon: <AppstoreOutlined />, label: t('nav.addons'), perm: 'addons' },
     { key: '/agreements', icon: <FileTextOutlined />, label: t('nav.agreements'), perm: 'agreements' },
     { key: '/languages', icon: <TranslationOutlined />, label: t('nav.languages'), perm: 'dict' },
+    { key: '/admins', icon: <TeamOutlined />, label: t('nav.admins'), perm: 'admins' },
+    { key: '/roles', icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: 'roles' },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [lang])
   const items = useMemo(
@@ -172,7 +175,7 @@ export default function AdminLayout() {
               <Avatar size={30} style={{ background: token.colorPrimary, flexShrink: 0 }}>{display.charAt(0).toUpperCase()}</Avatar>
               <span style={{ color: token.colorText }}>
                 {display}
-                {roleName && <span style={{ color: token.colorTextSecondary, marginLeft: 6, fontSize: 12 }}>({t(`roles.${roleName}`, roleName)})</span>}
+                {roleName && <span style={{ color: token.colorTextSecondary, marginLeft: 6, fontSize: 12 }}>({t(`roleNames.${roleName}`, roleName)})</span>}
               </span>
             </span>
           </Dropdown>

@@ -117,3 +117,29 @@ export interface LanguageVO {
   sort: number
   status: number
 }
+
+// ===== 后管账号 / 角色 =====
+export interface AdminVO {
+  id: string
+  username: string
+  realName?: string
+  roleId?: string
+  roleName?: string
+  status: number
+  createTime?: string
+}
+
+export interface RoleVO {
+  id: string
+  name: string
+  permissions: string[]
+  adminCount: number
+  createTime?: string
+}
+
+/** 可分配功能码定义(角色勾选项) */
+export interface FunctionDef {
+  code: string
+  zhName: string
+  enName: string
+}

@@ -31,7 +31,7 @@ export default {
     on: '上架',
     off: '下架',
   },
-  roles: {
+  roleNames: {
     超级管理员: '超级管理员',
   },
   form: {
@@ -60,6 +60,8 @@ export default {
     addons: '加量包管理',
     agreements: '协议管理',
     languages: '语种字典',
+    admins: '账号管理',
+    roles: '角色管理',
     group: '平台管理',
     group2: '运营配置',
   },
@@ -132,5 +134,27 @@ export default {
     zhName: '中文名',
     enName: '英文名',
     sort: '排序',
+  },
+  admins: {
+    username: '用户名',
+    realName: '姓名',
+    role: '角色',
+    password: '密码',
+    keyword: '用户名/姓名',
+    resetPassword: '重置密码',
+    newPassword: '新密码',
+    newPasswordPlaceholder: '请输入新密码',
+    passwordPlaceholder: '请输入登录密码',
+    enableConfirm: '确认启用该账号?',
+    disableConfirm: '确认禁用该账号?',
+    resetPwdSuccess: '密码已重置',
+    selfForbidden: '不能对当前登录账号执行该操作',
+  },
+  roles: {
+    name: '角色名称',
+    permissions: '功能权限',
+    adminCount: '管理员数',
+    permTip: '勾选该角色可访问的后管菜单/功能',
+    inUse: '该角色仍被管理员使用,无法删除',
   },
 }

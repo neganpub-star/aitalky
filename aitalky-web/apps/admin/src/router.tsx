@@ -10,6 +10,8 @@ import Plans from './pages/Plans'
 import Addons from './pages/Addons'
 import Agreements from './pages/Agreements'
 import Languages from './pages/Languages'
+import Admins from './pages/Admins'
+import Roles from './pages/Roles'
 
 /** 需登录(有 token) */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -34,6 +36,8 @@ export const router = createHashRouter([
       { path: 'addons', element: <Addons /> },
       { path: 'agreements', element: <Agreements /> },
       { path: 'languages', element: <Languages /> },
+      { path: 'admins', element: <Admins /> },
+      { path: 'roles', element: <Roles /> },
     ],
   },
   { path: '*', element: <Navigate to="/dashboard" replace /> },
