@@ -16,6 +16,9 @@ export interface ConversationCounts {
   unassigned: number
   all: number
   mention: number
+  // "该我处理"的未读会话数(分类红点用,跨视图准);别人负责的不计
+  mineUnread: number
+  unassignedUnread: number
 }
 
 /** 各视图进行中会话数 */

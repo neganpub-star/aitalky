@@ -94,7 +94,7 @@ export default function Inbox() {
   const [list, setList] = useState<ConversationVO[]>([])
   const [total, setTotal] = useState(0)
   const [loadingList, setLoadingList] = useState(false)
-  const [counts, setCounts] = useState<ConversationCounts>({ mine: 0, unassigned: 0, all: 0, mention: 0 })
+  const [counts, setCounts] = useState<ConversationCounts>({ mine: 0, unassigned: 0, all: 0, mention: 0, mineUnread: 0, unassignedUnread: 0 })
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<ConversationDetailVO | null>(null)
@@ -193,6 +193,16 @@ export default function Inbox() {
   }, [active, tab])
   loadListRef.current = loadList
 
+  // 防抖刷新各分类未读数(红点用):非当前会话来消息时调,合并高频避免刷爆
+  const countsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const refreshCountsRef = useRef<() => void>(() => {})
+  refreshCountsRef.current = () => {
+    clearTimeout(countsTimerRef.current)
+    countsTimerRef.current = setTimeout(() => {
+      getConversationCounts().then(setCounts).catch(() => {})
+    }, 600)
+  }
+
   useEffect(() => {
     loadList()
     // 轮询兜底:WS 只覆盖已打开/已订阅会话,新会话靠轮询进列表
@@ -218,6 +228,10 @@ export default function Inbox() {
       // 提示音:客户新消息且(不在该会话 或 标签页失焦)→ 响铃(对齐现网,在看该会话不打扰)
       if (msg.senderType === 'customer' && (!isCurrent || document.hidden)) {
         playBeep()
+      }
+      // 非当前会话来客户消息 → 刷新各分类未读数(我的/未分配红点跨视图实时,防抖)
+      if (msg.senderType === 'customer' && !isCurrent) {
+        refreshCountsRef.current()
       }
       // 未知会话(如未分配新会话经项目频道广播来)→ 列表里没有,刷新列表+计数让它实时出现
       const known = listRef.current.some((c) => c.id === msg.conversationId)
@@ -283,11 +297,12 @@ export default function Inbox() {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, pending, customerTyping])
 
-  // 未读总数同步到全局(图标栏「收件箱」红点 + 标题提醒);离开收件箱清零
+  // 当前列表镜像(WS 处理器判断"未知会话"用)
+  useEffect(() => { listRef.current = list }, [list])
+  // 未读总数(图标栏红点 + 标题提醒)=该我处理的未读(我的+未分配),来自后端 counts,跨视图准;离开清零
   useEffect(() => {
-    listRef.current = list
-    setUnreadTotal(list.reduce((s, c) => s + (c.unreadCount || 0), 0))
-  }, [list, setUnreadTotal])
+    setUnreadTotal(counts.mineUnread + counts.unassignedUnread)
+  }, [counts, setUnreadTotal])
   useEffect(() => () => setUnreadTotal(0), [setUnreadTotal])
 
   // ===== 选中会话:订阅 WS + 拉详情/消息 + 清未读 =====
@@ -314,6 +329,8 @@ export default function Inbox() {
         setMessages(sorted)
         // localMaxSeq = 首屏最新 seq;首屏只取最近 50 条,更早的是历史(翻页另说),不影响实时补漏基准
         localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
+        // 打开会话已清该会话未读 → 刷新分类未读数,我的/未分配红点跟着消
+        refreshCountsRef.current()
       } finally {
         setLoadingMsgs(false)
       }
@@ -447,8 +464,8 @@ export default function Inbox() {
 
   const renderCat = (c: { key: CategoryKey; label: string; icon: ReactNode }) => {
     const on = c.key === active
-    // 红点:当前视图下有未读(且不在该会话内即亮);跨视图未读暂以当前列表为准
-    const dot = on && list.some((x) => x.unreadCount > 0)
+    // 红点:仅"该我处理"的分类亮——我的/未分配(来自后端 counts,跨视图准);全部/提及不亮(别人负责的不算我未读)
+    const dot = (c.key === 'mine' && counts.mineUnread > 0) || (c.key === 'unassigned' && counts.unassignedUnread > 0)
     return (
       <div key={c.key} className="at-row" style={{ ...styles.catItem, ...(on ? styles.catActive : {}) }} onClick={() => { setActive(c.key); setSelectedId(null) }}>
         <Badge dot count={dot ? 1 : 0} offset={[2, 2]}><span style={{ width: 18, textAlign: 'center', display: 'inline-block' }}>{c.icon}</span></Badge>

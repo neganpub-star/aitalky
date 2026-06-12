@@ -111,7 +111,14 @@ public class ConversationServiceImpl implements ConversationService {
         long all = canViewAll
                 ? conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery().eq(CnvConversation::getStatus, 1))
                 : 0;
-        return new com.aitalky.conversation.dto.ConversationCounts(mine, unassigned, all, 0);
+        // 未读红点:仅"该我处理"的——分给我的 + 未分配的,且 unread_count>0;别人负责的不算我头上
+        long mineUnread = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
+                .eq(CnvConversation::getAssigneeMemberId, memberId).eq(CnvConversation::getStatus, 1)
+                .gt(CnvConversation::getUnreadCount, 0));
+        long unassignedUnread = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
+                .isNull(CnvConversation::getAssigneeMemberId).eq(CnvConversation::getStatus, 1)
+                .gt(CnvConversation::getUnreadCount, 0));
+        return new com.aitalky.conversation.dto.ConversationCounts(mine, unassigned, all, 0, mineUnread, unassignedUnread);
     }
 
     @Override
