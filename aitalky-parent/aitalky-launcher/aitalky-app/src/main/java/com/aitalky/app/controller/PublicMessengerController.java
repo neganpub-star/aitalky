@@ -61,10 +61,7 @@ public class PublicMessengerController {
         if (!StringUtils.hasText(req.userId()) && !StringUtils.hasText(req.visitorId())) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
-        // 黑名单拦截:被拉黑的用户/游客不允许接入
-        if (blacklistService.isBlocked(project.getId(), req.userId(), req.visitorId())) {
-            throw new BizException(ResultCode.FORBIDDEN);
-        }
+        // 黑名单不拦接入:被拉黑用户仍可打开聊天框,只在发消息时拦(send 返回 CONVERSATION_BLOCKED→气泡提示)
         CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), req.lang());
         CnvConversation conv = conversationService.openOrCreate(new OpenConversationCmd(
                 project.getId(), customer.getId(), null, req.source(), null, clientIp(request), null));
