@@ -11,7 +11,7 @@ import type { MemberVO, ProjectDetailVO } from '../../types'
 // 基本信息(对齐现网):Logo + 项目名称 + 负责人 + 保存修改;改名/换Logo/转让 仅负责人
 export default function TeamBasic() {
   const { t } = useTranslation()
-  const setProjectName = useAppStore((s) => s.setProjectName)
+  const setProject = useAppStore((s) => s.setProject)
   const [detail, setDetail] = useState<ProjectDetailVO | null>(null)
   const [members, setMembers] = useState<MemberVO[]>([])
   const [name, setName] = useState('')
@@ -44,7 +44,7 @@ export default function TeamBasic() {
     setSaving(true)
     try {
       await updateProject(name, logo)
-      setProjectName(name) // 同步顶部项目名
+      setProject(name, logo || undefined) // 同步顶部项目名 + 图标栏 Logo(响应式,无需刷新)
       message.success(t('team.saved'))
       load()
     } finally { setSaving(false) }

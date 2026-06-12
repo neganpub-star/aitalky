@@ -8,6 +8,7 @@ export interface SessionCtx {
   projects?: ProjectBrief[]
   projectId?: string
   projectName?: string
+  projectLogo?: string
   roleName?: string
   functions?: string[]
 }
@@ -24,6 +25,7 @@ export function getCtx(): SessionCtx {
     projects: s.projects,
     projectId: s.projectId,
     projectName: s.projectName,
+    projectLogo: s.projectLogo,
     roleName: s.roleName,
     functions: s.functions,
   }
@@ -33,8 +35,8 @@ export function saveLogin(r: LoginResult): void {
   useAppStore.getState().saveLogin(r)
 }
 
-export function saveEnter(r: EnterResult, projectName: string): void {
-  useAppStore.getState().saveEnter(r, projectName)
+export function saveEnter(r: EnterResult, projectName: string, projectLogo?: string | null): void {
+  useAppStore.getState().saveEnter(r, projectName, projectLogo || undefined)
 }
 
 export function patchCtx(patch: SessionCtx): void {

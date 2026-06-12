@@ -27,6 +27,9 @@ export default function MainLayout() {
   const loc = useLocation()
   const ctx = getCtx()
   const projects: ProjectBrief[] = ctx.projects || []
+  // 项目名/Logo 响应式订阅:基本信息保存后图标栏即时刷新(不再需要手动刷新页面)
+  const projectName = useAppStore((s) => s.projectName)
+  const projectLogo = useAppStore((s) => s.projectLogo)
   const themeMode = useAppStore((s) => s.themeMode)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const lang = useAppStore((s) => s.lang)
@@ -68,7 +71,7 @@ export default function MainLayout() {
 
   const onSwitch = async (p: ProjectBrief) => {
     if (p.id === ctx.projectId) return
-    saveEnter(await enterProject(p.id), p.name)
+    saveEnter(await enterProject(p.id), p.name, p.logo)
     location.reload()
   }
 
@@ -99,13 +102,13 @@ export default function MainLayout() {
 
   const projectPanel = (
     <div style={{ width: 240 }}>
-      <div style={{ padding: '4px 12px', fontWeight: 600 }}>{ctx.projectName}</div>
+      <div style={{ padding: '4px 12px', fontWeight: 600 }}>{projectName}</div>
       <Divider style={{ margin: '8px 0' }} />
       <div style={{ padding: '0 12px 4px', color: token.colorTextSecondary, fontSize: 12 }}>{t('nav.switchProject')}</div>
       <div style={{ maxHeight: 260, overflow: 'auto' }}>
         {projects.map((p) => (
           <div key={p.id} style={styles.projItem} onClick={() => onSwitch(p)}>
-            <Avatar shape="square" size={24} style={{ background: token.colorPrimary, fontSize: 12 }}>{p.name.charAt(0)}</Avatar>
+            <Avatar shape="square" size={24} src={p.logo || undefined} style={{ background: token.colorPrimary, fontSize: 12 }}>{p.name.charAt(0)}</Avatar>
             <span style={{ flex: 1, marginLeft: 8 }}>{p.name}</span>
             {p.id === ctx.projectId && <CheckOutlined style={{ color: token.colorPrimary }} />}
           </div>
@@ -185,7 +188,11 @@ export default function MainLayout() {
     <div style={styles.root}>
       <div style={styles.rail}>
         <Popover content={projectPanel} trigger="click" placement="rightTop" arrow={false}>
-          <div style={styles.brand} title={ctx.projectName}>{(ctx.projectName || 'AT').charAt(0).toUpperCase()}</div>
+          <div style={styles.brand} title={projectName}>
+            {projectLogo
+              ? <img src={projectLogo} alt="" style={{ width: '100%', height: '100%', borderRadius: 8, objectFit: 'cover' }} />
+              : (projectName || 'AT').charAt(0).toUpperCase()}
+          </div>
         </Popover>
 
         <div style={styles.navGroup}>

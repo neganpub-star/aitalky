@@ -3,6 +3,7 @@ export interface ProjectBrief {
   id: string
   name: string
   appId: string
+  logo: string | null
 }
 
 export interface LoginResult {

@@ -10,6 +10,7 @@ interface AppState {
   projects: ProjectBrief[]
   projectId?: string
   projectName?: string
+  projectLogo?: string
   memberId?: string
   roleName?: string
   nickname?: string
@@ -22,9 +23,9 @@ interface AppState {
 
   saveLogin: (r: LoginResult) => void
   setUnreadTotal: (n: number) => void
-  saveEnter: (r: EnterResult, projectName: string) => void
+  saveEnter: (r: EnterResult, projectName: string, projectLogo?: string) => void
   setProjects: (projects: ProjectBrief[]) => void
-  setProjectName: (projectName: string) => void
+  setProject: (projectName: string, projectLogo?: string) => void
   setMember: (nickname?: string, avatar?: string) => void
   logout: () => void
   toggleTheme: () => void
@@ -44,17 +45,18 @@ export const useAppStore = create<AppState>()(
       saveLogin: (r) =>
         set({ token: r.token, email: r.email, accountId: r.accountId, projects: r.projects }),
       setUnreadTotal: (n) => set({ unreadTotal: n }),
-      saveEnter: (r, projectName) =>
+      saveEnter: (r, projectName, projectLogo) =>
         set({
           token: r.token,
           projectId: r.projectId,
           projectName,
+          projectLogo: projectLogo || undefined,
           memberId: r.memberId,
           roleName: r.roleName,
           functions: r.functions,
         }),
       setProjects: (projects) => set({ projects }),
-      setProjectName: (projectName) => set({ projectName }),
+      setProject: (projectName, projectLogo) => set({ projectName, projectLogo: projectLogo || undefined }),
       setMember: (nickname, avatar) => set({ nickname, avatar }),
       logout: () =>
         set({
@@ -64,6 +66,7 @@ export const useAppStore = create<AppState>()(
           projects: [],
           projectId: undefined,
           projectName: undefined,
+          projectLogo: undefined,
           memberId: undefined,
           roleName: undefined,
           nickname: undefined,

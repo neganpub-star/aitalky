@@ -143,7 +143,7 @@ public class AccountServiceImpl implements AccountService {
         }
         List<Long> projectIds = members.stream().map(IdMember::getProjectId).toList();
         return projectMapper.selectBatchIds(projectIds).stream()
-                .map(p -> new ProjectBrief(p.getId(), p.getName(), p.getAppId()))
+                .map(p -> new ProjectBrief(p.getId(), p.getName(), p.getAppId(), p.getLogo()))
                 .toList();
     }
 

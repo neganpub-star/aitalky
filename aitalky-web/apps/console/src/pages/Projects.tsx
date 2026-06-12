@@ -31,7 +31,7 @@ export default function Projects() {
   }
 
   const onEnter = async (p: ProjectBrief) => {
-    saveEnter(await enterProject(p.id), p.name)
+    saveEnter(await enterProject(p.id), p.name, p.logo)
     nav('/inbox')
   }
 

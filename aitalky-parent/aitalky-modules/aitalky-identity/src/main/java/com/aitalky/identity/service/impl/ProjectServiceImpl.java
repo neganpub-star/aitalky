@@ -112,7 +112,7 @@ public class ProjectServiceImpl implements ProjectService {
         memberMapper.insert(owner);
 
         log.info("项目创建成功 projectId={}, appId={}, owner={}", project.getId(), project.getAppId(), ownerAccountId);
-        return new ProjectBrief(project.getId(), project.getName(), project.getAppId());
+        return new ProjectBrief(project.getId(), project.getName(), project.getAppId(), project.getLogo());
     }
 
     @Override
