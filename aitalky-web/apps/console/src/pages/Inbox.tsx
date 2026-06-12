@@ -1,10 +1,11 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Button, Empty, Input, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
+  ExclamationCircleFilled,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -695,20 +696,33 @@ export default function Inbox() {
             )}
           </div>
 
-          {/* 加入黑名单:拉黑该客户(用户=全设备,游客=该设备),拉黑后该身份无法再接入 */}
+          {/* 加入黑名单:详细确认弹窗,区分用户(全设备)/游客(该设备 MID),对齐参考系统 */}
           <div style={{ padding: '16px' }}>
-            <Popconfirm
-              title={t('inbox.detail.blacklistConfirm')}
-              okText={t('common.confirm')}
-              cancelText={t('common.cancel')}
-              onConfirm={async () => {
-                if (!detail.customerId) return
-                await blockCustomer(detail.customerId, detail.id)
-                message.success(t('inbox.detail.blacklisted'))
+            <Button
+              block
+              danger
+              onClick={() => {
+                const cid = detail.customerId
+                if (!cid) return
+                const isVisitor = detail.customerType === 1
+                const name = detail.customerName || cid
+                Modal.confirm({
+                  title: t('inbox.detail.blacklist'),
+                  icon: <ExclamationCircleFilled style={{ color: '#faad14' }} />,
+                  content: isVisitor
+                    ? t('inbox.detail.blacklistDescVisitor', { name })
+                    : t('inbox.detail.blacklistDescUser', { name }),
+                  okText: t('common.confirm'),
+                  cancelText: t('common.cancel'),
+                  onOk: async () => {
+                    await blockCustomer(cid, detail.id)
+                    message.success(t('inbox.detail.blacklisted'))
+                  },
+                })
               }}
             >
-              <Button block danger>{t('inbox.detail.blacklist')}</Button>
-            </Popconfirm>
+              {t('inbox.detail.blacklist')}
+            </Button>
           </div>
         </div>
       )}
