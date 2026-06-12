@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
 import { init, retractMessage, sendMessage, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
+import { ensureNotifyPermission, playBeep, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
 import Chat from './screens/Chat'
@@ -78,6 +79,9 @@ export default function App() {
   const sysTypingRef = useRef(true)
   // 已读水位:离开聊天时推进到当时最大 seq;进入聊天据此算未读分割线
   const lastReadSeqRef = useRef(0)
+  // 弹窗提醒开关 + 品牌名(失焦时新消息通知用);避免 WS 监听依赖 data 重订阅
+  const popupRef = useRef(true)
+  const brandRef = useRef('')
 
   const applyIncoming = useCallback((incoming: MessageVO[]) => {
     if (incoming.length === 0) return
@@ -119,6 +123,8 @@ export default function App() {
         convIdRef.current = d.conversationId
         localMaxSeqRef.current = 0
         sysTypingRef.current = d.config?.sysMsgTyping ?? true
+        popupRef.current = d.config?.popupEnabled ?? true
+        brandRef.current = d.config?.brandName || d.customerName || ''
         // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
         setLang(d.config?.lang || access.lang)
         setData(d)
@@ -150,7 +156,14 @@ export default function App() {
     const offMsg = messengerWs.onMessage((msg) => {
       if (msg.conversationId !== convIdRef.current) return
       if (msg.seq > localMaxSeqRef.current + 1) syncRef.current() // 跳号→漏帧→补拉
-      if (msg.senderType === 'agent') setPeerTyping(false) // 客服发出消息→输入态结束
+      if (msg.senderType === 'agent') {
+        setPeerTyping(false) // 客服发出消息→输入态结束
+        // 失焦时新消息提醒:声效恒开,弹窗受 popupEnabled 控制(撤回的空消息不提醒)
+        if (document.hidden && msg.isVisible !== false) {
+          playBeep()
+          if (popupRef.current) showPopup(brandRef.current || msg.senderName || '', msg.content || '')
+        }
+      }
       applyIncoming([msg])
     })
     // typing:仅响应客服(from=agent)且开关开启;4s 无新事件自动消失
@@ -258,6 +271,9 @@ export default function App() {
         data={data}
         lastMessage={last ? last.content : null}
         onEnter={() => {
+          // 用户手势内:解锁音频 + 申请通知权限(失焦新消息提醒用)
+          unlockAudio()
+          if (popupRef.current) ensureNotifyPermission()
           // 进入聊天:以"上次离开的已读水位"为未读分割界
           setUnreadAfterSeq(lastReadSeqRef.current)
           setScreen('chat')
