@@ -97,7 +97,7 @@ export default function Messenger() {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
     right: { flex: 1, minWidth: 0 },
     previewLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13 },
-    cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', cursor: 'pointer' },
+    cardHead: { display: 'flex', alignItems: 'center', gap: 16, padding: '22px 20px', cursor: 'pointer' },
     cardTitle: { fontWeight: 600, fontSize: 14, color: 'rgba(0,0,0,0.88)' },
     cardDesc: { fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 },
     cardBody: { padding: '4px 18px 18px 60px' },
@@ -113,7 +113,7 @@ export default function Messenger() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
         <div style={styles.cardHead}
           onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}>
           <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
