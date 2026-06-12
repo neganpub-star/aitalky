@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
 import { init, sendMessage, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
-import type { AccessParams, MessageVO, MessengerInit } from './types'
+import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
 import Chat from './screens/Chat'
 
@@ -37,7 +37,8 @@ function parseAccess(): AccessParams | null {
     groupId: q.get('groupId') || undefined,
     userId,
     visitorId,
-    lang: q.get('lang') || 'zh_CN',
+    // URL 不指定 lang 时留空,由后端按信使设置默认语言决定(init 返回 config.lang)
+    lang: q.get('lang') || '',
     source: q.get('source') || 'web',
   }
 }
@@ -60,7 +61,8 @@ export default function App() {
   const [data, setData] = useState<MessengerInit | null>(null)
   const [messages, setMessages] = useState<MessageVO[]>([])
   const [status, setStatus] = useState<WsStatus>('closed')
-  const [sending, setSending] = useState(false)
+  // 本地待发/失败消息(乐观渲染,未落库);成功后移除并以服务端消息按 seq 入列
+  const [pending, setPending] = useState<PendingMsg[]>([])
 
   // 补漏对账基准:本地已收到的最大 seq(以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
@@ -106,6 +108,8 @@ export default function App() {
         setToken(d.token)
         convIdRef.current = d.conversationId
         localMaxSeqRef.current = 0
+        // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
+        setLang(d.config?.lang || access.lang)
         setData(d)
         setPhase('ready')
         // 自定义网站标题(URL 接入,浏览器标签页)
@@ -152,20 +156,43 @@ export default function App() {
     }
   }, [applyIncoming])
 
-  const onSend = useCallback(
-    async (text: string) => {
-      const content = text.trim()
+  // 真正发送:成功→服务端消息按 seq 入列并移除本地态;失败→标红保留(带错误码供本地化提示)
+  const trySend = useCallback(
+    async (localId: string, content: string) => {
       const cid = convIdRef.current
-      if (!content || !cid || sending) return
-      setSending(true)
+      if (!cid) return
+      setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'sending', errorCode: undefined } : x)))
       try {
         const vo = await sendMessage(cid, content)
-        applyIncoming([vo]) // 立即上屏(WS 回声/补拉按 seq 去重)
-      } finally {
-        setSending(false)
+        applyIncoming([vo]) // WS 回声/补拉按 seq 去重,不会重复
+        setPending((p) => p.filter((x) => x.localId !== localId))
+      } catch (e) {
+        const code = (e as { code?: number })?.code
+        setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'failed', errorCode: code } : x)))
       }
     },
-    [sending, applyIncoming],
+    [applyIncoming],
+  )
+
+  // 乐观发送:先上屏 pending(sending),再异步发;不阻塞连发
+  const onSend = useCallback(
+    (text: string) => {
+      const content = text.trim()
+      if (!content || !convIdRef.current) return
+      const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
+      setPending((p) => [...p, { localId, content, status: 'sending', time: Date.now() }])
+      void trySend(localId, content)
+    },
+    [trySend],
+  )
+
+  // 点击失败消息的感叹号重发(对齐参考系统:重发用同一本地项,成功后并入正常消息流)
+  const onResend = useCallback(
+    (localId: string) => {
+      const item = pending.find((x) => x.localId === localId)
+      if (item) void trySend(localId, item.content)
+    },
+    [pending, trySend],
   )
 
   if (phase === 'loading') {
@@ -190,8 +217,9 @@ export default function App() {
       data={data}
       messages={messages}
       status={status}
-      sending={sending}
+      pending={pending}
       onSend={onSend}
+      onResend={onResend}
       onBack={() => setScreen('home')}
     />
   )

@@ -22,7 +22,10 @@ client.interceptors.response.use(
     const r = resp.data
     if (r && typeof r.code === 'number') {
       if (r.code === 0) return r.data
-      return Promise.reject(new Error(r.message || 'fail'))
+      // 业务失败:保留错误码(前端按码本地化提示,如 1024=会话暂不可用)
+      const e = new Error(r.message || 'fail') as Error & { code?: number }
+      e.code = r.code
+      return Promise.reject(e)
     }
     return r
   },

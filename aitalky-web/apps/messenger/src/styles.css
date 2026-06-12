@@ -229,6 +229,36 @@ body {
   color: var(--text-2);
   margin-top: 4px;
 }
+/* 发送失败:气泡左侧红色感叹号(点击重发) */
+.msg-fail {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #f5222d;
+  color: #f5222d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-self: center;
+}
+/* 居中系统提示气泡(会话暂不可用等) */
+.msg-system {
+  width: fit-content;
+  max-width: 80%;
+  margin: 2px auto 14px;
+  padding: 5px 12px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 6px;
+  text-align: center;
+}
 
 .chat-input {
   flex-shrink: 0;

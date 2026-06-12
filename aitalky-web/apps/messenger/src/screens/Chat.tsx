@@ -1,17 +1,21 @@
 import type { KeyboardEvent } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
-import type { MessageVO, MessengerInit } from '../types'
+import type { MessageVO, MessengerInit, PendingMsg } from '../types'
 import type { WsStatus } from '../ws'
 
 interface Props {
   data: MessengerInit
   messages: MessageVO[]
   status: WsStatus
-  sending: boolean
+  pending: PendingMsg[]
   onSend: (text: string) => void
+  onResend: (localId: string) => void
   onBack: () => void
 }
+
+// 黑名单错误码:发消息被拦时,失败气泡上方加一条「会话暂不可用」系统提示(文案随信使语言)
+const CONVERSATION_BLOCKED = 1024
 
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
 function fmtTime(ms: number): string {
@@ -28,7 +32,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, sending, onSend, onBack }: Props) {
+export default function Chat({ data, messages, status, pending, onSend, onResend, onBack }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
@@ -38,11 +42,11 @@ export default function Chat({ data, messages, status, sending, onSend, onBack }
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, pending])
 
   const submit = () => {
     const text = input.trim()
-    if (!text || sending) return
+    if (!text) return
     onSend(text)
     setInput('')
   }
@@ -104,6 +108,28 @@ export default function Chat({ data, messages, status, sending, onSend, onBack }
             </div>
           )
         })}
+
+        {/* 本地待发/失败消息(乐观渲染,均为客户自己消息→右侧蓝气泡) */}
+        {pending.map((p) => (
+          <Fragment key={p.localId}>
+            {/* 黑名单等业务失败:气泡上方加一条居中系统提示(文案随信使语言,带错误码) */}
+            {p.status === 'failed' && p.errorCode === CONVERSATION_BLOCKED && (
+              <div className="msg-system">{`${t('blocked')}(${p.errorCode})`}</div>
+            )}
+            <div className="msg-row mine">
+              <div className="msg-body">
+                <div className="bubble mine">{p.content}</div>
+                <div className="msg-time">{fmtTime(p.time)}</div>
+              </div>
+              {/* 失败:气泡左侧红色感叹号,点击重发(对齐参考系统) */}
+              {p.status === 'failed' && (
+                <span className="msg-fail" title={t('resend')} onClick={() => onResend(p.localId)}>
+                  !
+                </span>
+              )}
+            </div>
+          </Fragment>
+        ))}
         <div ref={endRef} />
       </div>
 
@@ -115,7 +141,7 @@ export default function Chat({ data, messages, status, sending, onSend, onBack }
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button className="send-btn" disabled={!input.trim() || sending} onClick={submit} aria-label={t('send')}>
+        <button className="send-btn" disabled={!input.trim()} onClick={submit} aria-label={t('send')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
           </svg>
