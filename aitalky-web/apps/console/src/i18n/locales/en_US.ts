@@ -358,6 +358,7 @@ export default {
     noMessages: 'No messages yet',
     reply: 'Reply',
     internalNote: 'Internal note',
+    resend: 'Failed — tap to resend',
     replyPlaceholder: 'Type your reply',
     internalPlaceholder: 'Internal note — visible to your team only, not the customer',
     send: 'Send',

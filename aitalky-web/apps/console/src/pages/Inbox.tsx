@@ -18,7 +18,7 @@ import {
 } from '../api/conversation'
 import { blockCustomer } from '../api/blacklist'
 import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
-import type { ConversationDetailVO, ConversationVO, MessageVO } from '../types'
+import type { ConversationDetailVO, ConversationVO, MessageVO, PendingMsg } from '../types'
 
 // 视图 → 列表查询的 view 参数
 type CategoryKey = 'mine' | 'mention' | 'unassigned' | 'all'
@@ -97,7 +97,8 @@ export default function Inbox() {
 
   const [replyTab, setReplyTab] = useState<'reply' | 'internal'>('reply')
   const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
+  // 本地待发/失败消息(乐观渲染,按会话隔离);成功后移除并以服务端消息按 seq 入列
+  const [pending, setPending] = useState<PendingMsg[]>([])
   const [wsStatus, setWsStatus] = useState<WsStatus>(wsClient.getStatus())
   // 详情面板:联系方式/邮箱内联编辑
   const [editField, setEditField] = useState<'contact' | 'email' | null>(null)
@@ -236,10 +237,10 @@ export default function Inbox() {
     }
   }, [])
 
-  // 新消息滚到底
+  // 新消息(含本地待发)滚到底
   useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, pending])
 
   // ===== 选中会话:订阅 WS + 拉详情/消息 + 清未读 =====
   const selectConversation = useCallback(
@@ -279,27 +280,47 @@ export default function Inbox() {
   }, [])
 
   // ===== 发送回复 / 内部消息 =====
-  const onSend = useCallback(async () => {
+  // 真正发送:成功→服务端消息入列(去重/有序)并移除本地态+更新列表预览;失败→标红保留可重发
+  const trySend = useCallback(
+    async (localId: string, content: string, internal: boolean, cid: string) => {
+      setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'sending' } : x)))
+      try {
+        const vo = await replyConversation(cid, { content, type: 'text', internal })
+        applyIncoming([vo]) // WS 回声/补拉按 seq 去重 + 有序插入 + 推进 localMaxSeq
+        setPending((p) => p.filter((x) => x.localId !== localId))
+        setList((prev) =>
+          prev.map((c) =>
+            c.id === cid
+              ? { ...c, lastMessagePreview: content, lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+              : c,
+          ),
+        )
+      } catch {
+        setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'failed' } : x)))
+      }
+    },
+    [applyIncoming],
+  )
+
+  // 乐观发送:先上屏 pending(sending),清空输入,再异步发;失败标红可重发(不阻塞连发)
+  const onSend = useCallback(() => {
     const content = input.trim()
-    if (!content || !selectedId || sending) return
-    setSending(true)
-    try {
-      const internal = replyTab === 'internal'
-      const vo = await replyConversation(selectedId, { content, type: 'text', internal })
-      setInput('')
-      // 立即上屏(WS 回声/补拉按 seq 去重 + 有序插入 + 推进 localMaxSeq)
-      applyIncoming([vo])
-      setList((prev) =>
-        prev.map((c) =>
-          c.id === selectedId
-            ? { ...c, lastMessagePreview: content, lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
-            : c,
-        ),
-      )
-    } finally {
-      setSending(false)
-    }
-  }, [input, selectedId, sending, replyTab, applyIncoming])
+    if (!content || !selectedId) return
+    const internal = replyTab === 'internal'
+    const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
+    setPending((p) => [...p, { localId, conversationId: selectedId, content, internal, status: 'sending', time: Date.now() }])
+    setInput('')
+    void trySend(localId, content, internal, selectedId)
+  }, [input, selectedId, replyTab, trySend])
+
+  // 点击失败消息的❗重发(用同一本地项,成功后并入正常消息流)
+  const onResend = useCallback(
+    (localId: string) => {
+      const item = pending.find((x) => x.localId === localId)
+      if (item) void trySend(localId, item.content, item.internal, item.conversationId)
+    },
+    [pending, trySend],
+  )
 
   const onInputKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -425,7 +446,32 @@ export default function Inbox() {
     )
   }
 
+  // 本地待发/失败消息(坐席自己,右侧);失败时气泡左侧红色感叹号,点击重发
+  const renderPending = (p: PendingMsg) => {
+    const bubbleBg = p.internal ? (isDark ? '#5c4b1f' : '#fff7e6') : token.colorPrimary
+    const bubbleColor = p.internal ? token.colorText : '#fff'
+    return (
+      <div key={p.localId} style={{ display: 'flex', flexDirection: 'row-reverse', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <Avatar size={32} style={{ background: token.colorPrimary, flexShrink: 0 }}>A</Avatar>
+        <div style={{ maxWidth: '62%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          {p.internal && <span style={{ fontSize: 11, color: token.colorWarning, marginBottom: 2 }}>{t('inbox.internalNote')}</span>}
+          <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: p.internal ? `1px solid ${token.colorWarningBorder}` : 'none', opacity: p.status === 'sending' ? 0.7 : 1 }}>
+            {p.content}
+          </div>
+          <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>{fmtMsgTime(p.time)}</span>
+        </div>
+        {p.status === 'failed' && (
+          <Tooltip title={t('inbox.resend')}>
+            <ExclamationCircleFilled onClick={() => onResend(p.localId)} style={{ color: token.colorError, fontSize: 18, cursor: 'pointer', flexShrink: 0 }} />
+          </Tooltip>
+        )}
+      </div>
+    )
+  }
+
   const closed = detail?.status === 2
+  // 当前会话的本地待发/失败消息
+  const currentPending = pending.filter((p) => p.conversationId === selectedId)
   const unassigned = detail != null && detail.assigneeMemberId == null
 
   return (
@@ -515,10 +561,13 @@ export default function Inbox() {
             <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
               {loadingMsgs ? (
                 <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spin /></div>
-              ) : messages.length === 0 ? (
+              ) : messages.length === 0 && currentPending.length === 0 ? (
                 <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40, color: token.colorTextTertiary }}>{t('inbox.noMessages')}</div>
               ) : (
-                messages.map(renderMessage)
+                <>
+                  {messages.map(renderMessage)}
+                  {currentPending.map(renderPending)}
+                </>
               )}
               <div ref={msgEndRef} />
             </div>
@@ -608,7 +657,7 @@ export default function Inbox() {
                   <Button size="small" style={{ marginRight: 8 }} onClick={onClaim}>{t('inbox.claim')}</Button>
                 )}
                 <Button style={{ marginRight: 8 }} onClick={() => message.info(t('settings.wip'))}>{t('inbox.translate')}</Button>
-                <Button type="primary" loading={sending} disabled={!input.trim()} onClick={onSend}>
+                <Button type="primary" disabled={!input.trim()} onClick={onSend}>
                   {t('inbox.send')}
                 </Button>
               </div>

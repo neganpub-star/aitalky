@@ -367,6 +367,7 @@ export default {
     noMessages: '暂无消息',
     reply: '回复',
     internalNote: '内部消息',
+    resend: '发送失败,点击重发',
     replyPlaceholder: '请输入您的回复内容',
     internalPlaceholder: '内部消息仅团队可见,客户看不到',
     send: '发送',

@@ -92,6 +92,19 @@ export interface ConversationDetailVO {
   customAttrs: string | null
   lastSeq: number | null
   assigneeName: string | null
+  // 该客户是否已在黑名单 + 命中记录 id(详情面板「加入/移除黑名单」状态切换)
+  blocked: boolean | null
+  blacklistId: string | null
+}
+
+// 坐席端本地待发/失败消息(乐观渲染,未落库,按会话隔离);成功后移除并以服务端消息按 seq 入列
+export interface PendingMsg {
+  localId: string
+  conversationId: string
+  content: string
+  internal: boolean
+  status: 'sending' | 'failed'
+  time: number
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...
