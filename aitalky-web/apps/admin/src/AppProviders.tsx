@@ -5,12 +5,11 @@ import enUS from 'antd/locale/en_US'
 import { useAdminStore } from './store/useAdminStore'
 
 // 统一注入主题(白天/黑夜)与 AntD 语言;随 store 响应式切换
-// 侧栏配色随主题:亮色用 RuoYi 深蓝,暗色更深(对齐参考后台);供布局/菜单共用
-export const sidebarColors = (dark: boolean) => ({
-  bg: dark ? '#141414' : '#1a1f2e',
-  subBg: dark ? '#0d0d0d' : '#141824',
-  hover: dark ? '#2d2d2d' : '#263445',
-})
+// 侧栏配色随主题:白天浅色侧栏(白底)、黑夜深色侧栏;供布局/菜单共用
+export const sidebarColors = (dark: boolean) =>
+  dark
+    ? { bg: '#141414', subBg: '#0d0d0d', hover: '#2d2d2d' }
+    : { bg: '#ffffff', subBg: '#ffffff', hover: '#f0f1f5' }
 
 export default function AppProviders({ children }: { children: ReactNode }) {
   const themeMode = useAdminStore((s) => s.themeMode)

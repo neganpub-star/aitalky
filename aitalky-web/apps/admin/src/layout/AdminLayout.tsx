@@ -33,7 +33,8 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   // 已打开页签(只存 key,标题随语言实时取);概览页常驻不可关
   const [tags, setTags] = useState<string[]>(['/dashboard'])
-  const siderBg = sidebarColors(themeMode === 'dark').bg
+  const dark = themeMode === 'dark'
+  const siderBg = sidebarColors(dark).bg
 
   // 登录后拉一次资料(刷新权限/角色名,防 token 内信息过期)
   useEffect(() => {
@@ -108,20 +109,25 @@ export default function AdminLayout() {
         width={210}
         collapsedWidth={64}
         collapsed={collapsed}
-        theme="dark"
-        style={{ background: siderBg, boxShadow: '2px 0 8px rgba(0,0,0,0.12)', overflow: 'hidden' }}
+        theme={dark ? 'dark' : 'light'}
+        style={{
+          background: siderBg, overflow: 'hidden',
+          borderRight: dark ? 'none' : `1px solid ${token.colorSplit}`,
+          boxShadow: dark ? '2px 0 8px rgba(0,0,0,0.3)' : '2px 0 8px rgba(0,0,0,0.04)',
+        }}
       >
         {/* LOGO 区 */}
         <div style={{
           height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           padding: '0 12px', overflow: 'hidden', whiteSpace: 'nowrap',
+          borderBottom: dark ? 'none' : `1px solid ${token.colorSplit}`,
         }}>
           <img src={logo} alt="aitalky" style={{ width: 30, height: 30, borderRadius: 7, flexShrink: 0, objectFit: 'cover' }} />
-          {!collapsed && <span style={{ color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: 0.5 }}>aitalky 后管</span>}
+          {!collapsed && <span style={{ color: token.colorText, fontWeight: 700, fontSize: 16, letterSpacing: 0.5 }}>aitalky 后管</span>}
         </div>
         <Menu
           mode="inline"
-          theme="dark"
+          theme={dark ? 'dark' : 'light'}
           style={{ background: siderBg, borderInlineEnd: 'none', height: 'calc(100% - 56px)', overflowY: 'auto' }}
           selectedKeys={[activeKey]}
           items={items}

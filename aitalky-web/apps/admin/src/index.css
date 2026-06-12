@@ -20,7 +20,7 @@ body {
   width: 6px;
 }
 .admin-sider .ant-menu::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(128, 128, 128, 0.35);
   border-radius: 3px;
 }
 .admin-sider .ant-menu::-webkit-scrollbar-track {
