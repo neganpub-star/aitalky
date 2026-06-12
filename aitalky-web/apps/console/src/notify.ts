@@ -16,21 +16,29 @@ export function unlockAudio() {
   }
 }
 
-/** 短促"叮"提示音(WebAudio 合成,无需音频文件) */
+/** 醒目"叮咚"提示音:双音上扬(WebAudio 合成,无需音频文件) */
 export function playBeep() {
   try {
     if (!audioCtx) return
-    const o = audioCtx.createOscillator()
-    const g = audioCtx.createGain()
-    o.connect(g)
-    g.connect(audioCtx.destination)
-    o.type = 'sine'
-    o.frequency.value = 660
-    g.gain.setValueAtTime(0.0001, audioCtx.currentTime)
-    g.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.01)
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.25)
-    o.start()
-    o.stop(audioCtx.currentTime + 0.26)
+    const ctx = audioCtx
+    // 单个音符:三角波更明亮,快速起落避免爆音
+    const tone = (freq: number, start: number, dur: number, peak = 0.32) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.connect(g)
+      g.connect(ctx.destination)
+      o.type = 'triangle'
+      o.frequency.value = freq
+      const t = ctx.currentTime + start
+      g.gain.setValueAtTime(0.0001, t)
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.012)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+      o.start(t)
+      o.stop(t + dur + 0.02)
+    }
+    // 叮(A5)→ 咚(E6),上扬两声更抓耳
+    tone(880, 0, 0.18)
+    tone(1319, 0.16, 0.3)
   } catch {
     // 忽略
   }
