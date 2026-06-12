@@ -703,7 +703,7 @@ export default function Inbox() {
               cancelText={t('common.cancel')}
               onConfirm={async () => {
                 if (!detail.customerId) return
-                await blockCustomer(detail.customerId)
+                await blockCustomer(detail.customerId, detail.id)
                 message.success(t('inbox.detail.blacklisted'))
               }}
             >

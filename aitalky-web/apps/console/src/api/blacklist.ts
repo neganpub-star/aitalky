@@ -1,24 +1,31 @@
 import client from './client'
 import type { PageResult } from '../types'
 
-// 黑名单项(对应后端 BlacklistVO)。targetType: 1用户 2游客设备
+// 黑名单项(对应后端 BlacklistVO)。targetType: 1用户 2游客设备;uid/mid 由后端派生;其余为拉黑时快照
 export interface BlacklistVO {
   id: string
   targetType: number
   targetValue: string
+  uid: string | null
+  mid: string | null
+  customerName: string | null
+  contact: string | null
+  email: string | null
+  location: string | null
+  operatorName: string | null
   reason: string | null
   createTime: string | null
 }
 
-/** 黑名单分页 */
-export function pageBlacklist(page = 1, size = 20) {
-  return client.get<unknown, PageResult<BlacklistVO>>('/blacklist', { params: { page, size } })
+/** 黑名单分页(keyword 模糊匹配 UID/MID/用户名/联系方式/邮箱) */
+export function pageBlacklist(page = 1, size = 20, keyword?: string) {
+  return client.get<unknown, PageResult<BlacklistVO>>('/blacklist', { params: { page, size, keyword: keyword || undefined } })
 }
 
-/** 按客户拉黑(详情面板用) */
-export function blockCustomer(customerId: string, reason?: string) {
+/** 按客户拉黑(详情面板用):带上会话ID以快照所在地 */
+export function blockCustomer(customerId: string, conversationId?: string, reason?: string) {
   return client.post<unknown, void>(`/blacklist/customer/${customerId}`, undefined, {
-    params: reason ? { reason } : undefined,
+    params: { conversationId: conversationId || undefined, reason: reason || undefined },
   })
 }
 

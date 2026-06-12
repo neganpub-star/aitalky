@@ -24,17 +24,34 @@ public class BlacklistServiceImpl implements BlacklistService {
     private final SupBlacklistMapper blacklistMapper;
 
     @Override
-    public PageResult<BlacklistVO> page(long page, long size) {
-        Page<SupBlacklist> p = blacklistMapper.selectPage(Page.of(page, size),
-                Wrappers.<SupBlacklist>lambdaQuery().orderByDesc(SupBlacklist::getCreateTime));
-        List<BlacklistVO> vos = p.getRecords().stream()
-                .map(b -> new BlacklistVO(b.getId(), b.getTargetType(), b.getTargetValue(), b.getReason(), b.getCreateTime()))
-                .toList();
+    public PageResult<BlacklistVO> page(long page, long size, String keyword) {
+        var q = Wrappers.<SupBlacklist>lambdaQuery().orderByDesc(SupBlacklist::getCreateTime);
+        // keyword 模糊匹配:UID/MID 落在 target_value;另含用户名/联系方式/邮箱
+        if (StringUtils.hasText(keyword)) {
+            String kw = keyword.trim();
+            q.and(w -> w.like(SupBlacklist::getTargetValue, kw)
+                    .or().like(SupBlacklist::getCustomerName, kw)
+                    .or().like(SupBlacklist::getContact, kw)
+                    .or().like(SupBlacklist::getEmail, kw));
+        }
+        Page<SupBlacklist> p = blacklistMapper.selectPage(Page.of(page, size), q);
+        List<BlacklistVO> vos = p.getRecords().stream().map(this::toVO).toList();
         return PageResult.of(vos, p.getTotal(), p.getCurrent(), p.getSize());
     }
 
+    /** 实体 → VO:按 targetType 派生 UID/MID 列 */
+    private BlacklistVO toVO(SupBlacklist b) {
+        boolean isUser = b.getTargetType() != null && b.getTargetType() == 1;
+        String uid = isUser ? b.getTargetValue() : null;
+        String mid = isUser ? null : b.getTargetValue();
+        return new BlacklistVO(b.getId(), b.getTargetType(), b.getTargetValue(),
+                uid, mid, b.getCustomerName(), b.getContact(), b.getEmail(), b.getLocation(),
+                b.getOperatorName(), b.getReason(), b.getCreateTime());
+    }
+
     @Override
-    public void add(Integer targetType, String targetValue, String reason) {
+    public void add(Integer targetType, String targetValue, String reason,
+                    String customerName, String contact, String email, String location, String operatorName) {
         if (targetType == null || !StringUtils.hasText(targetValue)) {
             return;
         }
@@ -49,6 +66,11 @@ public class BlacklistServiceImpl implements BlacklistService {
         b.setTargetType(targetType);
         b.setTargetValue(targetValue);
         b.setReason(reason);
+        b.setCustomerName(customerName);
+        b.setContact(contact);
+        b.setEmail(email);
+        b.setLocation(location);
+        b.setOperatorName(operatorName);
         blacklistMapper.insert(b); // project_id / 审计字段由拦截器与填充器自动写入
     }
 

@@ -15,4 +15,15 @@ public class SupBlacklist extends BaseEntity {
     private Integer targetType;
     private String targetValue;
     private String reason;
+
+    /** 客户名称(拉黑时快照) */
+    private String customerName;
+    /** 联系方式(拉黑时快照) */
+    private String contact;
+    /** 邮箱(拉黑时快照) */
+    private String email;
+    /** 所在地(拉黑时快照,来自会话IP定位) */
+    private String location;
+    /** 操作者昵称(拉黑时快照) */
+    private String operatorName;
 }
