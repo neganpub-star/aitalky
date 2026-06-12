@@ -307,7 +307,7 @@ body {
 .msg-more:hover {
   color: rgba(0, 0, 0, 0.55);
 }
-/* 复制/撤回 菜单:深色圆角浮层,定位在 ··· 上方 */
+/* 复制/撤回 菜单:深色圆角浮层,定位在 ··· 上方(对齐现网:图标+文字,紧凑) */
 .msg-menu {
   position: absolute;
   bottom: calc(100% + 6px);
@@ -316,15 +316,21 @@ body {
   background: #4b4f56;
   color: #fff;
   border-radius: 8px;
-  padding: 4px 0;
-  min-width: 92px;
+  padding: 3px 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 .msg-menu-item {
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
   font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+}
+.msg-menu-item svg {
+  opacity: 0.9;
 }
 .msg-menu-item:hover {
   background: rgba(255, 255, 255, 0.12);
