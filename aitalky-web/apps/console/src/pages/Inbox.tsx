@@ -590,10 +590,10 @@ export default function Inbox() {
             {toolbar}
           </div>
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>
-            {/* 已读回执:自己(非内部)消息显示 已读/未读 */}
-            {mine && !internal && (
-              <span style={{ marginRight: 5, color: m.seq <= customerReadSeq ? token.colorTextTertiary : token.colorPrimary }}>
-                {m.seq <= customerReadSeq ? t('inbox.read') : t('inbox.unread')}
+            {/* 已读回执:自己(非内部)消息只显示"未读";已读不显示(对齐现网) */}
+            {mine && !internal && m.seq > customerReadSeq && (
+              <span style={{ marginRight: 5, color: token.colorPrimary }}>
+                {t('inbox.unread')}
               </span>
             )}
             {fmtMsgTime(m.timestamp)}
