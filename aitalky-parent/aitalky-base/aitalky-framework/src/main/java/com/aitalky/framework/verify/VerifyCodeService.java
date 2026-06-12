@@ -39,6 +39,11 @@ public class VerifyCodeService {
 
     /** 发送验证码到邮箱(带防刷间隔) */
     public void sendCode(VerifyScene scene, String email) {
+        // 开启万能码(开发期):不生成真实码、不发邮件,直接用万能码通过校验即可
+        if (props.masterEnabled()) {
+            log.info("【验证码·DEV】已开启万能码,跳过真实发信。scene={}, email={}, 用万能码 {} 即可", scene, email, props.masterCode());
+            return;
+        }
         // 防刷:同邮箱+场景在间隔内只能发一次
         RBucket<String> limit = redisson.getBucket(limitKey(scene, email));
         if (!limit.setIfAbsent("1", Duration.ofSeconds(props.sendIntervalSeconds()))) {
@@ -47,10 +52,6 @@ public class VerifyCodeService {
         String code = randomCode(props.codeLength());
         redisson.getBucket(codeKey(scene, email)).set(code, props.ttlMinutes(), TimeUnit.MINUTES);
         sendMail(email, scene, code);
-        // 开发期(开启万能码)把验证码打到日志,便于联调;生产关闭后不打印
-        if (props.masterEnabled()) {
-            log.info("【验证码·DEV】scene={}, email={}, code={}", scene, email, code);
-        }
     }
 
     /**
