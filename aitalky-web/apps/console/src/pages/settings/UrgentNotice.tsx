@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Select, Spin, Switch, message } from 'antd'
+import { Button, Input, Select, Spin, Switch, message, theme } from 'antd'
 import { DownOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
@@ -9,6 +9,7 @@ import MessengerPreview from './MessengerPreview'
 // 会话服务 - 紧急通知设置(对齐 ByteTrack):左=头部总开关+各启用语种内容平铺(/500);右=信使端聊天窗预览(红条随语种变)
 export default function UrgentNotice() {
   const { t, i18n } = useTranslation()
+  const { token } = theme.useToken()
   const lng = i18n.language
   const [cfg, setCfg] = useState<MessengerConfigVO | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,16 +69,16 @@ export default function UrgentNotice() {
       {/* 左:编辑区 */}
       <div style={{ flex: 1, minWidth: 0, maxWidth: 680 }}>
         <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 20 }}>{t('mse.urgentTitle')}</div>
-        <div style={{ background: '#fff', borderRadius: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '18px 20px' }}>
+        <div style={{ background: token.colorBgContainer, borderRadius: 10, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', padding: '18px 20px' }}>
           {/* 头部:Hi 方框图标 + 标题/副标题 + 总开关 + 收起箭头(对齐现网 img.png) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 16, borderBottom: '0.5px solid rgba(0,0,0,0.08)' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 8, border: '1px solid rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, color: 'rgba(0,0,0,0.85)', flexShrink: 0 }}>Hi</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, paddingBottom: 16, borderBottom: `0.5px solid ${token.colorBorderSecondary}` }}>
+            <div style={{ width: 40, height: 40, borderRadius: 8, border: `1px solid ${token.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 15, color: token.colorText, flexShrink: 0 }}>Hi</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{t('mse.urgentCardTitle')}</div>
-              <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 }}>{t('mse.urgentCardDesc')}</div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: token.colorText }}>{t('mse.urgentCardTitle')}</div>
+              <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 2 }}>{t('mse.urgentCardDesc')}</div>
             </div>
             <Switch checked={enabled} onChange={toggleEnabled} />
-            <DownOutlined style={{ color: 'rgba(0,0,0,0.35)', fontSize: 13 }} />
+            <DownOutlined style={{ color: token.colorTextQuaternary, fontSize: 13 }} />
           </div>
 
           {/* 各语种通知内容平铺 */}
@@ -108,7 +109,7 @@ export default function UrgentNotice() {
       {/* 右:信使端聊天窗预览(占满剩余区域;语言下拉居右上,预览卡居中,对齐参考系统) */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13 }}>{t('mse.preview')}</span>
+          <span style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('mse.preview')}</span>
           <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
             options={cfg.enabledLanguages.map((c) => ({ value: c, label: langLabel(c, lng) }))} />
         </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, Form, Input, Modal, Popconfirm, Table, message } from 'antd'
+import { Button, Card, Form, Input, Modal, Popconfirm, Table, message, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +10,7 @@ import {
 // 会话服务 - 快捷回复:话术 CRUD(坐席聊天区工具栏插入)
 export default function QuickReplies() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [data, setData] = useState<QuickReplyVO[]>([])
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState<QuickReplyVO | null>(null)
@@ -69,7 +70,7 @@ export default function QuickReplies() {
       variant="borderless"
       extra={<Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>{t('qr.add')}</Button>}
     >
-      <div style={{ color: 'rgba(0,0,0,0.45)', marginBottom: 16 }}>{t('qr.desc')}</div>
+      <div style={{ color: token.colorTextTertiary, marginBottom: 16 }}>{t('qr.desc')}</div>
       <Table
         rowKey="id"
         columns={columns}

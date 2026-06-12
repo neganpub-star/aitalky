@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Select, Spin, message } from 'antd'
+import { Button, Card, Select, Spin, message, theme } from 'antd'
 import { GlobalOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
@@ -13,6 +13,7 @@ import MessengerPreview from './MessengerPreview'
 // 语种以后端 mse_messenger_language 表为准;可选语种全集来自后端语种字典 /api/languages(MainLayout 启动拉取)
 export default function General() {
   const { t, i18n } = useTranslation()
+  const { token } = theme.useToken()
   const lng = i18n.language
   const [langs, setLangs] = useState<MessengerLanguageVO[]>([])
   const [cfg, setCfg] = useState<MessengerConfigVO | null>(null)
@@ -70,7 +71,7 @@ export default function General() {
   }
 
   const sectionTitle: React.CSSProperties = { fontWeight: 600, fontSize: 14, margin: '20px 0 4px' }
-  const sectionDesc: React.CSSProperties = { color: 'rgba(0,0,0,0.45)', fontSize: 12, marginBottom: 12 }
+  const sectionDesc: React.CSSProperties = { color: token.colorTextTertiary, fontSize: 12, marginBottom: 12 }
 
   // 预览语种问候语(取自信使配置 i18n)
   const previewGreeting = cfg?.i18n.find((x) => x.language === previewLang)?.greeting ?? null
@@ -83,7 +84,7 @@ export default function General() {
         <GlobalOutlined style={{ fontSize: 20 }} />
         <div>
           <div style={{ fontWeight: 700, fontSize: 16 }}>{t('gen.langCardTitle')}</div>
-          <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12, marginTop: 2 }}>{t('gen.langCardDesc')}</div>
+          <div style={{ color: token.colorTextTertiary, fontSize: 12, marginTop: 2 }}>{t('gen.langCardDesc')}</div>
         </div>
       </div>
 
@@ -101,11 +102,11 @@ export default function General() {
       {/* 其他语言 */}
       <div style={sectionTitle}>{t('gen.otherLang')}</div>
       <div style={sectionDesc}>{t('gen.otherLangDesc')}</div>
-      {others.length === 0 && <div style={{ color: 'rgba(0,0,0,0.35)', fontSize: 13, marginBottom: 12 }}>--</div>}
+      {others.length === 0 && <div style={{ color: token.colorTextQuaternary, fontSize: 13, marginBottom: 12 }}>--</div>}
       {others.map((l) => (
         <div key={l.language} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 0', borderBottom: '0.5px solid rgba(0,0,0,0.06)', maxWidth: 420,
+          padding: '10px 0', borderBottom: `0.5px solid ${token.colorBorderSecondary}`, maxWidth: 420,
         }}>
           <span style={{ fontSize: 14 }}>{langLabel(l.language, lng)}</span>
           <span>
@@ -133,7 +134,7 @@ export default function General() {
       {/* 右:信使端首页预览(布局对齐紧急通知设置:占满剩余宽、预览卡居中) */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13 }}>{t('mse.preview')}</span>
+          <span style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('mse.preview')}</span>
           <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
             options={langs.map((l) => ({ value: l.language, label: langLabel(l.language, lng) }))} />
         </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Input, Popconfirm, Table, message } from 'antd'
+import { Input, Popconfirm, Table, message, theme } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,7 @@ import { pageBlacklist, removeBlacklist, type BlacklistVO } from '../../api/blac
 // 信使设置 - 黑名单:顶部搜索 + 列表 + 移除(加入入口在会话详情面板「加入黑名单」)。列对齐参考系统
 export default function Blacklist() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [data, setData] = useState<BlacklistVO[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -70,7 +71,7 @@ export default function Blacklist() {
       <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 20 }}>{t('blacklist.title')}</div>
       <Input
         allowClear
-        prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,0.4)' }} />}
+        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
         placeholder={t('blacklist.searchPh')}
         style={{ width: 360, marginBottom: 16 }}
         onChange={(e) => { setPage(1); setKeyword(e.target.value) }}

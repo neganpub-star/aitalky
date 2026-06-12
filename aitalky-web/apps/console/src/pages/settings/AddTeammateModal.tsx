@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Modal, Input, Avatar, Tag, Empty } from 'antd'
+import { Modal, Input, Avatar, Tag, Empty, theme } from 'antd'
 import { SearchOutlined, CloseOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { pageMembers } from '../../api/member'
@@ -16,6 +16,7 @@ interface Props {
 
 export default function AddTeammateModal({ open, initial, onCancel, onOk }: Props) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [list, setList] = useState<MemberVO[]>([])
   const [keyword, setKeyword] = useState('')
   const [selected, setSelected] = useState<MemberVO[]>([])
@@ -47,8 +48,8 @@ export default function AddTeammateModal({ open, initial, onCancel, onOk }: Prop
       {!removable && (
         <span style={{
           width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-          border: `1px solid ${isSelected(m.id) ? '#1677ff' : '#d9d9d9'}`,
-          background: isSelected(m.id) ? '#1677ff' : '#fff',
+          border: `1px solid ${isSelected(m.id) ? token.colorPrimary : token.colorBorder}`,
+          background: isSelected(m.id) ? token.colorPrimary : token.colorBgContainer,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {isSelected(m.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
@@ -57,7 +58,7 @@ export default function AddTeammateModal({ open, initial, onCancel, onOk }: Prop
       <Avatar size={26} src={m.avatar || undefined}>{m.nickname.charAt(0)}</Avatar>
       <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nickname}</span>
       <Tag color={roleTagColor(m.roleName)} style={{ marginRight: 0, fontSize: 11 }}>{m.roleName}</Tag>
-      {removable && <CloseOutlined style={{ fontSize: 11, color: '#999' }} />}
+      {removable && <CloseOutlined style={{ fontSize: 11, color: token.colorTextQuaternary }} />}
     </div>
   )
 
@@ -66,9 +67,9 @@ export default function AddTeammateModal({ open, initial, onCancel, onOk }: Prop
       okText={t('conv.add')} cancelText={t('common.cancel')} onOk={() => onOk(selected)}>
       <div style={{ display: 'flex', gap: 16, height: 420 }}>
         {/* 左:成员列表 */}
-        <div style={{ flex: 1, minWidth: 0, border: '0.5px solid #f0f0f0', borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minWidth: 0, border: `0.5px solid ${token.colorBorderSecondary}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: 10 }}>
-            <Input prefix={<SearchOutlined style={{ color: '#bbb' }} />} placeholder={t('conv.searchMemberPh')}
+            <Input prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />} placeholder={t('conv.searchMemberPh')}
               value={keyword} onChange={(e) => setKeyword(e.target.value)} allowClear />
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px 6px' }}>
@@ -76,8 +77,8 @@ export default function AddTeammateModal({ open, initial, onCancel, onOk }: Prop
           </div>
         </div>
         {/* 右:已选成员 */}
-        <div style={{ width: 240, flexShrink: 0, border: '0.5px solid #f0f0f0', borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '12px 12px 8px', fontSize: 13, color: 'rgba(0,0,0,0.65)' }}>{t('conv.selectedMember')}</div>
+        <div style={{ width: 240, flexShrink: 0, border: `0.5px solid ${token.colorBorderSecondary}`, borderRadius: 8, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '12px 12px 8px', fontSize: 13, color: token.colorTextSecondary }}>{t('conv.selectedMember')}</div>
           <div style={{ flex: 1, overflowY: 'auto', padding: '0 6px 6px' }}>
             {selected.length === 0
               ? <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 60 }} description={false} />

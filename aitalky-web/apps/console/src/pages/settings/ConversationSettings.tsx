@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import {
-  Avatar, Button, Input, InputNumber, Modal, Radio, Select, Switch, Table, Tag, message,
+  Avatar, Button, Input, InputNumber, Modal, Radio, Select, Switch, Table, Tag, message, theme,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import {
@@ -25,6 +25,7 @@ export default function ConversationSettings() {
   const projectId = useAppStore((s) => s.projectId)
   const projects = useAppStore((s) => s.projects)
   const appId = projects.find((p) => p.id === projectId)?.appId || 'U8PZhhCG'
+  const { token } = theme.useToken()
 
   const [openKey, setOpenKey] = useState<string | null>('basic')
   const [host, setHost] = useState('https://msg.example.top')
@@ -62,8 +63,8 @@ export default function ConversationSettings() {
   const styles: Record<string, CSSProperties> = {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
     cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', cursor: 'pointer' },
-    cardTitle: { fontWeight: 600, fontSize: 15, color: 'rgba(0,0,0,0.88)' },
-    cardDesc: { fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 3 },
+    cardTitle: { fontWeight: 600, fontSize: 15, color: token.colorText },
+    cardDesc: { fontSize: 12, color: token.colorTextTertiary, marginTop: 3 },
     cardBody: { padding: '4px 20px 22px 64px' },
     sectionLabel: { fontWeight: 600, fontSize: 14, margin: '18px 0 12px' },
     actions: { marginTop: 20, display: 'flex', gap: 10 },
@@ -74,14 +75,14 @@ export default function ConversationSettings() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 16, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
         <div style={styles.cardHead} onClick={() => setOpenKey(open ? null : k)}>
-          <span style={{ fontSize: 22, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
+          <span style={{ fontSize: 22, color: token.colorText }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={styles.cardTitle}>{title}</div>
             <div style={styles.cardDesc}>{desc}</div>
           </div>
-          {open ? <DownOutlined style={{ color: 'rgba(0,0,0,0.45)' }} /> : <RightOutlined style={{ color: 'rgba(0,0,0,0.25)' }} />}
+          {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
         </div>
         {open && <div style={styles.cardBody}>{body}</div>}
       </div>
@@ -94,22 +95,22 @@ export default function ConversationSettings() {
     return (
       <div onClick={() => setRule(key)} style={{
         flex: 1, padding: '20px 18px', borderRadius: 12, cursor: 'pointer',
-        border: `1.5px solid ${active ? '#1677ff' : '#eee'}`, background: active ? '#f0f6ff' : '#fff',
+        border: `1.5px solid ${active ? token.colorPrimary : token.colorBorderSecondary}`, background: active ? token.colorPrimaryBg : token.colorBgContainer,
       }}>
         <div style={{ width: 40, height: 40, borderRadius: 10, background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 20 }}>{icon}</div>
         <div style={{ fontWeight: 600, fontSize: 15, marginTop: 16 }}>{title}</div>
-        <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 6 }}>{desc}</div>
+        <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 6 }}>{desc}</div>
       </div>
     )
   }
 
   // 队友标签(普通分配模式底部展示)
   const teammateChip = (m: MemberVO, onRemove: () => void) => (
-    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f7f7f7', borderRadius: 8, padding: '7px 12px' }}>
+    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: token.colorFillTertiary, borderRadius: 8, padding: '7px 12px' }}>
       <Avatar size={22} src={m.avatar || undefined}>{m.nickname.charAt(0)}</Avatar>
       <span style={{ fontSize: 13 }}>{m.nickname}</span>
       <Tag color={m.roleName.includes('管理') ? 'orange' : m.roleName.includes('负责') ? 'red' : 'default'} style={{ marginRight: 0, fontSize: 11 }}>{m.roleName}</Tag>
-      <CloseCircleFilled onClick={onRemove} style={{ color: '#bbb', cursor: 'pointer', fontSize: 14 }} />
+      <CloseCircleFilled onClick={onRemove} style={{ color: token.colorTextQuaternary, cursor: 'pointer', fontSize: 14 }} />
     </div>
   )
 
@@ -118,7 +119,7 @@ export default function ConversationSettings() {
     return (
       <div onClick={() => setAccessTab(key)} style={{
         flex: 1, padding: '22px 0', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
-        border: `1.5px solid ${active ? '#1677ff' : '#eee'}`, background: active ? '#f0f6ff' : '#fff', color: active ? '#1677ff' : 'rgba(0,0,0,0.65)',
+        border: `1.5px solid ${active ? token.colorPrimary : token.colorBorderSecondary}`, background: active ? token.colorPrimaryBg : token.colorBgContainer, color: active ? token.colorPrimary : token.colorTextSecondary,
       }}>
         <div style={{ fontSize: 22 }}>{icon}</div>
         <div style={{ fontSize: 14, marginTop: 8 }}>{label}</div>
@@ -174,11 +175,11 @@ export default function ConversationSettings() {
           </div>
 
           <div style={styles.sectionLabel}>{t('conv.limitTitle')}</div>
-          <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'rgba(0,0,0,0.65)', display: 'flex', gap: 8 }}>
+          <div style={{ background: token.colorWarningBg, border: `1px solid ${token.colorWarningBorder}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: token.colorTextSecondary, display: 'flex', gap: 8 }}>
             <InfoCircleFilled style={{ color: '#faad14', marginTop: 3, flexShrink: 0 }} />
             <span>{t('conv.limitBanner')}</span>
           </div>
-          <div style={{ fontSize: 13, margin: '18px 0 12px', color: 'rgba(0,0,0,0.65)' }}>{t('conv.limitLabel')}</div>
+          <div style={{ fontSize: 13, margin: '18px 0 12px', color: token.colorTextSecondary }}>{t('conv.limitLabel')}</div>
           <Radio.Group value={limitMode} onChange={(e) => setLimitMode(e.target.value)} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Radio value="unlimited">{t('conv.limitUnlimited')}</Radio>
             <Radio value="limited">{t('conv.limitLimited')}</Radio>
@@ -198,7 +199,7 @@ export default function ConversationSettings() {
               options={[{ value: 'https://', label: 'https://' }, { value: 'http://', label: 'http://' }]} />
             <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder={t('conv.domainPh')} style={{ flex: 1, marginLeft: -1 }} />
           </div>
-          <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', lineHeight: 2, marginTop: 14 }}>
+          <div style={{ fontSize: 12, color: token.colorTextTertiary, lineHeight: 2, marginTop: 14 }}>
             <div>{t('conv.domainTip1Pre')}<a>{t('conv.domainTip1Link')}</a>{t('conv.domainTip1Suf')}</div>
             <div>{t('conv.domainTip2')}</div>
             <div>{t('conv.domainTip3')}</div>
@@ -213,7 +214,7 @@ export default function ConversationSettings() {
         <>
           <Button style={{ marginTop: 14 }} icon={<PlusOutlined />} onClick={() => setNormalModal(true)}>{t('conv.addTeammate')}</Button>
           {normalTeammates.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, background: '#fafafa', borderRadius: 8, padding: 14, marginTop: 14 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, background: token.colorFillTertiary, borderRadius: 8, padding: 14, marginTop: 14 }}>
               {normalTeammates.map((m) => teammateChip(m, () => setNormalTeammates((s) => s.filter((x) => x.id !== m.id))))}
             </div>
           )}
@@ -224,12 +225,12 @@ export default function ConversationSettings() {
           {accessTab === 'url' ? (
             <>
               <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessUrl')}</div>
-              <div style={{ background: '#f7f7f7', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: 'rgba(0,0,0,0.65)' }}>{normalUrl}</div>
+              <div style={{ background: token.colorFillTertiary, borderRadius: 8, padding: '12px 16px', fontSize: 13, color: token.colorTextSecondary }}>{normalUrl}</div>
               <Button type="primary" style={{ marginTop: 16 }} onClick={() => copy(normalUrl)}>{t('conv.copyLink')}</Button>
             </>
           ) : (
             <>
-              <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', margin: '20px 0 10px' }}>{t('conv.pluginCodeTip')}</div>
+              <div style={{ fontSize: 12, color: token.colorTextTertiary, margin: '20px 0 10px' }}>{t('conv.pluginCodeTip')}</div>
               <pre style={{ background: '#0b1f33', color: '#7ee787', borderRadius: 8, padding: 16, fontSize: 12, overflowX: 'auto' }}>
 {`<script src="${host}/bytetrack.js"></script>
 <script>new bytetrack({ appId: "${appId}" })</script>`}

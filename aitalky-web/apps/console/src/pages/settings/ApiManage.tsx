@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
-import { Alert, Button, message } from 'antd'
+import { Alert, Button, message, theme } from 'antd'
 import {
   DesktopOutlined, AppleFilled, AndroidFilled, RightOutlined, DownOutlined, CopyOutlined,
 } from '@ant-design/icons'
@@ -12,6 +12,7 @@ import { getMessengerConfig } from '../../api/messengerConfig'
 // 只读展示页;AppID 取自当前项目,Host 取自信使配置的自定义域名
 export default function ApiManage() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const projectId = useAppStore((s) => s.projectId)
   const projects = useAppStore((s) => s.projects)
   const appId = projects.find((p) => p.id === projectId)?.appId || 'U8PZhhCG'
@@ -27,10 +28,10 @@ export default function ApiManage() {
   const styles: Record<string, CSSProperties> = {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
     cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', cursor: 'pointer' },
-    cardTitle: { fontWeight: 600, fontSize: 15, color: 'rgba(0,0,0,0.88)' },
+    cardTitle: { fontWeight: 600, fontSize: 15, color: token.colorText },
     cardBody: { padding: '4px 20px 24px 64px' },
-    kvLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13, marginRight: 8 },
-    code: { display: 'inline-block', background: '#fff7e6', color: '#d46b08', padding: '2px 8px', borderRadius: 4 },
+    kvLabel: { color: token.colorTextTertiary, fontSize: 13, marginRight: 8 },
+    code: { display: 'inline-block', background: token.colorWarningBg, color: token.colorWarning, padding: '2px 8px', borderRadius: 4 },
   }
 
   // 移动端密钥卡内容(IOS/Android 同结构,差异:AppKey 占位、接入说明文案/代码)。AppKey 暂为静态占位,接入后由系统生成
@@ -45,7 +46,7 @@ export default function ApiManage() {
       </div>
       <div style={{ marginBottom: 14, fontSize: 14 }}>
         <span style={styles.kvLabel}>{t('api.appKey')}：</span>
-        <span style={{ color: 'rgba(0,0,0,0.35)' }}>{t('api.appKeyPending')}</span>
+        <span style={{ color: token.colorTextQuaternary }}>{t('api.appKeyPending')}</span>
       </div>
       <div style={{ marginBottom: 16, fontSize: 14 }}>
         <span style={styles.kvLabel}>{t('api.host')}：</span>
@@ -57,7 +58,7 @@ export default function ApiManage() {
         <Button danger disabled>{t('api.resetAppKey')}</Button>
       </div>
       <div style={{ fontSize: 15, fontWeight: 600, margin: '24px 0 14px' }}>{t('api.accessDesc')}</div>
-      <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.65)', lineHeight: 2.1 }}>
+      <div style={{ fontSize: 13, color: token.colorTextSecondary, lineHeight: 2.1 }}>
         <div>{intro}</div>
         <div style={{ marginTop: 6 }}><code style={styles.code}>{codeText}</code></div>
         <div style={{ marginTop: 10 }}>{t('api.viewDoc')}</div>
@@ -70,11 +71,11 @@ export default function ApiManage() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden', border: open ? '1px solid #1677ff' : '1px solid transparent' }}>
+      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden', border: open ? `1px solid ${token.colorPrimary}` : `1px solid ${token.colorBorderSecondary}` }}>
         <div style={styles.cardHead} onClick={() => { if (comingSoon) { message.info(t('api.comingSoon')); return } setOpenKey(open ? null : k) }}>
-          <span style={{ fontSize: 24, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
+          <span style={{ fontSize: 24, color: token.colorText }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}><div style={styles.cardTitle}>{title}</div></div>
-          {open ? <DownOutlined style={{ color: 'rgba(0,0,0,0.45)' }} /> : <RightOutlined style={{ color: 'rgba(0,0,0,0.25)' }} />}
+          {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
         </div>
         {open && body && <div style={styles.cardBody}>{body}</div>}
       </div>
@@ -101,12 +102,12 @@ export default function ApiManage() {
           <Button type="primary">{t('api.viewGuide')}</Button>
 
           <div style={{ fontSize: 15, fontWeight: 600, margin: '24px 0 14px' }}>{t('api.accessDesc')}</div>
-          <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.65)', lineHeight: 2.1 }}>
+          <div style={{ fontSize: 13, color: token.colorTextSecondary, lineHeight: 2.1 }}>
             <div>{t('api.accessIntro')}</div>
             <div>{t('api.accessStep1')}</div>
             <div>
               {t('api.accessStep2Pre')}
-              <code style={{ background: '#fff7e6', color: '#d46b08', padding: '2px 8px', borderRadius: 4, margin: '0 6px' }}>{`new bytetrack({ appId: ${appId} })`}</code>
+              <code style={{ background: token.colorWarningBg, color: token.colorWarning, padding: '2px 8px', borderRadius: 4, margin: '0 6px' }}>{`new bytetrack({ appId: ${appId} })`}</code>
               {t('api.accessStep2Suf')}
             </div>
             <div>{t('api.accessStep3')}</div>

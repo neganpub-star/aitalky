@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import {
-  Avatar, Button, Checkbox, Input, InputNumber, Radio, Select, Spin, Switch, Upload, message,
+  Avatar, Button, Checkbox, Input, InputNumber, Radio, Select, Spin, Switch, Upload, message, theme,
 } from 'antd'
 import {
   SmileOutlined, AppstoreOutlined, ClockCircleOutlined, EyeOutlined,
@@ -32,6 +32,7 @@ function emptyConfig(): MessengerConfigVO {
 // 卡片顺序:欢迎信息 → Wiki → 回复时间 → 消息查看时间 → 启动器样式 → 系统消息显示 → 偏好设置 → 客户撤回权限 → 网站标题图标
 export default function Messenger() {
   const { t, i18n } = useTranslation()
+  const { token } = theme.useToken()
   const lng = i18n.language
   const nav = useNavigate()
   const [cfg, setCfg] = useState<MessengerConfigVO>(emptyConfig())
@@ -96,13 +97,13 @@ export default function Messenger() {
     left: { flex: 1, minWidth: 0, maxWidth: 680 },
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
     right: { flex: 1, minWidth: 0 },
-    previewLabel: { color: 'rgba(0,0,0,0.45)', fontSize: 13 },
+    previewLabel: { color: token.colorTextTertiary, fontSize: 13 },
     cardHead: { display: 'flex', alignItems: 'center', gap: 16, padding: '28px 20px', cursor: 'pointer' },
-    cardTitle: { fontWeight: 600, fontSize: 14, color: 'rgba(0,0,0,0.88)' },
-    cardDesc: { fontSize: 12, color: 'rgba(0,0,0,0.45)', marginTop: 2 },
+    cardTitle: { fontWeight: 600, fontSize: 14, color: token.colorText },
+    cardDesc: { fontSize: 12, color: token.colorTextTertiary, marginTop: 2 },
     cardBody: { padding: '4px 18px 18px 60px' },
     fieldLabel: { fontWeight: 600, fontSize: 13, margin: '14px 0 8px' },
-    tip: { color: 'rgba(0,0,0,0.45)', fontSize: 12, marginTop: 6 },
+    tip: { color: token.colorTextTertiary, fontSize: 12, marginTop: 6 },
     switchRow: { display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0' },
     actions: { marginTop: 18, display: 'flex', gap: 10 },
   }
@@ -113,15 +114,15 @@ export default function Messenger() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: '#fff', borderRadius: 10, marginBottom: 14, border: '1px solid rgba(0,0,0,0.15)', boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 14, border: `1px solid ${token.colorBorder}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
         <div style={styles.cardHead}
           onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}>
-          <span style={{ fontSize: 20, color: 'rgba(0,0,0,0.85)' }}>{icon}</span>
+          <span style={{ fontSize: 20, color: token.colorText }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={styles.cardTitle}>{title}</div>
             <div style={styles.cardDesc}>{desc}</div>
           </div>
-          {open ? <DownOutlined style={{ color: 'rgba(0,0,0,0.45)' }} /> : <RightOutlined style={{ color: 'rgba(0,0,0,0.25)' }} />}
+          {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
         </div>
         {open && body && <div style={styles.cardBody}>{body}</div>}
       </div>
@@ -147,11 +148,11 @@ export default function Messenger() {
           <>
             {/* 项目信息(只读,品牌=项目名称/LOGO) */}
             <div style={styles.fieldLabel}>{t('mse.projectInfo')}</div>
-            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>
               {t('mse.projectInfoDesc')}
               <a onClick={() => nav('/settings/team')}>{t('mse.goModify')}</a>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f7f7f7', borderRadius: 8, padding: '8px 12px', maxWidth: 360 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: token.colorFillTertiary, borderRadius: 8, padding: '8px 12px', maxWidth: 360 }}>
               <Avatar size={28} src={cfg.logo || undefined} shape="square" style={{ background: '#0b1f33', borderRadius: 6 }}>
                 {(cfg.brandName || 'A').charAt(0)}
               </Avatar>
@@ -160,7 +161,7 @@ export default function Messenger() {
 
             {/* 问候语:所有启用语种平铺 */}
             <div style={styles.fieldLabel}>{t('mse.greeting')}</div>
-            <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)', marginBottom: 10 }}>{t('mse.greetingSectionDesc')}</div>
+            <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 10 }}>{t('mse.greetingSectionDesc')}</div>
             {cfg.enabledLanguages.map((lang) => (
               <div key={lang} style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 13, marginBottom: 6 }}>
@@ -268,10 +269,10 @@ export default function Messenger() {
           <>
             <div style={styles.fieldLabel}>{t('mse.webIcon')}</div>
             <Upload showUploadList={false} accept="image/*" beforeUpload={beforeIconUpload} disabled={uploading}>
-              <div style={{ width: 48, height: 48, borderRadius: 8, border: '1px dashed #d9d9d9', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: '#fafafa' }}>
-                {uploading ? <LoadingOutlined style={{ color: '#1677ff' }} />
+              <div style={{ width: 48, height: 48, borderRadius: 8, border: `1px dashed ${token.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: token.colorFillTertiary }}>
+                {uploading ? <LoadingOutlined style={{ color: token.colorPrimary }} />
                   : cfg.webIcon ? <img src={cfg.webIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <PictureOutlined style={{ fontSize: 18, color: '#bbb' }} />}
+                    : <PictureOutlined style={{ fontSize: 18, color: token.colorTextQuaternary }} />}
               </div>
             </Upload>
             <div style={styles.tip}>{t('mse.webIconTip')}</div>
@@ -287,7 +288,7 @@ export default function Messenger() {
           系统消息显示/客户撤回→会话演示;偏好设置→浏览器弹窗;其余→首页问候卡 */}
       <div style={styles.right}>
         {/* 预览头部:标题 + 语言下拉,下方贯穿分隔线(对齐 ByteTrack) */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
           <span style={styles.previewLabel}>{previewMode === 'home' ? t('mse.preview') : t('mse.previewSide')}</span>
           {previewMode === 'home' && (
             <Select size="small" value={previewLang} onChange={setPreviewLang} style={{ width: 120 }}
