@@ -31,6 +31,13 @@ export default {
     on: 'List',
     off: 'Unlist',
   },
+  form: {
+    basic: 'Basic Info',
+    priceSpec: 'Price & Spec',
+    featureQuota: 'Features & Quotas',
+    content: 'Agreement Content',
+    statusGroup: 'Status',
+  },
   login: {
     title: 'aitalky Platform Admin',
     username: 'Username',

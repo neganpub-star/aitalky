@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, message } from 'antd'
+import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Space, Table, message } from 'antd'
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined,
 } from '@ant-design/icons'
@@ -9,6 +9,7 @@ import { deleteLanguage, listLanguages, saveLanguage, setLanguageStatus } from '
 import type { LanguageVO } from '../types'
 import PageCard from '../components/PageCard'
 import StatusBadge from '../components/StatusBadge'
+import FormSection from '../components/FormSection'
 
 export default function Languages() {
   const { t } = useTranslation()
@@ -68,10 +69,16 @@ export default function Languages() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
       <Modal title={t('nav.languages')} open={open} onOk={submit} onCancel={() => setOpen(false)} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Form.Item name="code" label={t('languages.code')} rules={[{ required: true }]}><Input disabled={!!editing} placeholder="zh_CN" /></Form.Item>
-          <Form.Item name="zhName" label={t('languages.zhName')} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="enName" label={t('languages.enName')} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="sort" label={t('languages.sort')}><InputNumber min={0} /></Form.Item>
+          <FormSection title={t('form.basic')} first>
+            <Row gutter={16}>
+              <Col span={12}><Form.Item name="code" label={t('languages.code')} rules={[{ required: true }]}><Input disabled={!!editing} placeholder="zh_CN" /></Form.Item></Col>
+              <Col span={12}><Form.Item name="sort" label={t('languages.sort')}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}><Form.Item name="zhName" label={t('languages.zhName')} rules={[{ required: true }]} style={{ marginBottom: 0 }}><Input /></Form.Item></Col>
+              <Col span={12}><Form.Item name="enName" label={t('languages.enName')} rules={[{ required: true }]} style={{ marginBottom: 0 }}><Input /></Form.Item></Col>
+            </Row>
+          </FormSection>
         </Form>
       </Modal>
     </PageCard>

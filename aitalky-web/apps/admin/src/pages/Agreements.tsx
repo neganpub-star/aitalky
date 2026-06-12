@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
+import { Button, Col, Form, Input, Modal, Popconfirm, Row, Select, Space, Table, Tag, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { deleteAgreement, listAgreements, saveAgreement } from '../api/resources
 import type { AgreementVO } from '../types'
 import PageCard from '../components/PageCard'
 import StatusBadge from '../components/StatusBadge'
+import FormSection from '../components/FormSection'
 
 const TYPES = ['terms', 'privacy', 'subscription']
 
@@ -66,15 +67,22 @@ export default function Agreements() {
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
       <Modal title={t('nav.agreements')} open={open} onOk={submit} onCancel={() => setOpen(false)} width={680} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Space size="large">
-            <Form.Item name="type" label={t('agreements.type')} rules={[{ required: true }]}>
-              <Select style={{ width: 180 }} options={TYPES.map((ty) => ({ value: ty, label: typeLabel(ty) }))} />
-            </Form.Item>
-            <Form.Item name="language" label={t('agreements.language')} rules={[{ required: true }]}><Input style={{ width: 120 }} /></Form.Item>
-            <Form.Item name="version" label={t('agreements.version')}><Input style={{ width: 120 }} /></Form.Item>
-          </Space>
-          <Form.Item name="title" label={t('agreements.title')}><Input /></Form.Item>
-          <Form.Item name="content" label={t('agreements.content')}><Input.TextArea rows={8} /></Form.Item>
+          <FormSection title={t('form.basic')} first>
+            <Row gutter={16}>
+              <Col span={10}>
+                <Form.Item name="type" label={t('agreements.type')} rules={[{ required: true }]}>
+                  <Select options={TYPES.map((ty) => ({ value: ty, label: typeLabel(ty) }))} />
+                </Form.Item>
+              </Col>
+              <Col span={7}><Form.Item name="language" label={t('agreements.language')} rules={[{ required: true }]}><Input /></Form.Item></Col>
+              <Col span={7}><Form.Item name="version" label={t('agreements.version')}><Input /></Form.Item></Col>
+            </Row>
+          </FormSection>
+
+          <FormSection title={t('form.content')}>
+            <Form.Item name="title" label={t('agreements.title')}><Input /></Form.Item>
+            <Form.Item name="content" label={t('agreements.content')} style={{ marginBottom: 0 }}><Input.TextArea rows={8} /></Form.Item>
+          </FormSection>
         </Form>
       </Modal>
     </PageCard>

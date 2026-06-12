@@ -31,6 +31,13 @@ export default {
     on: '上架',
     off: '下架',
   },
+  form: {
+    basic: '基本信息',
+    priceSpec: '价格与规格',
+    featureQuota: '功能与配额',
+    content: '协议内容',
+    statusGroup: '状态设置',
+  },
   login: {
     title: 'aitalky 平台运营后台',
     username: '用户名',

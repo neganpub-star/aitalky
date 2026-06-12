@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, message } from 'antd'
+import { Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Table, message } from 'antd'
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined,
 } from '@ant-design/icons'
@@ -9,6 +9,7 @@ import { deleteAddon, listAddons, saveAddon, setAddonStatus } from '../api/resou
 import type { AddonVO } from '../types'
 import PageCard from '../components/PageCard'
 import StatusBadge from '../components/StatusBadge'
+import FormSection from '../components/FormSection'
 
 const RESOURCE_TYPES = ['translate_char', 'seat']
 
@@ -69,18 +70,25 @@ export default function Addons() {
   return (
     <PageCard title={t('nav.addons')} extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>{t('common.add')}</Button>}>
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
-      <Modal title={t('nav.addons')} open={open} onOk={submit} onCancel={() => setOpen(false)} destroyOnClose>
+      <Modal title={t('nav.addons')} open={open} onOk={submit} onCancel={() => setOpen(false)} width={560} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Form.Item name="code" label={t('addons.code')} rules={[{ required: true }]}><Input disabled={!!editing} /></Form.Item>
-          <Form.Item name="name" label={t('addons.name')} rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="resourceType" label={t('addons.resourceType')} rules={[{ required: true }]}>
-            <Select options={RESOURCE_TYPES.map((r) => ({ value: r, label: r }))} />
-          </Form.Item>
-          <Space size="large">
-            <Form.Item name="specAmount" label={t('addons.spec')} rules={[{ required: true }]}><InputNumber min={0} /></Form.Item>
-            <Form.Item name="price" label={t('addons.price')} rules={[{ required: true }]}><InputNumber min={0} step={0.01} /></Form.Item>
-            <Form.Item name="currency" label="Currency"><Input style={{ width: 90 }} /></Form.Item>
-          </Space>
+          <FormSection title={t('form.basic')} first>
+            <Row gutter={16}>
+              <Col span={12}><Form.Item name="code" label={t('addons.code')} rules={[{ required: true }]}><Input disabled={!!editing} /></Form.Item></Col>
+              <Col span={12}><Form.Item name="name" label={t('addons.name')} rules={[{ required: true }]}><Input /></Form.Item></Col>
+            </Row>
+            <Form.Item name="resourceType" label={t('addons.resourceType')} rules={[{ required: true }]}>
+              <Select options={RESOURCE_TYPES.map((r) => ({ value: r, label: r }))} />
+            </Form.Item>
+          </FormSection>
+
+          <FormSection title={t('form.priceSpec')}>
+            <Row gutter={16}>
+              <Col span={8}><Form.Item name="specAmount" label={t('addons.spec')} rules={[{ required: true }]} style={{ marginBottom: 0 }}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+              <Col span={8}><Form.Item name="price" label={t('addons.price')} rules={[{ required: true }]} style={{ marginBottom: 0 }}><InputNumber min={0} step={0.01} style={{ width: '100%' }} /></Form.Item></Col>
+              <Col span={8}><Form.Item name="currency" label="Currency" style={{ marginBottom: 0 }}><Input /></Form.Item></Col>
+            </Row>
+          </FormSection>
         </Form>
       </Modal>
     </PageCard>

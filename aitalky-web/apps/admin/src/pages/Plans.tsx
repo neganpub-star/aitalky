@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Switch, Table, Tag, message,
+  Button, Col, Form, Input, InputNumber, Modal, Popconfirm, Row, Select, Space, Switch, Table, Tag, message,
 } from 'antd'
 import {
   MinusCircleOutlined, PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined,
@@ -11,6 +11,7 @@ import { deletePlan, listPlans, savePlan, setPlanStatus } from '../api/resources
 import type { PlanVO } from '../types'
 import PageCard from '../components/PageCard'
 import StatusBadge from '../components/StatusBadge'
+import FormSection from '../components/FormSection'
 
 const RESOURCE_TYPES = ['seat', 'translate_char', 'customer']
 
@@ -89,22 +90,30 @@ export default function Plans() {
     >
       <Table rowKey="id" loading={loading} columns={columns} dataSource={data} pagination={false} />
 
-      <Modal title={t('nav.plans')} open={open} onOk={submit} onCancel={() => setOpen(false)} width={620} destroyOnClose>
+      <Modal title={t('nav.plans')} open={open} onOk={submit} onCancel={() => setOpen(false)} width={680} destroyOnClose>
         <Form form={form} layout="vertical">
-          <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="code" label={t('plans.code')} rules={[{ required: true }]} style={{ flex: 1 }}>
-              <Input disabled={!!editing} />
-            </Form.Item>
-            <Form.Item name="name" label={t('plans.name')} rules={[{ required: true }]} style={{ flex: 1 }}>
-              <Input />
-            </Form.Item>
-          </Space>
-          <Space size="large" style={{ display: 'flex' }}>
-            <Form.Item name="level" label={t('plans.level')}><InputNumber min={0} /></Form.Item>
-            <Form.Item name="monthlyPrice" label={t('plans.price')} rules={[{ required: true }]}><InputNumber min={0} step={0.01} /></Form.Item>
-            <Form.Item name="currency" label="Currency"><Input style={{ width: 90 }} /></Form.Item>
-            <Form.Item name="minMonths" label={t('plans.minMonths')}><InputNumber min={1} /></Form.Item>
-          </Space>
+          <FormSection title={t('form.basic')} first>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item name="code" label={t('plans.code')} rules={[{ required: true }]}>
+                  <Input disabled={!!editing} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="name" label={t('plans.name')} rules={[{ required: true }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={6}><Form.Item name="level" label={t('plans.level')}><InputNumber min={0} style={{ width: '100%' }} /></Form.Item></Col>
+              <Col span={6}><Form.Item name="monthlyPrice" label={t('plans.price')} rules={[{ required: true }]}><InputNumber min={0} step={0.01} style={{ width: '100%' }} /></Form.Item></Col>
+              <Col span={6}><Form.Item name="currency" label="Currency"><Input /></Form.Item></Col>
+              <Col span={6}><Form.Item name="minMonths" label={t('plans.minMonths')}><InputNumber min={1} style={{ width: '100%' }} /></Form.Item></Col>
+            </Row>
+          </FormSection>
+
+          <FormSection title={t('form.featureQuota')}>
           <Form.Item name="features" label={t('plans.features')}>
             <Select mode="tags" placeholder="inbox, messenger, translate..." />
           </Form.Item>
@@ -133,9 +142,13 @@ export default function Plans() {
               )}
             </Form.List>
           </Form.Item>
-          <Form.Item name="status" label={t('common.status')} valuePropName="checked" getValueFromEvent={(c) => (c ? 1 : 0)} getValueProps={(v) => ({ checked: v === 1 })}>
-            <Switch checkedChildren={t('common.enabled')} unCheckedChildren={t('common.disabled')} />
-          </Form.Item>
+          </FormSection>
+
+          <FormSection title={t('form.statusGroup')}>
+            <Form.Item name="status" label={t('common.status')} valuePropName="checked" getValueFromEvent={(c) => (c ? 1 : 0)} getValueProps={(v) => ({ checked: v === 1 })} style={{ marginBottom: 0 }}>
+              <Switch checkedChildren={t('common.enabled')} unCheckedChildren={t('common.disabled')} />
+            </Form.Item>
+          </FormSection>
         </Form>
       </Modal>
     </PageCard>
