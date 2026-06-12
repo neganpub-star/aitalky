@@ -294,8 +294,9 @@ body {
 .msg-row.mine .bubble-wrap {
   flex-direction: row-reverse;
 }
-/* ··· 触发器:默认半透明,hover 加深 */
+/* ··· 触发器:默认半透明,hover 加深;菜单以它为定位锚 */
 .msg-more {
+  position: relative;
   flex-shrink: 0;
   color: rgba(0, 0, 0, 0.3);
   font-weight: 700;
@@ -307,17 +308,28 @@ body {
 .msg-more:hover {
   color: rgba(0, 0, 0, 0.55);
 }
-/* 复制/撤回 菜单:深色圆角浮层,定位在 ··· 上方(对齐现网:图标+文字,紧凑) */
+/* 复制/撤回 菜单:深色圆角浮层,冒泡在 ··· 正上方 + 朝下小三角(对齐现网) */
 .msg-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
-  right: 0;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20;
   background: #4b4f56;
   color: #fff;
   border-radius: 8px;
   padding: 3px 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+/* 小三角:菜单底部居中,指向 ··· */
+.msg-menu::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #4b4f56;
 }
 .msg-menu-item {
   display: flex;

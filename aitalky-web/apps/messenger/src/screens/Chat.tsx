@@ -144,26 +144,28 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
                   <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
-                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack) */}
+                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack:菜单冒泡在 ··· 正上方,带小三角) */}
                   {mine && (
                     <span
                       className="msg-more"
                       onClick={(e) => { e.stopPropagation(); setMenuFor((cur) => (cur === m.msgId ? null : m.msgId)) }}
-                    >···</span>
-                  )}
-                  {mine && menuFor === m.msgId && (
-                    <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
-                      <div className="msg-menu-item" onClick={() => { copyText(m.content); setMenuFor(null) }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
-                        <span>{t('copy')}</span>
-                      </div>
-                      {retractable && (
-                        <div className="msg-menu-item" onClick={() => { setMenuFor(null); onRetract(m.msgId) }}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14L4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-2" /></svg>
-                          <span>{t('retract')}</span>
+                    >
+                      ···
+                      {menuFor === m.msgId && (
+                        <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
+                          <div className="msg-menu-item" onClick={() => { copyText(m.content); setMenuFor(null) }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+                            <span>{t('copy')}</span>
+                          </div>
+                          {retractable && (
+                            <div className="msg-menu-item" onClick={() => { setMenuFor(null); onRetract(m.msgId) }}>
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14L4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-2" /></svg>
+                              <span>{t('retract')}</span>
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </span>
                   )}
                 </div>
                 <div className="msg-time">{fmtTime(m.timestamp)}</div>
