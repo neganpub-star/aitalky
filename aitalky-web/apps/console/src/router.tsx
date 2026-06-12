@@ -23,6 +23,7 @@ import ConversationSettings from './pages/settings/ConversationSettings'
 import ApiManage from './pages/settings/ApiManage'
 import TeamBasic from './pages/settings/TeamBasic'
 import DeactivateProject from './pages/settings/DeactivateProject'
+import RolePage from './pages/settings/RolePage'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -80,7 +81,7 @@ export const router = createHashRouter([
           { path: 'api', element: <ApiManage /> },
           { path: 'team', element: <TeamBasic /> },
           { path: 'deactivate', element: <DeactivateProject /> },
-          { path: 'roles', element: <Placeholder title="角色管理" /> },
+          { path: 'roles', element: <RolePage /> },
           { path: 'data', element: <Placeholder title="数据管理" /> },
           { path: 'billing', element: <Placeholder title="服务订阅" /> },
         ],

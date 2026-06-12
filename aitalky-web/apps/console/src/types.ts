@@ -67,6 +67,27 @@ export interface RoleVO {
   isSystem: number
 }
 
+// 权限目录叶子节点(对应后端 PermNode);store 指明勾选后落入 pages[] 还是 functions[]
+export interface PermNode {
+  token: string
+  name: string
+  store: 'page' | 'function'
+}
+
+// 权限目录模块(对应后端 PermModule):模块/页面/功能 三列
+export interface PermModule {
+  key: string
+  name: string
+  pages: PermNode[]
+  functions: PermNode[]
+}
+
+// 某角色已勾选权限(对应后端 PermissionView)
+export interface PermissionView {
+  pages: string[]
+  functions: string[]
+}
+
 // 邮箱邀请记录行(对应后端 EmailInviteVO)。status: 0待接受 1已接受 2已撤销 3已过期
 export interface EmailInviteVO {
   id: string
