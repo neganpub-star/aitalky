@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Tag, message } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, message } from 'antd'
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined,
+} from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteLanguage, listLanguages, saveLanguage, setLanguageStatus } from '../api/resources'
 import type { LanguageVO } from '../types'
 import PageCard from '../components/PageCard'
+import StatusBadge from '../components/StatusBadge'
 
 export default function Languages() {
   const { t } = useTranslation()
@@ -41,16 +44,19 @@ export default function Languages() {
     { title: t('languages.enName'), dataIndex: 'enName' },
     {
       title: t('common.status'), dataIndex: 'status', width: 90,
-      render: (s: number) => <Tag color={s === 1 ? 'green' : 'default'}>{s === 1 ? t('common.enabled') : t('common.disabled')}</Tag>,
+      render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} />,
     },
     {
-      title: t('common.operation'), width: 180,
+      title: t('common.operation'), width: 190,
       render: (_, l) => (
-        <Space>
-          <a onClick={() => openModal(l)}>{t('common.edit')}</a>
-          <a onClick={async () => { await setLanguageStatus(l.id, l.status === 1 ? 0 : 1); load() }}>{l.status === 1 ? t('common.disabled') : t('common.enabled')}</a>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openModal(l)}>{t('common.edit')}</Button>
+          <Button type="link" size="small" icon={l.status === 1 ? <StopOutlined /> : <CheckCircleOutlined />}
+            onClick={async () => { await setLanguageStatus(l.id, l.status === 1 ? 0 : 1); load() }}>
+            {l.status === 1 ? t('common.disabled') : t('common.enabled')}
+          </Button>
           <Popconfirm title={t('common.deleteConfirm')} onConfirm={async () => { await deleteLanguage(l.id); message.success(t('common.deleted')); load() }}>
-            <a style={{ color: '#ff4d4f' }}>{t('common.delete')}</a>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>{t('common.delete')}</Button>
           </Popconfirm>
         </Space>
       ),

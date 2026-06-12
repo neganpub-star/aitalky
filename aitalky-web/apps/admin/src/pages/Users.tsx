@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Drawer, Descriptions, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { Button, Drawer, Descriptions, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { EyeOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageUsers, setUserStatus, userDetail } from '../api/resources'
 import type { AdminAccountDetailVO, AdminAccountVO } from '../types'
 import PageCard from '../components/PageCard'
+import StatusBadge from '../components/StatusBadge'
 
 export default function Users() {
   const { t } = useTranslation()
@@ -41,20 +43,21 @@ export default function Users() {
     { title: t('users.projectCount'), dataIndex: 'projectCount', width: 110 },
     {
       title: t('common.status'), dataIndex: 'status', width: 90,
-      render: (s: number) => <Tag color={s === 1 ? 'green' : 'red'}>{s === 1 ? t('common.enabled') : t('common.disabled')}</Tag>,
+      render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} offDanger />,
     },
     {
-      title: t('common.operation'), width: 160,
+      title: t('common.operation'), width: 170,
       render: (_, u) => (
-        <Space>
-          <a onClick={() => userDetail(u.id).then(setDetail)}>{t('common.detail')}</a>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => userDetail(u.id).then(setDetail)}>{t('common.detail')}</Button>
           <Popconfirm
             title={u.status === 1 ? t('users.disableConfirm') : t('users.enableConfirm')}
             onConfirm={() => toggle(u)}
           >
-            <a style={{ color: u.status === 1 ? '#ff4d4f' : undefined }}>
+            <Button type="link" size="small" danger={u.status === 1}
+              icon={u.status === 1 ? <StopOutlined /> : <CheckCircleOutlined />}>
               {u.status === 1 ? t('common.disabled') : t('common.enabled')}
-            </a>
+            </Button>
           </Popconfirm>
         </Space>
       ),

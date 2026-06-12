@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteAgreement, listAgreements, saveAgreement } from '../api/resources'
 import type { AgreementVO } from '../types'
 import PageCard from '../components/PageCard'
+import StatusBadge from '../components/StatusBadge'
 
 const TYPES = ['terms', 'privacy', 'subscription']
 
@@ -45,15 +46,15 @@ export default function Agreements() {
     { title: t('agreements.version'), dataIndex: 'version', render: (v) => v || '-' },
     {
       title: t('common.status'), dataIndex: 'status', width: 90,
-      render: (s: number) => <Tag color={s === 1 ? 'green' : 'default'}>{s === 1 ? '发布' : '草稿'}</Tag>,
+      render: (s: number) => <StatusBadge active={s === 1} on="发布" off="草稿" />,
     },
     {
-      title: t('common.operation'), width: 140,
+      title: t('common.operation'), width: 150,
       render: (_, a) => (
-        <Space>
-          <a onClick={() => openModal(a)}>{t('common.edit')}</a>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openModal(a)}>{t('common.edit')}</Button>
           <Popconfirm title={t('common.deleteConfirm')} onConfirm={async () => { await deleteAgreement(a.id); message.success(t('common.deleted')); load() }}>
-            <a style={{ color: '#ff4d4f' }}>{t('common.delete')}</a>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>{t('common.delete')}</Button>
           </Popconfirm>
         </Space>
       ),

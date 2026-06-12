@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, Tag, message } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Button, Form, Input, InputNumber, Modal, Popconfirm, Select, Space, Table, message } from 'antd'
+import {
+  PlusOutlined, EditOutlined, DeleteOutlined, StopOutlined, CheckCircleOutlined,
+} from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { deleteAddon, listAddons, saveAddon, setAddonStatus } from '../api/resources'
 import type { AddonVO } from '../types'
 import PageCard from '../components/PageCard'
+import StatusBadge from '../components/StatusBadge'
 
 const RESOURCE_TYPES = ['translate_char', 'seat']
 
@@ -44,16 +47,19 @@ export default function Addons() {
     { title: t('addons.price'), dataIndex: 'price', render: (v, r) => `${v} ${r.currency}` },
     {
       title: t('common.status'), dataIndex: 'status', width: 90,
-      render: (s: number) => <Tag color={s === 1 ? 'green' : 'default'}>{s === 1 ? t('common.enabled') : t('common.disabled')}</Tag>,
+      render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} />,
     },
     {
-      title: t('common.operation'), width: 180,
+      title: t('common.operation'), width: 190,
       render: (_, a) => (
-        <Space>
-          <a onClick={() => openModal(a)}>{t('common.edit')}</a>
-          <a onClick={async () => { await setAddonStatus(a.id, a.status === 1 ? 0 : 1); load() }}>{a.status === 1 ? t('common.off') : t('common.on')}</a>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openModal(a)}>{t('common.edit')}</Button>
+          <Button type="link" size="small" icon={a.status === 1 ? <StopOutlined /> : <CheckCircleOutlined />}
+            onClick={async () => { await setAddonStatus(a.id, a.status === 1 ? 0 : 1); load() }}>
+            {a.status === 1 ? t('common.off') : t('common.on')}
+          </Button>
           <Popconfirm title={t('common.deleteConfirm')} onConfirm={async () => { await deleteAddon(a.id); message.success(t('common.deleted')); load() }}>
-            <a style={{ color: '#ff4d4f' }}>{t('common.delete')}</a>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>{t('common.delete')}</Button>
           </Popconfirm>
         </Space>
       ),

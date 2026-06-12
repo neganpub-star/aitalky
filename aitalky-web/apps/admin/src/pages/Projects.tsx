@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { Button, Input, Popconfirm, Space, Table, Tag, message } from 'antd'
+import { StopOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageProjects, setProjectStatus } from '../api/resources'
 import type { AdminProjectVO } from '../types'
 import PageCard from '../components/PageCard'
+import StatusBadge from '../components/StatusBadge'
 
 export default function Projects() {
   const { t } = useTranslation()
@@ -45,18 +47,19 @@ export default function Projects() {
     },
     {
       title: t('common.status'), dataIndex: 'status', width: 90,
-      render: (s: number) => <Tag color={s === 1 ? 'green' : 'red'}>{s === 1 ? t('common.enabled') : t('common.disabled')}</Tag>,
+      render: (s: number) => <StatusBadge active={s === 1} on={t('common.enabled')} off={t('common.disabled')} offDanger />,
     },
     {
-      title: t('common.operation'), width: 100,
+      title: t('common.operation'), width: 110,
       render: (_, p) => (
         <Popconfirm
           title={p.status === 1 ? t('projects.disableConfirm') : t('projects.enableConfirm')}
           onConfirm={() => toggle(p)}
         >
-          <a style={{ color: p.status === 1 ? '#ff4d4f' : undefined }}>
+          <Button type="link" size="small" danger={p.status === 1}
+            icon={p.status === 1 ? <StopOutlined /> : <CheckCircleOutlined />}>
             {p.status === 1 ? t('common.disabled') : t('common.enabled')}
-          </a>
+          </Button>
         </Popconfirm>
       ),
     },
