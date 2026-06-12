@@ -38,7 +38,7 @@ export default function Messenger() {
   const [cfg, setCfg] = useState<MessengerConfigVO>(emptyConfig())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [openKey, setOpenKey] = useState<string | null>('welcome')
+  const [openKey, setOpenKey] = useState<string | null>(null)
   const [previewLang, setPreviewLang] = useState('zh_CN')
   const [uploading, setUploading] = useState(false) // webIcon
 
