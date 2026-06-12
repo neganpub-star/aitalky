@@ -8,6 +8,8 @@ export type WsStatus = 'connecting' | 'open' | 'closed'
 type MsgFn = (m: MessageVO) => void
 type StatusFn = (s: WsStatus) => void
 type OpenFn = () => void
+// typing 瞬时事件:from=agent/customer,conversationId 为字符串(与消息帧一致)
+type TypingFn = (e: { conversationId: string; from: string }) => void
 
 const PING_INTERVAL = 25_000
 const RECONNECT_BASE = 1_000
@@ -23,6 +25,7 @@ class MessengerWs {
   private msgFns = new Set<MsgFn>()
   private statusFns = new Set<StatusFn>()
   private openFns = new Set<OpenFn>()
+  private typingFns = new Set<TypingFn>()
   private status: WsStatus = 'closed'
 
   connect(token: string) {
@@ -49,6 +52,11 @@ class MessengerWs {
       try {
         data = JSON.parse(ev.data as string)
       } catch {
+        return
+      }
+      // typing 瞬时帧:分发给 typing 监听(上层按 from 过滤+开关控制显示)
+      if (data.evt === 'typing') {
+        this.typingFns.forEach((fn) => fn({ conversationId: String(data.conversationId), from: String(data.from) }))
         return
       }
       // 控制帧(connected/pong)忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
@@ -120,6 +128,11 @@ class MessengerWs {
   onOpen(fn: OpenFn) {
     this.openFns.add(fn)
     return () => this.openFns.delete(fn)
+  }
+
+  onTyping(fn: TypingFn) {
+    this.typingFns.add(fn)
+    return () => this.typingFns.delete(fn)
   }
 
   close() {

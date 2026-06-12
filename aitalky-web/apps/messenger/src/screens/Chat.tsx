@@ -12,6 +12,8 @@ interface Props {
   onSend: (text: string) => void
   onResend: (localId: string) => void
   onRetract: (msgId: string) => void
+  onTyping: () => void
+  peerTyping: boolean
   onBack: () => void
 }
 
@@ -35,7 +37,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, pending, onSend, onResend, onRetract, onBack }: Props) {
+export default function Chat({ data, messages, status, pending, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
@@ -52,7 +54,7 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, pending])
+  }, [messages, pending, peerTyping])
 
   const submit = () => {
     const text = input.trim()
@@ -175,6 +177,9 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
             </div>
           </Fragment>
         ))}
+
+        {/* 对方(客服)正在输入(瞬时;受 sysMsgTyping 开关控制,App 已过滤) */}
+        {peerTyping && <div className="msg-typing">{t('peerTyping')}</div>}
         <div ref={endRef} />
       </div>
 
@@ -183,7 +188,10 @@ export default function Chat({ data, messages, status, pending, onSend, onResend
           value={input}
           rows={1}
           placeholder={t('inputPlaceholder')}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value)
+            if (e.target.value.trim()) onTyping() // 节流在 App 层
+          }}
           onKeyDown={onKeyDown}
         />
         <button className="send-btn" disabled={!input.trim()} onClick={submit} aria-label={t('send')}>

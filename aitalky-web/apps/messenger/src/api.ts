@@ -51,6 +51,11 @@ export async function sendMessage(conversationId: string, content: string, type 
   return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type }))
 }
 
+/** 客户正在输入(瞬时通知;客户端节流调用,不落库) */
+export async function sendTyping(conversationId: string): Promise<void> {
+  await client.post<unknown, void>('/typing', undefined, { params: { conversationId } })
+}
+
 /** 客户撤回自己的消息(受信使设置「客户撤回权限」开关 + 2分钟时限控制) */
 export async function retractMessage(conversationId: string, msgId: string): Promise<MessageVO> {
   return normMessage(

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { init, retractMessage, sendMessage, setToken, syncMessages } from './api'
+import { init, retractMessage, sendMessage, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
@@ -63,11 +63,17 @@ export default function App() {
   const [status, setStatus] = useState<WsStatus>('closed')
   // 本地待发/失败消息(乐观渲染,未落库);成功后移除并以服务端消息按 seq 入列
   const [pending, setPending] = useState<PendingMsg[]>([])
+  // 对方(客服)正在输入(瞬时,4s 无新事件自动消失;受 sysMsgTyping 开关控制)
+  const [peerTyping, setPeerTyping] = useState(false)
 
   // 补漏对账基准:本地已收到的最大 seq(以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
   const syncingRef = useRef(false)
   const convIdRef = useRef<string>('')
+  // typing:节流发送时间戳 + 显示自动清除定时器 + sysMsgTyping 开关(避免 WS 监听依赖 data 重订阅)
+  const lastTypingRef = useRef(0)
+  const typingClearRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const sysTypingRef = useRef(true)
 
   const applyIncoming = useCallback((incoming: MessageVO[]) => {
     if (incoming.length === 0) return
@@ -108,6 +114,7 @@ export default function App() {
         setToken(d.token)
         convIdRef.current = d.conversationId
         localMaxSeqRef.current = 0
+        sysTypingRef.current = d.config?.sysMsgTyping ?? true
         // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
         setLang(d.config?.lang || access.lang)
         setData(d)
@@ -137,7 +144,15 @@ export default function App() {
     const offMsg = messengerWs.onMessage((msg) => {
       if (msg.conversationId !== convIdRef.current) return
       if (msg.seq > localMaxSeqRef.current + 1) syncRef.current() // 跳号→漏帧→补拉
+      if (msg.senderType === 'agent') setPeerTyping(false) // 客服发出消息→输入态结束
       applyIncoming([msg])
+    })
+    // typing:仅响应客服(from=agent)且开关开启;4s 无新事件自动消失
+    const offTyping = messengerWs.onTyping((e) => {
+      if (e.from !== 'agent' || e.conversationId !== convIdRef.current || !sysTypingRef.current) return
+      setPeerTyping(true)
+      clearTimeout(typingClearRef.current)
+      typingClearRef.current = setTimeout(() => setPeerTyping(false), 4000)
     })
     // 网①重连补漏 + 网③周期对账/聚焦补漏
     const offOpen = messengerWs.onOpen(() => syncRef.current())
@@ -150,8 +165,10 @@ export default function App() {
     return () => {
       offStatus()
       offMsg()
+      offTyping()
       offOpen()
       clearInterval(poll)
+      clearTimeout(typingClearRef.current)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [applyIncoming])
@@ -195,6 +212,16 @@ export default function App() {
     [pending, trySend],
   )
 
+  // 输入中:节流 3s 通知坐席(瞬时,不落库);失败静默
+  const onTyping = useCallback(() => {
+    const cid = convIdRef.current
+    if (!cid) return
+    const now = Date.now()
+    if (now - lastTypingRef.current < 3000) return
+    lastTypingRef.current = now
+    void sendTyping(cid).catch(() => {})
+  }, [])
+
   // 撤回自己的消息:成功后用返回的已撤回 VO(isVisible=false)按 seq 替换原消息;WS 回声同样幂等
   const onRetract = useCallback(
     (msgId: string) => {
@@ -237,6 +264,8 @@ export default function App() {
       onSend={onSend}
       onResend={onResend}
       onRetract={onRetract}
+      onTyping={onTyping}
+      peerTyping={peerTyping}
       onBack={() => setScreen('home')}
     />
   )

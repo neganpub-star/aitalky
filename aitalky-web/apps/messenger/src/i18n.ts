@@ -23,6 +23,7 @@ const dict = {
     retract: '撤回',
     retractedByYou: '你撤回了一条消息',
     retractedByAgent: '客服撤回了一条消息',
+    peerTyping: '对方正在输入中…',
   },
   en_US: {
     greetingTitle: 'Hi there!',
@@ -45,6 +46,7 @@ const dict = {
     retract: 'Recall',
     retractedByYou: 'You recalled a message',
     retractedByAgent: 'An agent recalled a message',
+    peerTyping: 'Typing…',
   },
   zh_TW: {
     greetingTitle: '您好!',

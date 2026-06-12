@@ -50,6 +50,11 @@ export async function replyConversation(
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, payload))
 }
 
+/** 坐席正在输入(瞬时通知;节流调用,不落库) */
+export function sendConversationTyping(id: string) {
+  return client.post<unknown, void>(`/conversations/${id}/typing`)
+}
+
 /** 坐席撤回自己发送的消息(2分钟时限);返回已撤回 VO(isVisible=false) */
 export async function retractConversationMessage(id: string, msgId: string) {
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages/${msgId}/retract`))

@@ -127,6 +127,24 @@ public class PublicMessengerController {
         return R.ok(vo);
     }
 
+    /** 客户正在输入(瞬时通知,不落库):推坐席端显示"客户正在输入中" */
+    @PostMapping("/typing")
+    public R<Void> typing(@RequestHeader("Authorization") String auth, @RequestParam Long conversationId) {
+        var principal = customerTokenService.parse(auth);
+        CnvConversation conv = conversationService.getById(conversationId);
+        if (!conv.getCustomerId().equals(principal.customerId()) || !conv.getProjectId().equals(principal.projectId())) {
+            throw new BizException(ResultCode.FORBIDDEN);
+        }
+        try {
+            String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                    "evt", "typing", "conversationId", String.valueOf(conv.getId()), "from", "customer"));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
+        } catch (Exception ignore) {
+            // 瞬时事件,失败无需补偿
+        }
+        return R.ok();
+    }
+
     /** 客户拉消息(客户令牌):afterSeq 增量;不传则取最近 50 条。客户看不到内部消息 */
     @GetMapping("/messages")
     public R<List<MessageVO>> messages(@RequestHeader("Authorization") String auth,

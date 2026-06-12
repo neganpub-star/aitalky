@@ -13,7 +13,8 @@ import { useAppStore } from '../store/useAppStore'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
   claimConversation, closeConversation, getConversation, getConversationCounts,
-  listConversations, listMessages, replyConversation, retractConversationMessage, updateCustomerContact,
+  listConversations, listMessages, replyConversation, retractConversationMessage,
+  sendConversationTyping, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
@@ -102,6 +103,10 @@ export default function Inbox() {
   const [input, setInput] = useState('')
   // hover 在自己消息上时显示「撤回」入口(对齐桌面端交互)
   const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
+  // 客户正在输入(瞬时,4s 自动消失)
+  const [customerTyping, setCustomerTyping] = useState(false)
+  const lastTypingRef = useRef(0)
+  const typingClearRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   // 本地待发/失败消息(乐观渲染,按会话隔离);成功后移除并以服务端消息按 seq 入列
   const [pending, setPending] = useState<PendingMsg[]>([])
   const [wsStatus, setWsStatus] = useState<WsStatus>(wsClient.getStatus())
@@ -203,6 +208,7 @@ export default function Inbox() {
         if (msg.seq > localMaxSeqRef.current + 1) {
           syncCurrentRef.current()
         }
+        if (msg.senderType === 'customer') setCustomerTyping(false) // 客户发出消息→输入态结束
         applyIncoming([msg])
       }
       setList((prev) =>
@@ -242,10 +248,26 @@ export default function Inbox() {
     }
   }, [])
 
-  // 新消息(含本地待发)滚到底
+  // ===== typing:仅响应客户(from=customer)且命中当前会话;4s 无新事件自动消失 =====
+  useEffect(() => {
+    return wsClient.onTyping((e) => {
+      if (e.from !== 'customer' || e.conversationId !== selectedRef.current) return
+      setCustomerTyping(true)
+      clearTimeout(typingClearRef.current)
+      typingClearRef.current = setTimeout(() => setCustomerTyping(false), 4000)
+    })
+  }, [])
+
+  // 切换会话:清除上一个会话残留的输入态
+  useEffect(() => {
+    setCustomerTyping(false)
+    clearTimeout(typingClearRef.current)
+  }, [selectedId])
+
+  // 新消息(含本地待发/输入态)滚到底
   useEffect(() => {
     msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, pending])
+  }, [messages, pending, customerTyping])
 
   // ===== 选中会话:订阅 WS + 拉详情/消息 + 清未读 =====
   const selectConversation = useCallback(
@@ -326,6 +348,15 @@ export default function Inbox() {
     },
     [pending, trySend],
   )
+
+  // 输入中:节流 3s 通知客户(瞬时,不落库);失败静默
+  const onTypingSend = useCallback(() => {
+    if (!selectedId) return
+    const now = Date.now()
+    if (now - lastTypingRef.current < 3000) return
+    lastTypingRef.current = now
+    void sendConversationTyping(selectedId).catch(() => {})
+  }, [selectedId])
 
   // 撤回自己发送的消息:成功后用返回的已撤回 VO(isVisible=false)按 seq 替换;WS 回声幂等
   const onRetract = useCallback(
@@ -615,6 +646,10 @@ export default function Inbox() {
                   {currentPending.map(renderPending)}
                 </>
               )}
+              {/* 客户正在输入(瞬时;4s 自动消失) */}
+              {customerTyping && (
+                <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>{t('inbox.customerTyping')}</div>
+              )}
               <div ref={msgEndRef} />
             </div>
 
@@ -648,7 +683,11 @@ export default function Inbox() {
               {/* 输入框(加高,对齐参考)*/}
               <Input.TextArea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value)
+                  // 仅"回复"tab(非内部消息)且有内容时通知客户输入中(节流在回调内)
+                  if (e.target.value.trim() && replyTab === 'reply') onTypingSend()
+                }}
                 onKeyDown={onInputKeyDown}
                 placeholder={t(replyTab === 'reply' ? 'inbox.replyPlaceholder' : 'inbox.internalPlaceholder')}
                 autoSize={{ minRows: 5, maxRows: 10 }}

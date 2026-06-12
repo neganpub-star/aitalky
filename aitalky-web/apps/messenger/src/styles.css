@@ -260,6 +260,13 @@ body {
   text-align: center;
 }
 
+/* 对方正在输入中:左侧灰色小字提示 */
+.msg-typing {
+  margin: 0 0 12px 4px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
 /* 撤回操作小按钮:点自己气泡后在下方弹出(右对齐,跟随气泡) */
 .msg-retract-btn {
   align-self: flex-end;

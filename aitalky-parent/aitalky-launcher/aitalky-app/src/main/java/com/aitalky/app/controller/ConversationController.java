@@ -148,6 +148,25 @@ public class ConversationController {
         return R.ok(vo);
     }
 
+    /** 坐席正在输入(瞬时通知,不落库):推客户端显示"对方正在输入中" */
+    @PostMapping("/{id}/typing")
+    public R<Void> typing(@PathVariable Long id) {
+        CnvConversation conv = conversationService.getById(id);
+        publishTyping(conv, "agent");
+        return R.ok();
+    }
+
+    /** 发布 typing 瞬时事件(evt=typing + from);两端按 from 只响应对方来源,自己回声忽略 */
+    private void publishTyping(CnvConversation conv, String from) {
+        try {
+            String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                    "evt", "typing", "conversationId", String.valueOf(conv.getId()), "from", from));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getAssigneeMemberId(), conv.getCustomerId(), payload));
+        } catch (Exception ignore) {
+            // 瞬时事件,失败无需补偿
+        }
+    }
+
     /** 认领 */
     @PostMapping("/{id}/claim")
     public R<Void> claim(@PathVariable Long id) {
