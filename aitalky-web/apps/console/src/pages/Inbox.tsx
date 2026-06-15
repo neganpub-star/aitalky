@@ -186,10 +186,16 @@ export default function Inbox() {
   syncCurrentRef.current = syncCurrent
 
   // ===== 列表加载(切视图/切 tab 时 + 轮询兜底新会话)=====
+  // 请求序号守卫(latest-wins):WS 项目频道会为"未知会话"高频触发 loadList,多个请求并发在飞;
+  // setList 是整列表替换,若"新会话创建前发出的旧请求"比新触发的更晚返回,会把新会话覆盖删掉
+  // (表现为「我的」里新会话要等下次轮询才出现)。故只采用最新一次请求的响应,旧响应直接丢弃。
+  const loadSeqRef = useRef(0)
   const loadList = useCallback(async () => {
+    const mySeq = ++loadSeqRef.current
     setLoadingList(true)
     try {
       const res = await listConversations({ view: active, status: statusOf(tab), page: 1, size: 50 })
+      if (mySeq !== loadSeqRef.current) return // 已被更新的请求(或切视图)取代 → 丢弃这次旧响应
       // 未读以服务端 DB 为权威;但当前打开会话强制显示 0(避免轮询把"边看边来的消息"算成未读)
       const cur = selectedRef.current
       setList(res.records.map((c) => (c.id === cur ? { ...c, unreadCount: 0 } : c)))
@@ -202,7 +208,7 @@ export default function Inbox() {
       // 分类徽标:各视图进行中数量
       getConversationCounts().then(setCounts).catch(() => {})
     } finally {
-      setLoadingList(false)
+      if (mySeq === loadSeqRef.current) setLoadingList(false)
     }
   }, [active, tab])
   loadListRef.current = loadList
@@ -220,7 +226,7 @@ export default function Inbox() {
   useEffect(() => {
     loadList()
     // 轮询兜底:WS 只覆盖已打开/已订阅会话,新会话靠轮询进列表
-    const timer = setInterval(loadList, 10_000)
+    const timer = setInterval(loadList, 100_000)
     return () => clearInterval(timer)
   }, [loadList])
 
