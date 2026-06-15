@@ -223,6 +223,15 @@ export default function Inbox() {
     }, 600)
   }
 
+  // 防抖拉列表(仅用于 WS 未知会话触发):项目频道广播会为项目内每条消息触发一次,
+  // 300ms 合并突发,减少 /conversations 请求量(切视图/轮询/重连仍直接 loadList,即时)。
+  const loadListTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const debouncedLoadListRef = useRef<() => void>(() => {})
+  debouncedLoadListRef.current = () => {
+    clearTimeout(loadListTimerRef.current)
+    loadListTimerRef.current = setTimeout(() => loadListRef.current(), 300)
+  }
+
   useEffect(() => {
     loadList()
     // 轮询兜底:WS 只覆盖已打开/已订阅会话,新会话靠轮询进列表
@@ -274,8 +283,9 @@ export default function Inbox() {
           }, ...prev])
         }
         // 任何未知会话的消息(分配系统消息/客户消息/坐席代发)都刷新列表,
-        // 让新会话在"创建/分配那一刻"(分配系统消息)就出现,不必等客户首条真实消息
-        loadListRef.current()
+        // 让新会话在"创建/分配那一刻"(分配系统消息)就出现,不必等客户首条真实消息;
+        // 防抖合并广播突发(latest-wins 守卫保证旧响应不会覆盖新会话)
+        debouncedLoadListRef.current()
         return
       }
       setList((prev) =>
