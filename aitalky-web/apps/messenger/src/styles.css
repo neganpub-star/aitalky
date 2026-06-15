@@ -173,6 +173,75 @@ body {
   font-weight: 400;
 }
 
+/* 头部点击展开:服务坐席头像 + 名称 + 在线状态 */
+.hc-expand {
+  flex-shrink: 0;
+  background: #fff;
+  padding: 14px 16px 16px;
+  border-bottom: 0.5px solid var(--line);
+}
+.hc-agent {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.hc-avatars {
+  display: flex;
+  flex-shrink: 0;
+}
+.hc-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  margin-left: -10px;
+  background: #e9eef8;
+  display: inline-block;
+}
+.hc-avatar:first-child {
+  margin-left: 0;
+}
+.hc-avatar img,
+.hc-avatar-fb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+.hc-avatar-fb {
+  background: #c9d3e6;
+}
+.hc-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #21c55d;
+  border: 2px solid #fff;
+}
+.hc-info {
+  text-align: left;
+}
+.hc-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.hc-status {
+  font-size: 14px;
+  color: #6b7177;
+}
+.hc-status-sub {
+  font-size: 14px;
+  color: #6b7177;
+  margin-top: 2px;
+}
+
 .msg-list {
   flex: 1;
   overflow-y: auto;

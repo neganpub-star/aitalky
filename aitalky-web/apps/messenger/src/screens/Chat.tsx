@@ -1,13 +1,12 @@
 import type { KeyboardEvent } from 'react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
-import type { MessageVO, MessengerInit, PendingMsg } from '../types'
-import type { WsStatus } from '../ws'
+import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
 
 interface Props {
   data: MessengerInit
+  agent: MessengerAgent | null
   messages: MessageVO[]
-  status: WsStatus
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   onSend: (text: string) => void
@@ -43,9 +42,11 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
+  // 头部默认折叠(只显项目名);点击项目名展开服务坐席(对齐参考)
+  const [headerOpen, setHeaderOpen] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -65,6 +66,12 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
 
   // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
   const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
+
+  // ===== 头部:标题=项目名;点击展开服务坐席(4 态,见 MessengerAgentVO)=====
+  const brandName = data.config?.brandName || data.customerName || ''
+  const assigned = agent?.mode === 'ASSIGNED_ONLINE' || agent?.mode === 'ASSIGNED_OFFLINE'
+  const agentName = assigned ? agent?.agents?.[0]?.name ?? null : null
+  const showOnlineDot = agent?.mode === 'ASSIGNED_ONLINE' // 已分配·在线:头像带绿点
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -93,11 +100,45 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
         <div className="back" onClick={onBack}>
           ‹
         </div>
-        <div className="title">
-          {data.customerName}
-          {status !== 'open' && <span className="chat-status">  {t('offline')}</span>}
+        {/* 标题=项目名,点击展开/收起服务坐席 */}
+        <div className="title" style={{ cursor: 'pointer' }} onClick={() => setHeaderOpen((v) => !v)}>
+          {brandName}
         </div>
       </div>
+
+      {/* 展开:服务坐席头像 + 名称 + 在线状态 */}
+      {headerOpen && agent && agent.agents.length > 0 && (
+        <div className="hc-expand">
+          <div className="hc-agent">
+            <div className="hc-avatars">
+              {agent.agents.slice(0, 3).map((a, i) => (
+                <span className="hc-avatar" key={i} style={{ zIndex: 3 - i }}>
+                  {a.avatar ? <img src={a.avatar} alt="" /> : <span className="hc-avatar-fb" />}
+                  {showOnlineDot && i === 0 && <span className="hc-dot" />}
+                </span>
+              ))}
+            </div>
+            <div className="hc-info">
+              {agentName && <div className="hc-name">{agentName}</div>}
+              {agent.mode === 'POOL_BUSY' ? (
+                <>
+                  <div className="hc-status">{t('agentBusyTitle')}</div>
+                  <div className="hc-status-sub">{t('agentBusyDesc')}</div>
+                </>
+              ) : agent.mode === 'ASSIGNED_OFFLINE' ? (
+                <div className="hc-status">{t('agentOffline')}</div>
+              ) : agent.mode === 'ASSIGNED_ONLINE' ? (
+                <div className="hc-status">{t('agentOnline')}</div>
+              ) : (
+                <>
+                  <div className="hc-status">{t('agentReplyTime')}</div>
+                  {agent.replyTime && <div className="hc-status-sub">🕑 {agent.replyTime}</div>}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 紧急通知红条(对齐 ByteTrack:标题栏下方,可关闭) */}
       {urgent && !urgentClosed && (

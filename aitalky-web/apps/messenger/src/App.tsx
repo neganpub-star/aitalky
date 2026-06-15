@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
+import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
-import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
+import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, PendingMsg } from './types'
 import Home from './screens/Home'
 import Chat from './screens/Chat'
 
@@ -60,8 +60,10 @@ export default function App() {
   const [phase, setPhase] = useState<'loading' | 'error' | 'ready'>('loading')
   const [screen, setScreen] = useState<'home' | 'chat'>('home')
   const [data, setData] = useState<MessengerInit | null>(null)
+  const [agent, setAgent] = useState<MessengerAgent | null>(null) // 服务坐席头部(随上下线/认领刷新)
   const [messages, setMessages] = useState<MessageVO[]>([])
-  const [status, setStatus] = useState<WsStatus>('closed')
+  // WS 状态:头部不再展示连接态(对齐参考),仅保留 setter 驱动重连补漏
+  const [, setStatus] = useState<WsStatus>('closed')
   // 本地待发/失败消息(乐观渲染,未落库);成功后移除并以服务端消息按 seq 入列
   const [pending, setPending] = useState<PendingMsg[]>([])
   // 对方(客服)正在输入(瞬时,4s 无新事件自动消失;受 sysMsgTyping 开关控制)
@@ -122,6 +124,14 @@ export default function App() {
   // 进聊天 / 新消息到达(在看时)→ 上报已读
   useEffect(() => { reportReadRef.current() }, [messages, screen])
 
+  // 刷新服务坐席头部(坐席上下线/会话被认领时)
+  const refreshAgentRef = useRef<() => void>(() => {})
+  refreshAgentRef.current = () => {
+    const cid = convIdRef.current
+    if (!cid) return
+    getAgent(cid).then(setAgent).catch(() => {})
+  }
+
   // ===== 启动:解析参数 → init → 连 WS → 拉历史 =====
   useEffect(() => {
     const access = parseAccess()
@@ -144,6 +154,7 @@ export default function App() {
         // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
         setLang(d.config?.lang || access.lang)
         setData(d)
+        setAgent(d.agent)
         setPhase('ready')
         // 自定义网站标题(URL 接入,浏览器标签页)
         if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
@@ -174,6 +185,7 @@ export default function App() {
       if (msg.seq > localMaxSeqRef.current + 1) syncRef.current() // 跳号→漏帧→补拉
       if (msg.senderType === 'agent') {
         setPeerTyping(false) // 客服发出消息→输入态结束
+        refreshAgentRef.current() // 坐席回复常意味着会话被认领/分配变化,刷新头部坐席
         // 失焦时新消息提醒:声效恒开,弹窗受 popupEnabled 控制(撤回的空消息不提醒)
         if (document.hidden && msg.isVisible !== false) {
           playBeep()
@@ -191,15 +203,15 @@ export default function App() {
       clearTimeout(typingClearRef.current)
       typingClearRef.current = setTimeout(() => setPeerTyping(false), 4000)
     })
-    // 网①重连补漏 + 网③周期对账/聚焦补漏
-    const offOpen = messengerWs.onOpen(() => syncRef.current())
+    // 网①重连补漏 + 网③周期对账/聚焦补漏(顺带刷新坐席头部)
+    const offOpen = messengerWs.onOpen(() => { syncRef.current(); refreshAgentRef.current() })
     const poll = setInterval(() => syncRef.current(), SYNC_POLL)
-    // 聚焦/可见:清标题未读数 + 对账补漏
+    // 聚焦/可见:清标题未读数 + 对账补漏 + 刷新坐席在线状态
     const clearTitle = () => { hiddenUnreadRef.current = 0; setTitleUnread(0) }
     const onVisible = () => {
-      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current(); reportReadRef.current() }
+      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current(); reportReadRef.current(); refreshAgentRef.current() }
     }
-    const onFocus = () => { clearTitle(); syncRef.current(); reportReadRef.current() }
+    const onFocus = () => { clearTitle(); syncRef.current(); reportReadRef.current(); refreshAgentRef.current() }
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
@@ -306,8 +318,8 @@ export default function App() {
   return (
     <Chat
       data={data}
+      agent={agent}
       messages={messages}
-      status={status}
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       onSend={onSend}
