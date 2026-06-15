@@ -181,6 +181,9 @@ body {
   text-align: center;
   border-bottom: 0.5px solid var(--line);
 }
+.hc-top {
+  cursor: pointer;
+}
 .hc-brand {
   font-size: 18px;
   font-weight: 700;

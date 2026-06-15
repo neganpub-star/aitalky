@@ -55,6 +55,8 @@ function fmtHeaderDate(ms: number): string {
 export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
+  // 头部默认折叠(只显项目名+日期);点击头部展开坐席信息(对齐参考)
+  const [headerOpen, setHeaderOpen] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
@@ -109,11 +111,13 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
 
   return (
     <>
-      {/* 头部卡片(对齐参考):项目名 + 日期 + 服务坐席 */}
+      {/* 头部卡片(对齐参考):默认只显项目名+日期,点击展开服务坐席 */}
       <div className="chat-headcard">
-        <div className="hc-brand">{brandName}</div>
-        {headerDate && <div className="hc-date">{headerDate}</div>}
-        {ag && ag.agents.length > 0 && (
+        <div className="hc-top" onClick={() => setHeaderOpen((v) => !v)}>
+          <div className="hc-brand">{brandName}</div>
+          {headerDate && <div className="hc-date">{headerDate}</div>}
+        </div>
+        {headerOpen && ag && ag.agents.length > 0 && (
           <div className="hc-agent">
             <div className="hc-avatars">
               {ag.agents.slice(0, 3).map((a, i) => (
