@@ -46,8 +46,9 @@ public class ConnectionRegistry {
     public static final AttributeKey<String> ATTR_IDENTITY = AttributeKey.valueOf("identity"); // member:{id} / cust:{id}
     public static final AttributeKey<String> ATTR_CHANNEL = AttributeKey.valueOf("channel"); // 附加频道 project:{id}(坐席收未分配广播)
 
-    /** 连接活性 TTL(秒):大于"读空闲 60s + 心跳 25s"留足容错(丢 ~2 个心跳仍判活);心跳每次续期 */
-    private static final long LIVENESS_TTL_SECONDS = 90;
+    /** 连接活性 TTL(秒):需 ≥ 读空闲(180s)——只要服务端仍持有连接,route 键就不该过期被对账误删;
+     * 心跳每次续期。后台标签心跳被节流到 60s 时,200s TTL 仍可维持(每 60s 续一次)。 */
+    private static final long LIVENESS_TTL_SECONDS = 200;
 
     /** 本实例 ID（横向扩展时每实例唯一，配置注入） */
     private final String instanceId;

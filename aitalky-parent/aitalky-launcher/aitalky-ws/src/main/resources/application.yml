@@ -24,7 +24,9 @@ aitalky:
   ws:
     port: 9100          # 避开 MinIO 占用的 9000
     path: /ws
-    reader-idle-seconds: 60
+    # 读空闲超时:设 180s 远大于前端心跳 25s——后台标签被浏览器节流(心跳被拖到 60s+)时
+    # 仍不被误判掉线,后台坐席也能持续收实时帧(60s 节流心跳 < 180s 容忍)。
+    reader-idle-seconds: 180
     # ★ 横向扩展：每个 ws 实例必须唯一(上线多实例时改这里)
     instance-id: ws-0
 
