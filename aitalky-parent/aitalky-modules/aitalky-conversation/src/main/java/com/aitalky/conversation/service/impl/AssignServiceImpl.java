@@ -32,6 +32,7 @@ public class AssignServiceImpl implements AssignService {
     private final AsnConfigMapper configMapper;
     private final AsnGroupMapper groupMapper;
     private final AsnGroupMemberMapper groupMemberMapper;
+    private final com.aitalky.framework.lock.DistributedLockTemplate lockTemplate;
 
     @Override
     public AssignConfigVO getConfig(Long projectId) {
@@ -128,23 +129,36 @@ public class AssignServiceImpl implements AssignService {
                 .eq(AsnConfig::getProjectId, projectId).last("limit 1"));
     }
 
-    /** 取项目普通组(type=1)id;create=true 时不存在则懒创建 */
+    /** 取项目普通组(type=1)id;create=true 时不存在则懒创建。加项目锁防并发建重复组 */
     private Long normalGroupId(Long projectId, boolean create) {
-        AsnGroup g = groupMapper.selectOne(Wrappers.<AsnGroup>lambdaQuery()
-                .eq(AsnGroup::getProjectId, projectId)
-                .eq(AsnGroup::getType, GROUP_NORMAL).last("limit 1"));
+        AsnGroup g = findNormalGroup(projectId);
         if (g != null) {
             return g.getId();
         }
         if (!create) {
             return null;
         }
-        g = new AsnGroup();
-        g.setProjectId(projectId);
-        g.setType(GROUP_NORMAL);
-        g.setName("普通分配");
-        groupMapper.insert(g);
-        return g.getId();
+        // 锁内二次查 + 创建:避免并发(前端同时加多个队友)各建一个普通组
+        return lockTemplate.execute("lock:asn:normalgroup:" + projectId, 3, 10, () -> {
+            AsnGroup again = findNormalGroup(projectId);
+            if (again != null) {
+                return again.getId();
+            }
+            AsnGroup ng = new AsnGroup();
+            ng.setProjectId(projectId);
+            ng.setType(GROUP_NORMAL);
+            ng.setName("普通分配");
+            groupMapper.insert(ng);
+            return ng.getId();
+        });
+    }
+
+    /** 普通组:取 id 最小的一个(历史可能有重复,确定性取一个) */
+    private AsnGroup findNormalGroup(Long projectId) {
+        return groupMapper.selectOne(Wrappers.<AsnGroup>lambdaQuery()
+                .eq(AsnGroup::getProjectId, projectId)
+                .eq(AsnGroup::getType, GROUP_NORMAL)
+                .orderByAsc(AsnGroup::getId).last("limit 1"));
     }
 
     /** asn_config.mode(1手动2轮流3负载) → 对外(0手动1轮流2负载) */
