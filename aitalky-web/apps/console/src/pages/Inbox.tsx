@@ -344,9 +344,11 @@ export default function Inbox() {
 
   // 当前列表镜像(WS 处理器判断"未知会话"用)
   useEffect(() => { listRef.current = list }, [list])
-  // 未读总数(图标栏红点 + 标题提醒)=该我处理的未读(我的+未分配),来自后端 counts,跨视图准;离开清零
+  // 未读总数(图标栏红点 + 浏览器标签角标)=只算「我的」未读会话数(我个人待处理);
+  // 未分配是全员共享池,不顶进个人标签角标(避免所有坐席标签都被同一批未认领积压撑大),
+  // 仅在左侧「未分配」分类内单独亮红点。来自后端 counts,跨视图准;离开清零
   useEffect(() => {
-    setUnreadTotal(counts.mineUnread + counts.unassignedUnread)
+    setUnreadTotal(counts.mineUnread)
   }, [counts, setUnreadTotal])
   useEffect(() => () => setUnreadTotal(0), [setUnreadTotal])
 
