@@ -67,7 +67,7 @@ class WsClient {
       this.setStatus('open')
       this.startPing()
       // 重连补订阅
-      this.subscriptions.forEach((cid) => this.send({ type: 'subscribe', conversationId: Number(cid) }))
+      this.subscriptions.forEach((cid) => this.send({ type: 'subscribe', conversationId: cid }))
       // 通知上层做"重连补漏":每次 open(首连/重连)都触发,上层据此对当前会话 sync 对账
       this.openListeners.forEach((fn) => fn())
     }
@@ -160,13 +160,14 @@ class WsClient {
   /** 订阅会话(打开会话即调用,推送目标来源) */
   subscribe(conversationId: string) {
     this.subscriptions.add(conversationId)
-    this.send({ type: 'subscribe', conversationId: Number(conversationId) })
+    // 雪花会话ID超 JS 安全整数,必须以字符串发送(Number() 会丢精度→订阅错会话→代看收不到推送)
+    this.send({ type: 'subscribe', conversationId: conversationId })
   }
 
   /** 退订会话(切走/关闭会话时调用) */
   unsubscribe(conversationId: string) {
     this.subscriptions.delete(conversationId)
-    this.send({ type: 'unsubscribe', conversationId: Number(conversationId) })
+    this.send({ type: 'unsubscribe', conversationId: conversationId })
   }
 
   /** 注册消息监听,返回取消函数 */
