@@ -17,4 +17,11 @@ public interface AsnGroupMemberMapper extends BaseMapper<AsnGroupMember> {
      */
     @Delete("DELETE FROM asn_group_member WHERE group_id = #{groupId}")
     int physicalDeleteByGroup(@Param("groupId") Long groupId);
+
+    /**
+     * 物理删除某组的指定成员(普通分配/专属分配移除队友共用)。
+     * <p>同上:uk(group_id, member_id) 不含 del_flag,软删残留行会让"移除后重加同人"撞唯一键。
+     */
+    @Delete("DELETE FROM asn_group_member WHERE group_id = #{groupId} AND member_id = #{memberId}")
+    int physicalDeleteMember(@Param("groupId") Long groupId, @Param("memberId") Long memberId);
 }

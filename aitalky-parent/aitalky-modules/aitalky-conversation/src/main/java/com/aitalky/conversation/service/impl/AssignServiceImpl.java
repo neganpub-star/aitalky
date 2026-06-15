@@ -88,12 +88,10 @@ public class AssignServiceImpl implements AssignService {
     @Override
     public void addParticipant(Long projectId, Long memberId) {
         Long groupId = normalGroupId(projectId, true);
-        boolean exists = groupMemberMapper.exists(Wrappers.<AsnGroupMember>lambdaQuery()
-                .eq(AsnGroupMember::getGroupId, groupId)
-                .eq(AsnGroupMember::getMemberId, memberId));
-        if (exists) {
-            return;
-        }
+        // 先物理清掉该 (group, member) 的残留行(含历史软删行)再插入:
+        // uk(group_id, member_id) 不含 del_flag,软删行会让 exists() 查不到却又撞唯一键;
+        // 物理删+插也天然幂等(已存在则等价于重插)。
+        groupMemberMapper.physicalDeleteMember(groupId, memberId);
         AsnGroupMember m = new AsnGroupMember();
         m.setProjectId(projectId);
         m.setGroupId(groupId);
@@ -107,9 +105,8 @@ public class AssignServiceImpl implements AssignService {
         if (groupId == null) {
             return;
         }
-        groupMemberMapper.delete(Wrappers.<AsnGroupMember>lambdaQuery()
-                .eq(AsnGroupMember::getGroupId, groupId)
-                .eq(AsnGroupMember::getMemberId, memberId));
+        // 物理删除:避免软删残留行让"移除后重新加入同一队友"撞唯一键
+        groupMemberMapper.physicalDeleteMember(groupId, memberId);
     }
 
     @Override
