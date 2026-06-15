@@ -37,6 +37,9 @@ public interface ConversationService {
     /** 指派给他人(toMemberId 非空)或取消分配(toMemberId 为 null,回未分配);operatorMemberId=操作人。返回会话 */
     CnvConversation assign(Long conversationId, Long toMemberId, Long operatorMemberId);
 
+    /** 消费等待队列(结束会话释放容量 / 坐席上线后调用)。返回本次新分配的会话+坐席,供发分配系统消息 */
+    java.util.List<com.aitalky.conversation.dto.OpenConversationResult> consumeWaitingQueue(Long projectId);
+
     /** 结束会话 */
     void close(Long conversationId);
 

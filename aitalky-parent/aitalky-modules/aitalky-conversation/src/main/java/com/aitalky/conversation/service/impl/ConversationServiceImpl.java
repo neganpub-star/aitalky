@@ -187,6 +187,13 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public java.util.List<com.aitalky.conversation.dto.OpenConversationResult> consumeWaitingQueue(Long projectId) {
+        // 项目级锁:避免并发(多坐席同时上线/多会话同时结束)重复分配同一等待会话
+        return lockTemplate.execute("lock:conv:consume:" + projectId, 2, 10,
+                () -> assignEngine.consumeWaiting(projectId));
+    }
+
+    @Override
     public CnvConversation assign(Long conversationId, Long toMemberId, Long operatorMemberId) {
         CnvConversation conv = getById(conversationId);
         // 指派给他人(toMemberId 非空)/ 取消分配(toMemberId 为 null,回未分配)

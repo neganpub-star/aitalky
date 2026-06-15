@@ -36,6 +36,8 @@ public class AccountController {
     private final MemberService memberService;
     private final AccountService accountService;
     private final com.aitalky.identity.service.InviteService inviteService;
+    private final com.aitalky.conversation.service.ConversationService conversationService;
+    private final com.aitalky.app.service.AssignNotifier assignNotifier;
 
     /** 个人资料:账户邮箱/用户名/邀请码 + 当前项目成员信息(昵称/头像/角色/是否owner/偏好) */
     /** 当前账号加入的项目列表(切换项目下拉用;加入新项目后刷新) */
@@ -123,6 +125,11 @@ public class AccountController {
     @Log("设置工作状态")
     public R<Void> updateWorkStatus(@Valid @RequestBody WorkStatusReq req) {
         memberService.updateWorkStatus(TenantContext.getMemberId(), req.workStatus());
+        // 坐席上线 → 消费等待队列(把等待会话分给现在可接待的坐席)
+        if (req.workStatus() != null && req.workStatus() == 1) {
+            conversationService.consumeWaitingQueue(TenantContext.getProjectId())
+                    .forEach(r -> assignNotifier.notifyAssigned(r.conversation(), r.autoAssignedMemberId()));
+        }
         return R.ok();
     }
 

@@ -203,10 +203,13 @@ public class ConversationController {
     public record AssignReq(Long memberId) {
     }
 
-    /** 结束会话 */
+    /** 结束会话(释放该坐席容量 → 消费等待队列,把等待会话分给空出的坐席) */
     @PostMapping("/{id}/close")
     public R<Void> close(@PathVariable Long id) {
+        CnvConversation conv = conversationService.getById(id);
         conversationService.close(id);
+        conversationService.consumeWaitingQueue(conv.getProjectId())
+                .forEach(r -> assignNotifier.notifyAssigned(r.conversation(), r.autoAssignedMemberId()));
         return R.ok();
     }
 

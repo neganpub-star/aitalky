@@ -77,6 +77,25 @@ public class AssignEngine {
         return target;
     }
 
+    /**
+     * 消费等待队列:对项目内等待中(status=0)会话按先后逐个尝试自动分配。
+     * 容量空出(结束会话)/坐席上线后调用。返回本次新分配成功的会话(供上层发系统消息)。
+     */
+    public List<com.aitalky.conversation.dto.OpenConversationResult> consumeWaiting(Long projectId) {
+        List<CnvConversation> waiting = conversationMapper.selectList(Wrappers.<CnvConversation>lambdaQuery()
+                .eq(CnvConversation::getProjectId, projectId)
+                .eq(CnvConversation::getStatus, 0)
+                .orderByAsc(CnvConversation::getCreateTime));
+        java.util.List<com.aitalky.conversation.dto.OpenConversationResult> assigned = new java.util.ArrayList<>();
+        for (CnvConversation conv : waiting) {
+            Long m = autoAssign(conv); // 仍无容量则保持等待(返回 null)
+            if (m != null) {
+                assigned.add(new com.aitalky.conversation.dto.OpenConversationResult(conv, m));
+            }
+        }
+        return assigned;
+    }
+
     /** 落库分配结果:更新会话 + 写分配流水。type:1认领 2指派 3自动 4转移 */
     public void applyAssign(CnvConversation conv, Long toMemberId, int type, Long operatorMemberId) {
         Long from = conv.getAssigneeMemberId();
