@@ -74,13 +74,14 @@ public class WebSocketFrameHandler extends SimpleChannelInboundHandler<TextWebSo
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame frame) {
         String text = frame.text();
-        // 心跳
+        String connId = ctx.channel().attr(ConnectionRegistry.ATTR_CONN_ID).get();
+        // 心跳:回 pong + 续期连接活性键(防被定时对账当僵尸剔除)
         if (text.contains("\"type\":\"ping\"")) {
+            registry.heartbeat(connId);
             ctx.writeAndFlush(new TextWebSocketFrame("{\"type\":\"pong\"}"));
             return;
         }
         // 会话订阅/退订（仅示意解析；正式用 JSON 反序列化 + 权限校验）
-        String connId = ctx.channel().attr(ConnectionRegistry.ATTR_CONN_ID).get();
         if (text.contains("\"type\":\"subscribe\"")) {
             String cid = extract(text, "conversationId");
             if (cid != null) {

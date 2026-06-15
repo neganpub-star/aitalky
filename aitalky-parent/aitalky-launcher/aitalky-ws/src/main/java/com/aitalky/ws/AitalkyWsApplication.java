@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * aitalky 实时网关入口（Netty WebSocket）。
@@ -15,6 +16,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
  * (framework 传递带入 mybatis-plus starter,但 ws 无需 DB)。
  * <p>横向扩展：每实例只持有自己的连接,连接路由存 Redis;跨实例推送经 RocketMQ。
  */
+@EnableScheduling // 连接注册表僵尸节点定时对账(ConnectionRegistry.reconcile)
 @SpringBootApplication(scanBasePackages = "com.aitalky", exclude = {
         DataSourceAutoConfiguration.class,
         DataSourceTransactionManagerAutoConfiguration.class,
