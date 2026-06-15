@@ -87,6 +87,11 @@ export function claimConversation(id: string) {
   return client.post<unknown, void>(`/conversations/${id}/claim`)
 }
 
+/** 指派会话给队友(memberId)或取消分配(null=回未分配) */
+export function assignConversation(id: string, memberId: string | null) {
+  return client.post<unknown, void>(`/conversations/${id}/assign`, { memberId })
+}
+
 /** 结束会话 */
 export function closeConversation(id: string) {
   return client.post<unknown, void>(`/conversations/${id}/close`)

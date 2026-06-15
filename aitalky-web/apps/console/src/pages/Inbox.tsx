@@ -5,7 +5,7 @@ import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
-  ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined,
+  ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -13,14 +13,15 @@ import { useAppStore } from '../store/useAppStore'
 import { playBeep, unlockAudio } from '../notify'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
-  claimConversation, closeConversation, getConversation, getConversationCounts,
+  assignConversation, claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, replyConversation, retractConversationMessage,
   searchConversations, sendConversationTyping, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
+import { pageMembers } from '../api/member'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
 import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
-import type { ConversationDetailVO, ConversationVO, MessageVO, PendingMsg } from '../types'
+import type { ConversationDetailVO, ConversationVO, MemberVO, MessageVO, PendingMsg } from '../types'
 
 // 视图 → 列表查询的 view 参数
 type CategoryKey = 'mine' | 'mention' | 'unassigned' | 'all'
@@ -482,6 +483,25 @@ export default function Inbox() {
     loadList()
   }, [selectedId, loadList])
 
+  // ===== 指派会话(头部「未分配/坐席名 ▾」下拉:搜索队友 / 分配给队友 / 不分配)=====
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [assignKw, setAssignKw] = useState('')
+  const [assignMembers, setAssignMembers] = useState<MemberVO[]>([])
+  const openAssign = useCallback((o: boolean) => {
+    setAssignOpen(o)
+    if (o) {
+      setAssignKw('')
+      pageMembers({ page: 1, size: 500, status: 1 }).then((r) => setAssignMembers(r.records)).catch(() => undefined)
+    }
+  }, [])
+  const doAssign = useCallback(async (memberId: string | null) => {
+    if (!selectedId) return
+    setAssignOpen(false)
+    await assignConversation(selectedId, memberId)
+    setDetail(await getConversation(selectedId))
+    loadList()
+  }, [selectedId, loadList])
+
   // ===== 详情:保存联系方式/邮箱(编辑哪个就改哪个,另一个保持原值)=====
   const saveContact = useCallback(async () => {
     if (!selectedId || !detail || !editField) return
@@ -750,8 +770,45 @@ export default function Inbox() {
           <>
             <div style={{ ...styles.colHeader, background: token.colorBgContainer }}>
               <span style={styles.colTitle}>{detail.customerName || detail.customerId}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 10, color: token.colorTextTertiary, fontSize: 13 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: token.colorTextTertiary, fontSize: 13 }}>
                 {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
+                {/* 指派下拉(对齐参考:搜索队友/分配给队友/不分配),所有坐席可操作 */}
+                {!closed && (
+                  <Popover
+                    trigger="click"
+                    placement="bottomRight"
+                    open={assignOpen}
+                    onOpenChange={openAssign}
+                    content={
+                      <div style={{ width: 240 }}>
+                        <Input
+                          size="small" allowClear prefix={<SearchOutlined />} placeholder={t('inbox.assignSearch')}
+                          value={assignKw} onChange={(e) => setAssignKw(e.target.value)} style={{ marginBottom: 8 }}
+                        />
+                        <div style={{ maxHeight: 240, overflow: 'auto' }}>
+                          <div style={{ fontSize: 12, color: token.colorTextTertiary, padding: '2px 4px 6px' }}>{t('inbox.assignTo')}</div>
+                          {assignMembers
+                            .filter((m) => !assignKw.trim() || (m.nickname || '').includes(assignKw.trim()))
+                            .map((m) => (
+                              <div key={m.id} className="at-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 6px', borderRadius: 6, cursor: 'pointer' }} onClick={() => doAssign(m.id)}>
+                                <Avatar size={22} src={m.avatar || undefined}>{(m.nickname || 'U').charAt(0)}</Avatar>
+                                <span style={{ flex: 1, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nickname}</span>
+                                {m.id === detail.assigneeMemberId && <CheckOutlined style={{ color: token.colorPrimary }} />}
+                              </div>
+                            ))}
+                          <div className="at-row" style={{ padding: '8px 6px', borderRadius: 6, cursor: 'pointer', borderTop: `1px solid ${token.colorBorderSecondary}`, marginTop: 4, fontSize: 13 }} onClick={() => doAssign(null)}>
+                            {t('inbox.assignNone')}
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <span style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, color: token.colorTextSecondary }}>
+                      {detail.assigneeName || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : t('inbox.unassignedTag'))}
+                      <DownOutlined style={{ fontSize: 10 }} />
+                    </span>
+                  </Popover>
+                )}
                 {!closed && (
                   <Popconfirm title={t('inbox.closeConfirm')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={onClose}>
                     <LogoutOutlined style={{ fontSize: 18, cursor: 'pointer', color: token.colorTextSecondary }} title={t('inbox.close')} />
