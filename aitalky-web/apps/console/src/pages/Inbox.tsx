@@ -250,26 +250,26 @@ export default function Inbox() {
       // 未知会话(如新会话经项目频道广播来)→ 列表里没有
       const known = listRef.current.some((c) => c.id === msg.conversationId)
       if (!known) {
-        if (msg.senderType === 'customer') {
-          // 「全部」视图本就显示所有会话 → 用消息里的客户名/头像/预览本地即时插入,无需等 loadList 往返;
-          // 「我的/未分配」依赖分配信息,不本地插(可能不属于该视图),交给 loadList 服务端正确判定
-          if (activeRef.current === 'all') {
-            setList((prev) => prev.some((c) => c.id === msg.conversationId) ? prev : [{
-              id: msg.conversationId,
-              customerId: msg.senderId,
-              customerName: msg.senderName || '',
-              customerAvatar: msg.senderAvatar,
-              customerUid: null,
-              assigneeMemberId: null,
-              status: 1,
-              lastMessagePreview: msg.content,
-              lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
-              unreadCount: isCurrent ? 0 : 1,
-              lastSeq: msg.seq,
-            }, ...prev])
-          }
-          loadListRef.current() // 兜底校正(分配/UID/排序/未读以服务端为权威)
+        // 「全部」视图 + 客户消息 → 用消息里的客户名/头像/预览本地即时插入,体感即时;
+        // 「我的/未分配」依赖分配信息,不本地插(可能不属于该视图),交给 loadList 服务端正确判定
+        if (msg.senderType === 'customer' && activeRef.current === 'all') {
+          setList((prev) => prev.some((c) => c.id === msg.conversationId) ? prev : [{
+            id: msg.conversationId,
+            customerId: msg.senderId,
+            customerName: msg.senderName || '',
+            customerAvatar: msg.senderAvatar,
+            customerUid: null,
+            assigneeMemberId: null,
+            status: 1,
+            lastMessagePreview: msg.content,
+            lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
+            unreadCount: isCurrent ? 0 : 1,
+            lastSeq: msg.seq,
+          }, ...prev])
         }
+        // 任何未知会话的消息(分配系统消息/客户消息/坐席代发)都刷新列表,
+        // 让新会话在"创建/分配那一刻"(分配系统消息)就出现,不必等客户首条真实消息
+        loadListRef.current()
         return
       }
       setList((prev) =>
