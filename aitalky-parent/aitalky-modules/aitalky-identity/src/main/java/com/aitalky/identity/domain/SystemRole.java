@@ -9,7 +9,7 @@ public enum SystemRole {
 
     /** 负责人:全部权限(billing 仅其可用) */
     OWNER("负责人", """
-            {"pages":["inbox","customers","statistics","settings"],\
+            {"pages":["inbox","inbox.digitalEmployee","customers","statistics","settings"],\
             "functions":["inbox.viewAll","inbox.viewUnassigned","inbox.search","conversation.send","conversation.withdraw",\
             "conversation.transfer","conversation.close","conversation.blacklist","member.manage","role.manage",\
             "messenger.setting","assign.setting","group.manage","quickreply.manage","blacklist.manage",\
@@ -17,15 +17,15 @@ public enum SystemRole {
 
     /** 管理员:除 billing.manage 外的全部 */
     ADMIN("管理员", """
-            {"pages":["inbox","customers","statistics","settings"],\
+            {"pages":["inbox","inbox.digitalEmployee","customers","statistics","settings"],\
             "functions":["inbox.viewAll","inbox.viewUnassigned","inbox.search","conversation.send","conversation.withdraw",\
             "conversation.transfer","conversation.close","conversation.blacklist","member.manage","role.manage",\
             "messenger.setting","assign.setting","group.manage","quickreply.manage","blacklist.manage","project.setting"]}"""),
 
-    /** 普通成员:只看 我的/提及我的;能回复/撤回/结束;无管理与设置 */
+    /** 普通成员:收件箱 全部/未分配/会话搜索(不含数字员工);能回复/撤回/结束;无管理与设置 */
     MEMBER("普通成员", """
             {"pages":["inbox","customers"],\
-            "functions":["inbox.search","conversation.send","conversation.withdraw","conversation.close"]}""");
+            "functions":["inbox.viewAll","inbox.viewUnassigned","inbox.search","conversation.send","conversation.withdraw","conversation.close"]}""");
 
     /** 角色显示名 */
     private final String roleName;
