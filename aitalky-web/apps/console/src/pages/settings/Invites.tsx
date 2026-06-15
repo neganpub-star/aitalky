@@ -8,6 +8,7 @@ import {
   resendEmailInvite, revokeEmailInvite,
   type EmailInviteQuery, type LinkInviteQuery,
 } from '../../api/invite'
+import { roleLabel } from '../../auth/roleLabel'
 import type { EmailInviteVO, LinkInviteDetailVO, LinkInviteVO } from '../../types'
 
 const { RangePicker } = DatePicker
@@ -83,7 +84,7 @@ function EmailTab({ statusTag }: { statusTag: (v: boolean) => React.ReactNode })
   const columns: ColumnsType<EmailInviteVO> = [
     { title: t('invite.inviter'), dataIndex: 'inviterName', render: (v) => v || '-' },
     { title: t('invite.emailAddr'), dataIndex: 'email' },
-    { title: t('invite.joinRole'), dataIndex: 'roleName', render: (v) => v || '-' },
+    { title: t('invite.joinRole'), dataIndex: 'roleName', render: (v) => roleLabel(v, t) },
     { title: t('invite.member'), dataIndex: 'memberNickname', render: (v) => v || '-' },
     { title: t('invite.status'), dataIndex: 'valid', render: (v) => statusTag(v) },
     { title: t('invite.sendCount'), dataIndex: 'sendCount' },
@@ -137,7 +138,7 @@ function LinkTab({ statusTag }: { statusTag: (v: boolean) => React.ReactNode }) 
 
   const columns: ColumnsType<LinkInviteVO> = [
     { title: t('invite.inviter'), dataIndex: 'inviterName', render: (v) => v || '-' },
-    { title: t('invite.joinRole'), dataIndex: 'roleName', render: (v) => v || '-' },
+    { title: t('invite.joinRole'), dataIndex: 'roleName', render: (v) => roleLabel(v, t) },
     { title: t('invite.joinCount'), dataIndex: 'joinCount' },
     { title: t('invite.status'), dataIndex: 'valid', render: (v) => statusTag(v) },
     { title: t('invite.createTime'), dataIndex: 'createTime' },
@@ -164,7 +165,7 @@ function LinkTab({ statusTag }: { statusTag: (v: boolean) => React.ReactNode }) 
         {detail && (
           <Descriptions column={1} size="small" bordered style={{ marginTop: 8 }}>
             <Descriptions.Item label={t('invite.joinProject')}>{detail.projectName}</Descriptions.Item>
-            <Descriptions.Item label={t('invite.joinRole')}>{detail.roleName}</Descriptions.Item>
+            <Descriptions.Item label={t('invite.joinRole')}>{roleLabel(detail.roleName, t)}</Descriptions.Item>
             <Descriptions.Item label={t('invite.joinCount')}>{detail.joinCount}</Descriptions.Item>
             <Descriptions.Item label={t('invite.inviteForm')}>
               {detail.accessType === 1 ? t('invite.private') : t('invite.public')}

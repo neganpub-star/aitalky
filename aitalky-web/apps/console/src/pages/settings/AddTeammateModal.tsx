@@ -3,6 +3,7 @@ import { Modal, Input, Avatar, Tag, Empty, theme } from 'antd'
 import { SearchOutlined, CloseOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { pageMembers } from '../../api/member'
+import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO } from '../../types'
 
 // 添加成员弹窗(对齐 ByteTrack img_13/img_16):左=可搜索成员列表(可勾选),右=已选成员;确定回传已选
@@ -57,7 +58,7 @@ export default function AddTeammateModal({ open, initial, onCancel, onOk }: Prop
       )}
       <Avatar size={26} src={m.avatar || undefined}>{m.nickname.charAt(0)}</Avatar>
       <span style={{ fontSize: 13, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nickname}</span>
-      <Tag color={roleTagColor(m.roleName)} style={{ marginRight: 0, fontSize: 11 }}>{m.roleName}</Tag>
+      <Tag color={roleTagColor(m.roleName)} style={{ marginRight: 0, fontSize: 11 }}>{roleLabel(m.roleName, t)}</Tag>
       {removable && <CloseOutlined style={{ fontSize: 11, color: token.colorTextQuaternary }} />}
     </div>
   )

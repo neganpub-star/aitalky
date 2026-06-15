@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import {
   createRole, deleteRole, listRoles, renameRole, roleCatalog, rolePermissions, updateRolePermissions,
 } from '../../api/role'
+import { roleLabel } from '../../auth/roleLabel'
 import type { PermModule, PermNode, RoleVO } from '../../types'
 
 // 角色管理(对齐现网):左栏系统默认 + 自定义角色;右栏权限树(模块/页面/功能 勾选),系统角色只读
@@ -165,7 +166,7 @@ export default function RolePage() {
           background: active ? token.colorPrimaryBg : 'transparent',
           color: active ? token.colorPrimary : token.colorText,
         }}>
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{roleLabel(r.name, t)}</span>
         {editable && active && (
           <Space size={4} onClick={(e) => e.stopPropagation()}>
             <EditOutlined style={{ color: token.colorTextSecondary }} onClick={() => onRename(r)} />

@@ -123,6 +123,9 @@ export default {
     deactivateWarn5: 'You have handled any other matters that may affect your rights;',
   },
   role: {
+    sysOwner: 'Owner',
+    sysAdmin: 'Admin',
+    sysMember: 'Member',
     systemGroup: 'System default',
     customGroup: 'Custom roles',
     noCustom: 'No custom roles yet',

@@ -18,6 +18,7 @@ import {
 import { sendCode } from '../../api/auth'
 import { uploadFile } from '../../api/file'
 import { logout } from '../../auth/session'
+import { roleLabel } from '../../auth/roleLabel'
 import { useAppStore } from '../../store/useAppStore'
 
 type ModalKind = null | 'email' | 'password' | 'reset'
@@ -220,7 +221,7 @@ export default function ProfileBasic() {
         ) : (
           <>
             <span style={styles.val}>{data.nickname || '-'}</span>
-            {data.roleName && <Tag color="orange" style={{ marginLeft: 12 }}>{data.roleName}</Tag>}
+            {data.roleName && <Tag color="orange" style={{ marginLeft: 12 }}>{roleLabel(data.roleName, t)}</Tag>}
             <EditOutlined style={styles.icon} onClick={() => { setNickVal(data.nickname || ''); setEditNick(true) }} />
           </>
         )}

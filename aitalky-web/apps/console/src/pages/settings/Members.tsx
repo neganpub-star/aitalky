@@ -13,6 +13,7 @@ import {
   updateMemberAvatar, updateMemberRole, updateMemberStatus, type MemberQuery,
 } from '../../api/member'
 import InviteMemberModal from './InviteMemberModal'
+import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO, RoleVO } from '../../types'
 
 const OWNER_ROLE = '负责人'
@@ -118,7 +119,7 @@ export default function Members() {
       ),
     },
     { title: t('member.colEmail'), dataIndex: 'email', render: (v) => maskEmail(v) },
-    { title: t('member.colRole'), dataIndex: 'roleName', render: (v) => v || '-' },
+    { title: t('member.colRole'), dataIndex: 'roleName', render: (v) => roleLabel(v, t) },
     {
       title: t('member.colOnline'), dataIndex: 'workStatus', width: 140,
       render: (v) => (

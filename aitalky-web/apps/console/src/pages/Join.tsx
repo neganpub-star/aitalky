@@ -7,6 +7,7 @@ import AuthShell from './auth/AuthShell'
 import { login, register, sendCode } from '../api/auth'
 import { acceptInvite, inviteInfo } from '../api/invite'
 import { getToken, saveEnter, saveLogin } from '../auth/session'
+import { roleLabel } from '../auth/roleLabel'
 import type { InviteInfoVO } from '../types'
 
 const { Title, Text } = Typography
@@ -116,7 +117,7 @@ export default function Join() {
           <Title style={{ fontSize: 30, fontWeight: 800, marginBottom: 4 }}>
             {t('invite.inviteYouJoin', { project: info.projectName })}
           </Title>
-          <Text type="secondary">{t('invite.invitedBy', { name: info.inviterName || '-', role: info.roleName || '-' })}</Text>
+          <Text type="secondary">{t('invite.invitedBy', { name: info.inviterName || '-', role: roleLabel(info.roleName, t) })}</Text>
           <div style={{ marginTop: 32 }}>
             <Button type="primary" size="large" block onClick={() => { form.resetFields(); setMode('register') }}>
               {t('invite.registerJoin')}

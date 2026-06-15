@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
 import { getMessengerConfig } from '../../api/messengerConfig'
+import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO } from '../../types'
 import AddTeammateModal from './AddTeammateModal'
 
@@ -109,7 +110,7 @@ export default function ConversationSettings() {
     <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: token.colorFillTertiary, borderRadius: 8, padding: '7px 12px' }}>
       <Avatar size={22} src={m.avatar || undefined}>{m.nickname.charAt(0)}</Avatar>
       <span style={{ fontSize: 13 }}>{m.nickname}</span>
-      <Tag color={m.roleName.includes('管理') ? 'orange' : m.roleName.includes('负责') ? 'red' : 'default'} style={{ marginRight: 0, fontSize: 11 }}>{m.roleName}</Tag>
+      <Tag color={m.roleName.includes('管理') ? 'orange' : m.roleName.includes('负责') ? 'red' : 'default'} style={{ marginRight: 0, fontSize: 11 }}>{roleLabel(m.roleName, t)}</Tag>
       <CloseCircleFilled onClick={onRemove} style={{ color: token.colorTextQuaternary, cursor: 'pointer', fontSize: 14 }} />
     </div>
   )

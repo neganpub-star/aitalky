@@ -128,6 +128,9 @@ export default {
     deactivateWarn5: '您已经妥善处理了其他任何可能影响您权益的事项;',
   },
   role: {
+    sysOwner: '负责人',
+    sysAdmin: '管理员',
+    sysMember: '普通成员',
     systemGroup: '系统默认',
     customGroup: '自定义角色',
     noCustom: '暂无自定义角色',

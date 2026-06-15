@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next'
 import { enterProject } from '../api/auth'
 import { getCtx, logout, saveEnter } from '../auth/session'
 import { canAccessSettings, hasFunction } from '../auth/perm'
+import { roleLabel } from '../auth/roleLabel'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
@@ -165,7 +166,7 @@ export default function MainLayout() {
           <div style={{ fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {displayName}
           </div>
-          {ctx.roleName && <Tag color="orange" style={{ marginTop: 4 }}>{ctx.roleName}</Tag>}
+          {ctx.roleName && <Tag color="orange" style={{ marginTop: 4 }}>{roleLabel(ctx.roleName, t)}</Tag>}
         </div>
       </div>
       <Divider style={{ margin: 0 }} />
