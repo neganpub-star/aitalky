@@ -271,7 +271,11 @@ export default function Inbox() {
   useEffect(() => {
     const offOpen = wsClient.onOpen(() => {
       loadListRef.current()
-      if (selectedRef.current) syncCurrentRef.current()
+      // 重连=新连接,旧订阅失效:重新订阅当前会话,否则非负责会话(代看/全部视图)收不到实时推送,退化成轮询
+      if (selectedRef.current) {
+        wsClient.subscribe(selectedRef.current)
+        syncCurrentRef.current()
+      }
     })
     const onFocus = () => {
       if (selectedRef.current) syncCurrentRef.current()
