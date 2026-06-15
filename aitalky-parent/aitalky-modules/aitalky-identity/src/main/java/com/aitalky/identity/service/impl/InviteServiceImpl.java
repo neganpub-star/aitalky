@@ -341,51 +341,63 @@ public class InviteServiceImpl implements InviteService {
 
     @Override
     public InviteInfoVO inviteInfo(String token) {
-        IdInvite email = inviteMapper.selectOne(Wrappers.<IdInvite>lambdaQuery()
-                .eq(IdInvite::getToken, token).last("limit 1"));
-        if (email != null) {
-            boolean valid = email.getStatus() == 0 && notExpired(email.getExpireTime());
-            IdProject project = projectMapper.selectById(email.getProjectId());
-            IdRole role = roleMapper.selectById(email.getRoleId());
-            return new InviteInfoVO("email", email.getProjectId(),
-                    project == null ? null : project.getName(), project == null ? null : project.getLogo(),
-                    role == null ? null : role.getName(), email.getEmail(),
-                    memberName(email.getInviterMemberId()), false, valid,
-                    valid ? null : "邀请已失效");
+        // 凭 token 跨项目查(可能在项目级令牌下调用,如"切换项目-待加入"点入);绕租户避免被当前项目过滤
+        InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            IdInvite email = inviteMapper.selectOne(Wrappers.<IdInvite>lambdaQuery()
+                    .eq(IdInvite::getToken, token).last("limit 1"));
+            if (email != null) {
+                boolean valid = email.getStatus() == 0 && notExpired(email.getExpireTime());
+                IdProject project = projectMapper.selectById(email.getProjectId());
+                IdRole role = roleMapper.selectById(email.getRoleId());
+                return new InviteInfoVO("email", email.getProjectId(),
+                        project == null ? null : project.getName(), project == null ? null : project.getLogo(),
+                        role == null ? null : role.getName(), email.getEmail(),
+                        memberName(email.getInviterMemberId()), false, valid,
+                        valid ? null : "邀请已失效");
+            }
+            IdInviteLink link = linkMapper.selectOne(Wrappers.<IdInviteLink>lambdaQuery()
+                    .eq(IdInviteLink::getToken, token).last("limit 1"));
+            if (link != null) {
+                boolean valid = link.getDisabled() == 0 && notExpired(link.getExpireTime());
+                IdProject project = projectMapper.selectById(link.getProjectId());
+                IdRole role = roleMapper.selectById(link.getRoleId());
+                return new InviteInfoVO("link", link.getProjectId(),
+                        project == null ? null : project.getName(), project == null ? null : project.getLogo(),
+                        role == null ? null : role.getName(), null,
+                        memberName(link.getInviterMemberId()), link.getAccessType() == 1, valid,
+                        valid ? null : "邀请已失效");
+            }
+            throw new BizException(ResultCode.INVITE_NOT_FOUND);
+        } finally {
+            InterceptorIgnoreHelper.clearIgnoreStrategy();
         }
-        IdInviteLink link = linkMapper.selectOne(Wrappers.<IdInviteLink>lambdaQuery()
-                .eq(IdInviteLink::getToken, token).last("limit 1"));
-        if (link != null) {
-            boolean valid = link.getDisabled() == 0 && notExpired(link.getExpireTime());
-            IdProject project = projectMapper.selectById(link.getProjectId());
-            IdRole role = roleMapper.selectById(link.getRoleId());
-            return new InviteInfoVO("link", link.getProjectId(),
-                    project == null ? null : project.getName(), project == null ? null : project.getLogo(),
-                    role == null ? null : role.getName(), null,
-                    memberName(link.getInviterMemberId()), link.getAccessType() == 1, valid,
-                    valid ? null : "邀请已失效");
-        }
-        throw new BizException(ResultCode.INVITE_NOT_FOUND);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public EnterResult accept(Long accountId, String token, AcceptInviteCmd cmd) {
-        IdAccount account = accountMapper.selectById(accountId);
-        if (account == null) {
-            throw new BizException(ResultCode.UNAUTHORIZED);
+        // 凭 token 跨项目接受(同上,可能在项目级令牌下调用);绕租户。enter() 内部自管租户开关。
+        InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            IdAccount account = accountMapper.selectById(accountId);
+            if (account == null) {
+                throw new BizException(ResultCode.UNAUTHORIZED);
+            }
+            IdInvite email = inviteMapper.selectOne(Wrappers.<IdInvite>lambdaQuery()
+                    .eq(IdInvite::getToken, token).last("limit 1"));
+            if (email != null) {
+                return acceptEmail(account, email, cmd);
+            }
+            IdInviteLink link = linkMapper.selectOne(Wrappers.<IdInviteLink>lambdaQuery()
+                    .eq(IdInviteLink::getToken, token).last("limit 1"));
+            if (link != null) {
+                return acceptLink(account, link, cmd);
+            }
+            throw new BizException(ResultCode.INVITE_NOT_FOUND);
+        } finally {
+            InterceptorIgnoreHelper.clearIgnoreStrategy();
         }
-        IdInvite email = inviteMapper.selectOne(Wrappers.<IdInvite>lambdaQuery()
-                .eq(IdInvite::getToken, token).last("limit 1"));
-        if (email != null) {
-            return acceptEmail(account, email, cmd);
-        }
-        IdInviteLink link = linkMapper.selectOne(Wrappers.<IdInviteLink>lambdaQuery()
-                .eq(IdInviteLink::getToken, token).last("limit 1"));
-        if (link != null) {
-            return acceptLink(account, link, cmd);
-        }
-        throw new BizException(ResultCode.INVITE_NOT_FOUND);
     }
 
     private EnterResult acceptEmail(IdAccount account, IdInvite invite, AcceptInviteCmd cmd) {
