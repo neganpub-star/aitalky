@@ -496,6 +496,13 @@ public class InviteServiceImpl implements InviteService {
 
     /** 建成员(接受邀请;account 无项目上下文,显式带 projectId) */
     private Long createMember(Long projectId, Long accountId, Long roleId, String nickname, Long inviteLinkId) {
+        // 重新加入(曾退出/被移除=软删 del_flag=1):唯一键 uk_project_account 不含 del_flag,
+        // 死行仍占键,直接 insert 会撞唯一键。先探测(含软删)旧行,有则复活而非新插。
+        Long existingId = memberMapper.findAnyMemberId(projectId, accountId);
+        if (existingId != null) {
+            memberMapper.reviveMember(existingId, roleId, nickname, DefaultAvatar.urlFor(existingId));
+            return existingId;
+        }
         IdMember member = new IdMember();
         member.setId(idGenerator.nextId());
         member.setProjectId(projectId);
