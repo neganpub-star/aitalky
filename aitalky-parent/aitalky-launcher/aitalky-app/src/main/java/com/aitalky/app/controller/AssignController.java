@@ -5,8 +5,6 @@ import com.aitalky.conversation.dto.AssignConfigVO;
 import com.aitalky.conversation.service.AssignService;
 import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.framework.web.RequiresFunction;
-import com.aitalky.identity.dto.MemberBrief;
-import com.aitalky.identity.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +27,6 @@ import java.util.List;
 public class AssignController {
 
     private final AssignService assignService;
-    private final MemberService memberService;
 
     /** 分配配置 */
     @GetMapping("/config")
@@ -46,16 +43,11 @@ public class AssignController {
         return R.ok();
     }
 
-    /** 参与队友列表(含昵称/头像) */
+    /** 参与队友成员ID列表(前端用成员表映射出昵称/头像/角色) */
     @GetMapping("/members")
     @RequiresFunction("assign.setting")
-    public R<List<MemberBrief>> members() {
-        List<Long> ids = assignService.participantIds(TenantContext.getProjectId());
-        List<MemberBrief> list = ids.stream()
-                .map(memberService::brief)
-                .filter(java.util.Objects::nonNull)
-                .toList();
-        return R.ok(list);
+    public R<List<Long>> members() {
+        return R.ok(assignService.participantIds(TenantContext.getProjectId()));
     }
 
     /** 添加参与队友(实时保存) */

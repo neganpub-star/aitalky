@@ -24,4 +24,10 @@ public interface AssignService {
 
     /** 移除参与队友(实时保存) */
     void removeParticipant(Long projectId, Long memberId);
+
+    /**
+     * 轮流分配:在候选(升序)中取游标之后的下一个并推进游标;候选空返回 null。
+     * 游标持久化在分配配置上,实现跨会话的顺序轮转。
+     */
+    Long nextRoundRobin(Long projectId, java.util.List<Long> candidatesAsc);
 }

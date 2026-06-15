@@ -23,6 +23,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-customer</artifactId>
         </dependency>
+        <!-- 分配引擎:查在线成员(work_status)判定可分配坐席 -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-identity</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

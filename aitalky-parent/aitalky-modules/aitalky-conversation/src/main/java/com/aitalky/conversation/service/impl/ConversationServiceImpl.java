@@ -37,9 +37,10 @@ public class ConversationServiceImpl implements ConversationService {
     private final CusCustomerMapper customerMapper;
     private final SnowflakeIdGenerator idGenerator;
     private final DistributedLockTemplate lockTemplate;
+    private final com.aitalky.conversation.service.AssignEngine assignEngine;
 
     @Override
-    public CnvConversation openOrCreate(OpenConversationCmd cmd) {
+    public com.aitalky.conversation.dto.OpenConversationResult openOrCreate(OpenConversationCmd cmd) {
         return lockTemplate.execute("lock:conv:open:" + cmd.projectId() + ":" + cmd.customerId(), 3, 10, () -> {
             // 找该客户的活跃会话(进行中/等待队列)
             CnvConversation active = conversationMapper.selectOne(Wrappers.<CnvConversation>lambdaQuery()
@@ -49,14 +50,14 @@ public class ConversationServiceImpl implements ConversationService {
                     .orderByDesc(CnvConversation::getCreateTime)
                     .last("limit 1"));
             if (active != null) {
-                return active;
+                return new com.aitalky.conversation.dto.OpenConversationResult(active, null); // 复用,不重复分配
             }
             CnvConversation conv = new CnvConversation();
             conv.setId(idGenerator.nextId());
             conv.setProjectId(cmd.projectId());
             conv.setCustomerId(cmd.customerId());
             conv.setGroupId(cmd.groupId());
-            conv.setStatus(1);            // 进行中(未分配,进未分配池;分配引擎后续接入)
+            conv.setStatus(1);            // 先置进行中(未分配);引擎按规则分配或转等待队列
             conv.setSource(cmd.source());
             conv.setDeviceInfo(cmd.deviceInfo());
             conv.setIp(cmd.ip());
@@ -66,7 +67,9 @@ public class ConversationServiceImpl implements ConversationService {
             conv.setLastSeq(0L);
             conversationMapper.insert(conv);
             log.info("创建会话 conversationId={}, customerId={}", conv.getId(), cmd.customerId());
-            return conv;
+            // 自动分配(手动模式/无在线/全满 返回 null,会话留未分配或进等待队列)
+            Long assigned = assignEngine.autoAssign(conv);
+            return new com.aitalky.conversation.dto.OpenConversationResult(conv, assigned);
         });
     }
 

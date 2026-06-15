@@ -40,6 +40,12 @@ public interface MemberService {
      */
     java.util.List<com.aitalky.identity.dto.MemberAgent> agentsOf(Long projectId, boolean onlineOnly, int limit);
 
+    /**
+     * 分配引擎用:取项目内「工作状态在线 且 启用」的成员ID集合。
+     * 分配可能在无成员租户上下文(客户令牌新建会话)下触发,显式 projectId + 绕租户。
+     */
+    java.util.List<Long> onlineMemberIds(Long projectId);
+
     /** 启用/禁用(status 1启用 0禁用) */
     void updateStatus(Long memberId, Integer status);
 

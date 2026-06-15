@@ -82,6 +82,33 @@ public class AssignServiceImpl implements AssignService {
                 .eq(CnvAssignMember::getMemberId, memberId));
     }
 
+    @Override
+    public Long nextRoundRobin(Long projectId, List<Long> candidatesAsc) {
+        if (candidatesAsc == null || candidatesAsc.isEmpty()) {
+            return null;
+        }
+        CnvAssignConfig cfg = findConfig(projectId);
+        Long cursor = cfg == null ? null : cfg.getRoundRobinCursor();
+        // 取游标之后的第一个;没有(游标在末尾/为空)则回到第一个
+        Long picked = candidatesAsc.stream()
+                .filter(id -> cursor == null || id > cursor)
+                .findFirst()
+                .orElse(candidatesAsc.get(0));
+        // 推进游标(配置不存在则建默认行)
+        if (cfg == null) {
+            cfg = new CnvAssignConfig();
+            cfg.setProjectId(projectId);
+            cfg.setAssignMode(DEFAULT_MODE);
+            cfg.setMaxConcurrent(DEFAULT_MAX);
+            cfg.setRoundRobinCursor(picked);
+            configMapper.insert(cfg);
+        } else {
+            cfg.setRoundRobinCursor(picked);
+            configMapper.updateById(cfg);
+        }
+        return picked;
+    }
+
     private CnvAssignConfig findConfig(Long projectId) {
         return configMapper.selectOne(Wrappers.<CnvAssignConfig>lambdaQuery()
                 .eq(CnvAssignConfig::getProjectId, projectId).last("limit 1"));

@@ -153,6 +153,25 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    public java.util.List<Long> onlineMemberIds(Long projectId) {
+        if (projectId == null) {
+            return java.util.List.of();
+        }
+        com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.handle(
+                com.baomidou.mybatisplus.core.plugins.IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            return memberMapper.selectList(Wrappers.<IdMember>lambdaQuery()
+                            .select(IdMember::getId)
+                            .eq(IdMember::getProjectId, projectId)
+                            .eq(IdMember::getStatus, 1)
+                            .eq(IdMember::getWorkStatus, 1))
+                    .stream().map(IdMember::getId).toList();
+        } finally {
+            com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.clearIgnoreStrategy();
+        }
+    }
+
+    @Override
     public void updateWorkStatus(Long memberId, Integer workStatus) {
         IdMember member = requireMember(memberId);
         // 归一:非 1 即 0(0离开 1在线)

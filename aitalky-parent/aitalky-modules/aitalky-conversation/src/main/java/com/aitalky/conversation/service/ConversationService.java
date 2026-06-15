@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 /** 会话服务 */
 public interface ConversationService {
 
-    /** 建或取该客户的活跃会话(进行中/等待队列);已结束则新建 */
-    CnvConversation openOrCreate(com.aitalky.conversation.dto.OpenConversationCmd cmd);
+    /** 建或取该客户的活跃会话(进行中/等待队列);已结束则新建。新建会话经引擎自动分配,结果含分配到的坐席 */
+    com.aitalky.conversation.dto.OpenConversationResult openOrCreate(com.aitalky.conversation.dto.OpenConversationCmd cmd);
 
     /** 收件箱列表(view: mine/unassigned/all/mention) */
     PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll);

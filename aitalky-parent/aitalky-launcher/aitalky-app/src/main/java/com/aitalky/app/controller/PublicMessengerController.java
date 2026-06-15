@@ -51,6 +51,7 @@ public class PublicMessengerController {
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
     private final com.aitalky.messenger.service.MessengerConfigService messengerConfigService;
     private final com.aitalky.identity.service.MemberService memberService;
+    private final com.aitalky.app.service.AssignNotifier assignNotifier;
 
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
@@ -67,8 +68,11 @@ public class PublicMessengerController {
         }
         // 黑名单不拦接入:被拉黑用户仍可打开聊天框,只在发消息时拦(send 返回 CONVERSATION_BLOCKED→气泡提示)
         CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), req.lang());
-        CnvConversation conv = conversationService.openOrCreate(new OpenConversationCmd(
+        var openResult = conversationService.openOrCreate(new OpenConversationCmd(
                 project.getId(), customer.getId(), null, req.source(), null, clientIp(request), null));
+        CnvConversation conv = openResult.conversation();
+        // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
+        assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
         String token = customerTokenService.issue(project.getId(), customer.getId());
         // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询
         var config = messengerConfigService.getPublicConfig(project.getId(), req.lang());
@@ -239,7 +243,7 @@ public class PublicMessengerController {
         }
     }
 
-    static MessageVO toVO(Message m) {
+    public static MessageVO toVO(Message m) {
         // 已撤回(isVisible=false):内容置空,不向任何端泄露被撤回的原文;两端按 isVisible 渲染"撤回了一条消息"
         boolean retracted = Boolean.FALSE.equals(m.getIsVisible());
         return new MessageVO(m.getMsgId(), m.getSeq(), m.getConversationId(),
