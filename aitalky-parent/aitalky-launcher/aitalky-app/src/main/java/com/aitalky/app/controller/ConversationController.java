@@ -46,6 +46,7 @@ public class ConversationController {
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
+    private final com.aitalky.app.service.AssignNotifier assignNotifier;
 
     /** 收件箱列表 */
     @GetMapping
@@ -133,6 +134,7 @@ public class ConversationController {
         if (targetAssignee == null && !internal) {
             conversationService.claim(id, me.id()); // 直接回复未分配会话即认领
             targetAssignee = me.id();
+            assignNotifier.notifyAssigned(conv, me.id()); // 「该会话分配给了X」系统消息
         }
         // 推送:客户(若非内部消息)+ assignee全部连接 + 会话订阅者(代看/代发由订阅天然覆盖)
         MessageVO vo = PublicMessengerController.toVO(m);
@@ -184,8 +186,21 @@ public class ConversationController {
     /** 认领 */
     @PostMapping("/{id}/claim")
     public R<Void> claim(@PathVariable Long id) {
-        conversationService.claim(id, TenantContext.getMemberId());
+        Long me = TenantContext.getMemberId();
+        conversationService.claim(id, me);
+        assignNotifier.notifyAssigned(conversationService.getById(id), me);
         return R.ok();
+    }
+
+    /** 指派会话:memberId 指派给该队友;不传/为空=取消分配(回未分配)。所有坐席可操作 */
+    @PostMapping("/{id}/assign")
+    public R<Void> assign(@PathVariable Long id, @RequestBody AssignReq req) {
+        CnvConversation conv = conversationService.assign(id, req.memberId(), TenantContext.getMemberId());
+        assignNotifier.notifyAssigned(conv, req.memberId()); // 取消分配(null)不发系统消息
+        return R.ok();
+    }
+
+    public record AssignReq(Long memberId) {
     }
 
     /** 结束会话 */

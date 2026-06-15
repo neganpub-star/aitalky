@@ -9,6 +9,7 @@ import com.aitalky.conversation.dto.ConversationVO;
 import com.aitalky.conversation.dto.OpenConversationCmd;
 import com.aitalky.conversation.entity.CnvConversation;
 import com.aitalky.conversation.mapper.CnvConversationMapper;
+import com.aitalky.conversation.service.AssignEngine;
 import com.aitalky.conversation.service.ConversationService;
 import com.aitalky.customer.entity.CusCustomer;
 import com.aitalky.customer.mapper.CusCustomerMapper;
@@ -181,11 +182,17 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public void claim(Long conversationId, Long memberId) {
         CnvConversation conv = getById(conversationId);
-        conv.setAssigneeMemberId(memberId);
-        if (conv.getStatus() == 0) {
-            conv.setStatus(1);
-        }
-        conversationMapper.updateById(conv);
+        // 认领=分配给自己:写分配流水(applyAssign 内置 status→1)
+        assignEngine.applyAssign(conv, memberId, AssignEngine.LOG_CLAIM, memberId);
+    }
+
+    @Override
+    public CnvConversation assign(Long conversationId, Long toMemberId, Long operatorMemberId) {
+        CnvConversation conv = getById(conversationId);
+        // 指派给他人(toMemberId 非空)/ 取消分配(toMemberId 为 null,回未分配)
+        int type = toMemberId == null ? AssignEngine.LOG_TRANSFER : AssignEngine.LOG_ASSIGN;
+        assignEngine.applyAssign(conv, toMemberId, type, operatorMemberId);
+        return conv;
     }
 
     @Override

@@ -34,6 +34,9 @@ public interface ConversationService {
     /** 认领(分配给自己) */
     void claim(Long conversationId, Long memberId);
 
+    /** 指派给他人(toMemberId 非空)或取消分配(toMemberId 为 null,回未分配);operatorMemberId=操作人。返回会话 */
+    CnvConversation assign(Long conversationId, Long toMemberId, Long operatorMemberId);
+
     /** 结束会话 */
     void close(Long conversationId);
 

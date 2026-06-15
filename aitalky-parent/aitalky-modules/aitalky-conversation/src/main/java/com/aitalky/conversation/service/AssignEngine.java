@@ -32,8 +32,11 @@ public class AssignEngine {
     private final AssignService assignService;
     private final MemberService memberService;
 
-    /** 分配类型:1认领 2指派 3自动 4转移 */
+    /** 分配类型:1认领 2指派 3自动 4转移/取消 */
+    public static final int LOG_CLAIM = 1;
+    public static final int LOG_ASSIGN = 2;
     public static final int LOG_AUTO = 3;
+    public static final int LOG_TRANSFER = 4;
 
     /**
      * 为会话自动分配坐席并落库(更新 assignee/status)。
