@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next'
 import AuthShell from './auth/AuthShell'
 import { login, register, sendCode } from '../api/auth'
 import { acceptInvite, inviteInfo } from '../api/invite'
-import { getToken, saveEnter, saveLogin } from '../auth/session'
+import { getToken, patchCtx, saveEnter, saveLogin } from '../auth/session'
 import { roleLabel } from '../auth/roleLabel'
+import { getMyProjects } from '../api/account'
 import type { InviteInfoVO } from '../types'
 
 const { Title, Text } = Typography
@@ -73,6 +74,8 @@ export default function Join() {
     try {
       const r = await acceptInvite(token, v.nickname, v.accessCode)
       saveEnter(r, info?.projectName || '')
+      // 刷新项目列表(新加入的项目要出现在切换项目下拉)
+      try { patchCtx({ projects: await getMyProjects() }) } catch { /* 刷新失败不阻塞进入 */ }
       message.success(t('invite.joined'))
       nav('/inbox')
     } finally { setLoading(false) }

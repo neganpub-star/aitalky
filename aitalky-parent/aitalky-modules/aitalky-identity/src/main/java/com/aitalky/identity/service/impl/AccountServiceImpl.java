@@ -17,6 +17,8 @@ import com.aitalky.identity.mapper.IdAccountMapper;
 import com.aitalky.identity.mapper.IdMemberMapper;
 import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.service.AccountService;
+import com.baomidou.mybatisplus.core.plugins.IgnoreStrategy;
+import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -133,6 +135,17 @@ public class AccountServiceImpl implements AccountService {
     }
 
     /** 账号可进入的项目(它在哪些项目里是成员) */
+    @Override
+    public List<ProjectBrief> myProjects(Long accountId) {
+        // 可能在项目级令牌下调用(切换项目下拉/加入后刷新):id_member 受租户过滤,绕租户跨项目查
+        InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            return listProjects(accountId);
+        } finally {
+            InterceptorIgnoreHelper.clearIgnoreStrategy();
+        }
+    }
+
     private List<ProjectBrief> listProjects(Long accountId) {
         List<IdMember> members = memberMapper.selectList(
                 Wrappers.<IdMember>lambdaQuery()

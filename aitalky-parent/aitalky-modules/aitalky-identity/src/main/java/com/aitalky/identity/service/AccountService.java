@@ -34,4 +34,7 @@ public interface AccountService {
 
     /** 重置密码(忘记旧密码:校验发往本账号邮箱的验证码后更新;新密码为 RSA 密文) */
     void resetPassword(Long accountId, String code, String newPasswordCipher);
+
+    /** 当前账号加入的项目列表(切换项目用;加入新项目后刷新)。绕租户跨项目查 */
+    java.util.List<com.aitalky.identity.dto.ProjectBrief> myProjects(Long accountId);
 }

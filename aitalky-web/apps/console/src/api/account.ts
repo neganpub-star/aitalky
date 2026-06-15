@@ -1,5 +1,6 @@
 import client from './client'
 import { encryptPassword } from './crypto'
+import type { ProjectBrief } from '../types'
 
 // 个人中心资料(对应后端 ProfileVO)
 export interface ProfileVO {
@@ -69,6 +70,11 @@ export interface PendingInviteVO {
 /** 当前账号的「待加入」邀请(切换项目下拉用) */
 export function getPendingInvites() {
   return client.get<unknown, PendingInviteVO[]>('/account/pending-invites')
+}
+
+/** 当前账号加入的项目列表(加入新项目后刷新切换项目下拉) */
+export function getMyProjects() {
+  return client.get<unknown, ProjectBrief[]>('/account/projects')
 }
 
 /** 改用户名(账号显示名) */
