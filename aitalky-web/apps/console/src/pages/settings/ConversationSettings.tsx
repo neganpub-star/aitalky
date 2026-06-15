@@ -12,11 +12,16 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
 import { getMessengerConfig } from '../../api/messengerConfig'
+import { getAssignConfig, updateAssignConfig, getAssignMemberIds, addAssignMember, removeAssignMember } from '../../api/assign'
+import { pageMembers } from '../../api/member'
 import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO } from '../../types'
 import AddTeammateModal from './AddTeammateModal'
 
 type AssignRule = 'manual' | 'round' | 'load'
+// 分配规则 ↔ 后端 assignMode(0手动 1轮流 2负载)
+const RULE_TO_MODE: Record<AssignRule, number> = { manual: 0, round: 1, load: 2 }
+const MODE_TO_RULE: AssignRule[] = ['manual', 'round', 'load']
 interface Strategy { id: string; name: string; mark: string; teammates: MemberVO[]; remark: string }
 
 // 会话设置(对齐 ByteTrack live-现网截图 img_10~img_17):手风琴 5 块
@@ -55,11 +60,45 @@ export default function ConversationSettings() {
 
   useEffect(() => {
     getMessengerConfig().then((c) => { if (c.customDomain) setHost(c.customDomain) }).catch(() => undefined)
+    // 分配配置:规则 + 最大会话数
+    getAssignConfig().then((c) => {
+      setRule(MODE_TO_RULE[c.assignMode] ?? 'round')
+      if (c.maxConcurrent > 0) { setLimitMode('limited'); setLimitNum(c.maxConcurrent) } else setLimitMode('unlimited')
+    }).catch(() => undefined)
+    // 普通分配参与队友:成员表 + 参与id 映射出 MemberVO
+    Promise.all([pageMembers({ page: 1, size: 500 }), getAssignMemberIds()])
+      .then(([res, ids]) => {
+        const set = new Set(ids)
+        setNormalTeammates(res.records.filter((m) => set.has(m.id)))
+      }).catch(() => undefined)
   }, [])
 
   const normalUrl = `${host}?appId=${appId}`
   const copy = (text: string) => { navigator.clipboard?.writeText(text); message.success(t('common.confirm')) }
-  const todoSave = () => message.success(t('mse.saved')) // TODO 接后端
+  const todoSave = () => message.success(t('mse.saved')) // TODO 接后端(域名/保持期等)
+
+  // 基本设置:保存分配规则 + 最大会话数
+  const saveBasic = async () => {
+    await updateAssignConfig(RULE_TO_MODE[rule], limitMode === 'limited' ? limitNum : 0)
+    message.success(t('mse.saved'))
+  }
+
+  // 普通分配参与队友:增删实时落库(对齐参考:加/删即保存,无需保存按钮)
+  const applyNormalTeammates = async (ms: MemberVO[]) => {
+    const cur = new Set(normalTeammates.map((m) => m.id))
+    const next = new Set(ms.map((m) => m.id))
+    const added = ms.filter((m) => !cur.has(m.id))
+    const removed = normalTeammates.filter((m) => !next.has(m.id))
+    setNormalTeammates(ms)
+    setNormalModal(false)
+    try {
+      await Promise.all([...added.map((m) => addAssignMember(m.id)), ...removed.map((m) => removeAssignMember(m.id))])
+    } catch { message.error(t('mse.saved')) }
+  }
+  const removeNormalTeammate = (m: MemberVO) => {
+    setNormalTeammates((s) => s.filter((x) => x.id !== m.id))
+    removeAssignMember(m.id).catch(() => undefined)
+  }
 
   const styles: Record<string, CSSProperties> = {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
@@ -188,7 +227,9 @@ export default function ConversationSettings() {
           {limitMode === 'limited' && (
             <InputNumber min={1} max={9999} value={limitNum} onChange={(v) => setLimitNum(v || 1)} style={{ marginTop: 12, width: 160 }} />
           )}
-          {saveBtns()}
+          <div style={styles.actions}>
+            <Button type="primary" onClick={saveBasic}>{t('common.save')}</Button>
+          </div>
         </>
       } />
 
@@ -216,7 +257,7 @@ export default function ConversationSettings() {
           <Button style={{ marginTop: 14 }} icon={<PlusOutlined />} onClick={() => setNormalModal(true)}>{t('conv.addTeammate')}</Button>
           {normalTeammates.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, background: token.colorFillTertiary, borderRadius: 8, padding: 14, marginTop: 14 }}>
-              {normalTeammates.map((m) => teammateChip(m, () => setNormalTeammates((s) => s.filter((x) => x.id !== m.id))))}
+              {normalTeammates.map((m) => teammateChip(m, () => removeNormalTeammate(m)))}
             </div>
           )}
           <div style={{ display: 'flex', gap: 20, marginTop: 20, maxWidth: 640 }}>
@@ -274,7 +315,7 @@ export default function ConversationSettings() {
       {/* 普通分配 - 添加队友 */}
       <AddTeammateModal open={normalModal} initial={normalTeammates}
         onCancel={() => setNormalModal(false)}
-        onOk={(ms) => { setNormalTeammates(ms); setNormalModal(false) }} />
+        onOk={applyNormalTeammates} />
 
       {/* 专属分配 - 添加队友(新增策略弹窗内 / 队友管理) */}
       <AddTeammateModal open={strategyTeamModal} initial={strategyTeammates}
