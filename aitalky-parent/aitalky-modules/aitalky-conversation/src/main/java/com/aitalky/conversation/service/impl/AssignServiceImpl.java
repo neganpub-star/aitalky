@@ -1,10 +1,12 @@
 package com.aitalky.conversation.service.impl;
 
 import com.aitalky.conversation.dto.AssignConfigVO;
-import com.aitalky.conversation.entity.CnvAssignConfig;
-import com.aitalky.conversation.entity.CnvAssignMember;
-import com.aitalky.conversation.mapper.CnvAssignConfigMapper;
-import com.aitalky.conversation.mapper.CnvAssignMemberMapper;
+import com.aitalky.conversation.entity.AsnConfig;
+import com.aitalky.conversation.entity.AsnGroup;
+import com.aitalky.conversation.entity.AsnGroupMember;
+import com.aitalky.conversation.mapper.AsnConfigMapper;
+import com.aitalky.conversation.mapper.AsnGroupMapper;
+import com.aitalky.conversation.mapper.AsnGroupMemberMapper;
 import com.aitalky.conversation.service.AssignService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
@@ -13,73 +15,87 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * 会话分配设置实现。配置/参与队友均显式按 projectId 读写——
- * 既兼容设置态(项目级令牌,租户也会注入同一 projectId),也兼容分配引擎在无成员租户上下文(客户令牌)下调用。
+ * 会话分配设置实现(基于 asn_* 表)。
+ * <p>对外 AssignConfigVO.assignMode 沿用 0手动/1轮流/2负载;asn_config.mode 为 1/2/3,边界处 ±1 映射。
+ * <p>普通分配「参与队友」= 项目「普通组」(asn_group.type=1)的成员;普通组首次需要时懒创建。
+ * <p>显式按 projectId 读写,兼容分配引擎在无成员租户上下文(客户令牌新建会话)下调用。
  */
 @Service
 @RequiredArgsConstructor
 public class AssignServiceImpl implements AssignService {
 
-    /** 默认:轮流分配、不限会话数(对齐参考) */
+    /** 对外默认:轮流(1)、不限(0) */
     private static final int DEFAULT_MODE = 1;
     private static final int DEFAULT_MAX = 0;
+    private static final int GROUP_NORMAL = 1; // asn_group.type 普通组
 
-    private final CnvAssignConfigMapper configMapper;
-    private final CnvAssignMemberMapper memberMapper;
+    private final AsnConfigMapper configMapper;
+    private final AsnGroupMapper groupMapper;
+    private final AsnGroupMemberMapper groupMemberMapper;
 
     @Override
     public AssignConfigVO getConfig(Long projectId) {
-        CnvAssignConfig cfg = findConfig(projectId);
+        AsnConfig cfg = findConfig(projectId);
         if (cfg == null) {
             return new AssignConfigVO(DEFAULT_MODE, DEFAULT_MAX);
         }
-        return new AssignConfigVO(cfg.getAssignMode(), cfg.getMaxConcurrent());
+        return new AssignConfigVO(toVoMode(cfg.getMode()), cfg.getCapacityLimit());
     }
 
     @Override
     public void updateConfig(Long projectId, Integer assignMode, Integer maxConcurrent) {
-        int mode = assignMode == null ? DEFAULT_MODE : assignMode;
+        int dbMode = toDbMode(assignMode);
         int max = maxConcurrent == null || maxConcurrent < 0 ? DEFAULT_MAX : maxConcurrent;
-        CnvAssignConfig cfg = findConfig(projectId);
+        AsnConfig cfg = findConfig(projectId);
         if (cfg == null) {
-            cfg = new CnvAssignConfig();
+            cfg = new AsnConfig();
             cfg.setProjectId(projectId);
-            cfg.setAssignMode(mode);
-            cfg.setMaxConcurrent(max);
-            configMapper.insert(cfg); // id 由 insertFill 兜底注入
+            cfg.setMode(dbMode);
+            cfg.setCapacityLimit(max);
+            configMapper.insert(cfg);
         } else {
-            cfg.setAssignMode(mode);
-            cfg.setMaxConcurrent(max);
+            cfg.setMode(dbMode);
+            cfg.setCapacityLimit(max);
             configMapper.updateById(cfg);
         }
     }
 
     @Override
     public List<Long> participantIds(Long projectId) {
-        return memberMapper.selectList(Wrappers.<CnvAssignMember>lambdaQuery()
-                        .eq(CnvAssignMember::getProjectId, projectId))
-                .stream().map(CnvAssignMember::getMemberId).toList();
+        Long groupId = normalGroupId(projectId, false);
+        if (groupId == null) {
+            return List.of();
+        }
+        return groupMemberMapper.selectList(Wrappers.<AsnGroupMember>lambdaQuery()
+                        .eq(AsnGroupMember::getGroupId, groupId))
+                .stream().map(AsnGroupMember::getMemberId).toList();
     }
 
     @Override
     public void addParticipant(Long projectId, Long memberId) {
-        boolean exists = memberMapper.exists(Wrappers.<CnvAssignMember>lambdaQuery()
-                .eq(CnvAssignMember::getProjectId, projectId)
-                .eq(CnvAssignMember::getMemberId, memberId));
+        Long groupId = normalGroupId(projectId, true);
+        boolean exists = groupMemberMapper.exists(Wrappers.<AsnGroupMember>lambdaQuery()
+                .eq(AsnGroupMember::getGroupId, groupId)
+                .eq(AsnGroupMember::getMemberId, memberId));
         if (exists) {
-            return; // 幂等
+            return;
         }
-        CnvAssignMember m = new CnvAssignMember();
+        AsnGroupMember m = new AsnGroupMember();
         m.setProjectId(projectId);
+        m.setGroupId(groupId);
         m.setMemberId(memberId);
-        memberMapper.insert(m);
+        groupMemberMapper.insert(m);
     }
 
     @Override
     public void removeParticipant(Long projectId, Long memberId) {
-        memberMapper.delete(Wrappers.<CnvAssignMember>lambdaQuery()
-                .eq(CnvAssignMember::getProjectId, projectId)
-                .eq(CnvAssignMember::getMemberId, memberId));
+        Long groupId = normalGroupId(projectId, false);
+        if (groupId == null) {
+            return;
+        }
+        groupMemberMapper.delete(Wrappers.<AsnGroupMember>lambdaQuery()
+                .eq(AsnGroupMember::getGroupId, groupId)
+                .eq(AsnGroupMember::getMemberId, memberId));
     }
 
     @Override
@@ -87,19 +103,17 @@ public class AssignServiceImpl implements AssignService {
         if (candidatesAsc == null || candidatesAsc.isEmpty()) {
             return null;
         }
-        CnvAssignConfig cfg = findConfig(projectId);
+        AsnConfig cfg = findConfig(projectId);
         Long cursor = cfg == null ? null : cfg.getRoundRobinCursor();
-        // 取游标之后的第一个;没有(游标在末尾/为空)则回到第一个
         Long picked = candidatesAsc.stream()
                 .filter(id -> cursor == null || id > cursor)
                 .findFirst()
                 .orElse(candidatesAsc.get(0));
-        // 推进游标(配置不存在则建默认行)
         if (cfg == null) {
-            cfg = new CnvAssignConfig();
+            cfg = new AsnConfig();
             cfg.setProjectId(projectId);
-            cfg.setAssignMode(DEFAULT_MODE);
-            cfg.setMaxConcurrent(DEFAULT_MAX);
+            cfg.setMode(DEFAULT_MODE == 1 ? 2 : DEFAULT_MODE); // 默认轮流(db=2)
+            cfg.setCapacityLimit(DEFAULT_MAX);
             cfg.setRoundRobinCursor(picked);
             configMapper.insert(cfg);
         } else {
@@ -109,8 +123,38 @@ public class AssignServiceImpl implements AssignService {
         return picked;
     }
 
-    private CnvAssignConfig findConfig(Long projectId) {
-        return configMapper.selectOne(Wrappers.<CnvAssignConfig>lambdaQuery()
-                .eq(CnvAssignConfig::getProjectId, projectId).last("limit 1"));
+    private AsnConfig findConfig(Long projectId) {
+        return configMapper.selectOne(Wrappers.<AsnConfig>lambdaQuery()
+                .eq(AsnConfig::getProjectId, projectId).last("limit 1"));
+    }
+
+    /** 取项目普通组(type=1)id;create=true 时不存在则懒创建 */
+    private Long normalGroupId(Long projectId, boolean create) {
+        AsnGroup g = groupMapper.selectOne(Wrappers.<AsnGroup>lambdaQuery()
+                .eq(AsnGroup::getProjectId, projectId)
+                .eq(AsnGroup::getType, GROUP_NORMAL).last("limit 1"));
+        if (g != null) {
+            return g.getId();
+        }
+        if (!create) {
+            return null;
+        }
+        g = new AsnGroup();
+        g.setProjectId(projectId);
+        g.setType(GROUP_NORMAL);
+        g.setName("普通分配");
+        groupMapper.insert(g);
+        return g.getId();
+    }
+
+    /** asn_config.mode(1手动2轮流3负载) → 对外(0手动1轮流2负载) */
+    private int toVoMode(Integer dbMode) {
+        return dbMode == null ? DEFAULT_MODE : Math.max(0, dbMode - 1);
+    }
+
+    /** 对外(0/1/2) → asn_config.mode(1/2/3) */
+    private int toDbMode(Integer voMode) {
+        int v = voMode == null ? DEFAULT_MODE : voMode;
+        return v + 1;
     }
 }

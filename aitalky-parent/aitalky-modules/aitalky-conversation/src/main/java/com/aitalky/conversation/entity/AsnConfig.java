@@ -5,15 +5,17 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 会话分配配置(项目维度)。assignMode:0手动 1轮流 2负载;maxConcurrent:0=不限 */
+/** 会话设置(分配规则/限制/保持期)。mode:1手动 2轮流 3负载;capacityLimit:0不限 */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("cnv_assign_config")
-public class CnvAssignConfig extends BaseEntity {
+@TableName("asn_config")
+public class AsnConfig extends BaseEntity {
 
     private Long projectId;
-    private Integer assignMode;
-    private Integer maxConcurrent;
+    private Integer mode;
+    private Integer capacityLimit;
     /** 轮流分配游标:上次分到的 member_id */
     private Long roundRobinCursor;
+    /** 会话保持期(分钟),超时自动结束,0不自动 */
+    private Integer autoCloseIdleMinutes;
 }
