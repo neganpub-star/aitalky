@@ -27,6 +27,9 @@ spring:
       database: 0
     mongodb:
       uri: mongodb://localhost:27017/aitalky
+      # 启动时按实体 @CompoundIndex/@Indexed 声明幂等地确保索引存在(已存在跳过);
+      # 不开则注解形同虚设(Spring Data 3.0+ 默认关闭),dev/正式环境都不会自动建索引。
+      auto-index-creation: true
   # 文件上传大小限制(SpringBoot 自带 multipart;与 MinIO 单文件上限相互独立,取更严的一方)
   servlet:
     multipart:

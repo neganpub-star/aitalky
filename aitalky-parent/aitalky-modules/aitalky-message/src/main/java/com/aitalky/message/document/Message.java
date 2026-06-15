@@ -3,6 +3,7 @@ package com.aitalky.message.document;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,7 +16,12 @@ import java.util.Map;
  */
 @Data
 @Document("messages")
-@CompoundIndex(name = "conv_seq", def = "{'conversationId': 1, 'seq': 1}")
+@CompoundIndexes({
+        // 热路径:按会话取消息 / 增量同步(loadLatest、sync、retract)——查询代价与集合总量无关
+        @CompoundIndex(name = "conv_seq", def = "{'conversationId': 1, 'seq': 1}"),
+        // 内容搜索/按项目过滤:先用 projectId 命中索引缩小范围,再正则匹配 content;timestamp 倒序便于取新
+        @CompoundIndex(name = "proj_ts", def = "{'projectId': 1, 'timestamp': -1}")
+})
 public class Message {
 
     @Id
