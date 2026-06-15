@@ -51,6 +51,22 @@ public class PushService {
         dispatch(registry.connectionsOf(identity), payloadJson);
     }
 
+    /**
+     * 坐席侧统一下发:会话订阅者 ∪ assignee 全部连接 ∪ 项目频道(全部在线坐席)。
+     * 合并到一个 Set 去重后单次下发——同一连接同时命中多个来源也只收一次(杜绝重复帧),
+     * 同时保证负责人/"全部"视图等未订阅者也能经项目频道实时收到。
+     */
+    public void pushToAgents(long conversationId, Long assigneeMemberId, Long projectId, String payloadJson) {
+        Set<String> targets = new HashSet<>(registry.subscribersOf(String.valueOf(conversationId)));
+        if (assigneeMemberId != null) {
+            targets.addAll(registry.connectionsOf("member:" + assigneeMemberId));
+        }
+        if (projectId != null) {
+            targets.addAll(registry.connectionsOf("project:" + projectId));
+        }
+        dispatch(targets, payloadJson);
+    }
+
     /** 把消息分发到一组连接节点（实例#connId）：本实例直推，跨实例走 MQ 广播 */
     private void dispatch(Set<String> nodes, String payloadJson) {
         log.debug("dispatch 目标连接数={}", nodes.size());

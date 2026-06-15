@@ -23,12 +23,9 @@ public class MessagePushListener implements RocketMQListener<MsgPushEvent> {
     public void onMessage(MsgPushEvent event) {
         log.info("收到推送事件 conversationId={}, assignee={}, customerId={}",
                 event.conversationId(), event.assigneeMemberId(), event.customerId());
-        // 坐席:assignee 全部连接 + 正在查看该会话的订阅者
-        pushService.pushToConversation(event.conversationId(), event.assigneeMemberId(), event.payload());
-        // 未分配会话(无负责人):广播给项目内全部在线坐席,确保"新会话"实时进列表+铃声(无人订阅时的唯一触达)
-        if (event.assigneeMemberId() == null && event.projectId() != null) {
-            pushService.pushToIdentity("project:" + event.projectId(), event.payload());
-        }
+        // 坐席:assignee + 会话订阅者 + 项目频道(全部坐席,保证"全部/未分配"视图实时);
+        // 三者合并为一个连接集合,单次去重下发——同一连接(既是assignee又在项目频道/订阅)只收一次,杜绝重复帧
+        pushService.pushToAgents(event.conversationId(), event.assigneeMemberId(), event.projectId(), event.payload());
         // 客户:其全部连接(internal 消息时 customerId 为空,跳过)
         if (event.customerId() != null) {
             pushService.pushToIdentity("cust:" + event.customerId(), event.payload());

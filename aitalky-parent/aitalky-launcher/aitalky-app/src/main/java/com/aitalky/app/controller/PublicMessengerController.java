@@ -149,14 +149,9 @@ public class PublicMessengerController {
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
                 req.type(), req.content(), false, null));
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), true);
-        // 推送:坐席侧(assignee 全部连接 + 会话订阅者)+ 客户其他端
+        // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端
         MessageVO vo = toVO(m);
         publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
-        // 已分配会话:再向项目频道广播一份,让未订阅该会话的坐席(尤其负责人看"全部")列表实时刷新/新会话实时出现。
-        // 未分配会话上面已走项目频道(assignee=null),无需重复。客户端按 seq 去重,不会重复入列。
-        if (conv.getAssigneeMemberId() != null) {
-            publishPush(conv.getId(), conv.getProjectId(), null, null, vo);
-        }
         return R.ok(vo);
     }
 
