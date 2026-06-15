@@ -12,7 +12,10 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
 import { getMessengerConfig } from '../../api/messengerConfig'
-import { getAssignConfig, updateAssignConfig, getAssignMemberIds, addAssignMember, removeAssignMember } from '../../api/assign'
+import {
+  getAssignConfig, updateAssignConfig, getAssignMemberIds, addAssignMember, removeAssignMember,
+  listAssignGroups, createAssignGroup, updateAssignGroup, deleteAssignGroup,
+} from '../../api/assign'
 import { pageMembers } from '../../api/member'
 import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO } from '../../types'
@@ -48,12 +51,16 @@ export default function ConversationSettings() {
   const [accessTab, setAccessTab] = useState<'url' | 'plugin'>('url')
   const [normalModal, setNormalModal] = useState(false)
   // 专属分配模式
+  const [allMembers, setAllMembers] = useState<MemberVO[]>([])
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [strategyModal, setStrategyModal] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null) // 非空=编辑该策略,空=新增
   const [strategyName, setStrategyName] = useState('')
   const [strategyRemark, setStrategyRemark] = useState('')
   const [strategyTeammates, setStrategyTeammates] = useState<MemberVO[]>([])
-  const [strategyTeamModal, setStrategyTeamModal] = useState(false)
+  const [strategyTeamModal, setStrategyTeamModal] = useState(false) // 新增/编辑弹窗内的队友选择
+  const [manageStrategy, setManageStrategy] = useState<Strategy | null>(null) // 表格「队友管理」目标
+  const [codeStrategy, setCodeStrategy] = useState<Strategy | null>(null) // 表格「查看代码」目标
   // 保持期
   const [keepEnabled, setKeepEnabled] = useState(true)
   const [keepMinutes, setKeepMinutes] = useState(60)
@@ -65,13 +72,26 @@ export default function ConversationSettings() {
       setRule(MODE_TO_RULE[c.assignMode] ?? 'round')
       if (c.maxConcurrent > 0) { setLimitMode('limited'); setLimitNum(c.maxConcurrent) } else setLimitMode('unlimited')
     }).catch(() => undefined)
-    // 普通分配参与队友:成员表 + 参与id 映射出 MemberVO
-    Promise.all([pageMembers({ page: 1, size: 500 }), getAssignMemberIds()])
-      .then(([res, ids]) => {
+    // 成员表加载一次,普通参与队友 + 专属策略队友都用它把 memberId 映射成 MemberVO
+    pageMembers({ page: 1, size: 500 }).then((res) => {
+      const members = res.records
+      setAllMembers(members)
+      getAssignMemberIds().then((ids) => {
         const set = new Set(ids)
-        setNormalTeammates(res.records.filter((m) => set.has(m.id)))
+        setNormalTeammates(members.filter((m) => set.has(m.id)))
       }).catch(() => undefined)
+      reloadGroups(members)
+    }).catch(() => undefined)
   }, [])
+
+  // 专属策略:后端列表 → Strategy(队友ID 映射成 MemberVO)
+  const reloadGroups = (members: MemberVO[] = allMembers) =>
+    listAssignGroups().then((gs) => {
+      setStrategies(gs.map((g) => {
+        const set = new Set(g.memberIds)
+        return { id: g.id, name: g.name, mark: g.groupKey, teammates: members.filter((m) => set.has(m.id)), remark: g.remark || '' }
+      }))
+    }).catch(() => undefined)
 
   const normalUrl = `${host}?appId=${appId}`
   const copy = (text: string) => { navigator.clipboard?.writeText(text); message.success(t('common.confirm')) }
@@ -99,6 +119,40 @@ export default function ConversationSettings() {
     setNormalTeammates((s) => s.filter((x) => x.id !== m.id))
     removeAssignMember(m.id).catch(() => undefined)
   }
+
+  // 专属策略:新增/编辑共用弹窗
+  const openCreateStrategy = () => {
+    setEditingId(null); setStrategyName(''); setStrategyRemark(''); setStrategyTeammates([]); setStrategyModal(true)
+  }
+  const openEditStrategy = (r: Strategy) => {
+    setEditingId(r.id); setStrategyName(r.name); setStrategyRemark(r.remark); setStrategyTeammates(r.teammates); setStrategyModal(true)
+  }
+  const submitStrategy = async () => {
+    if (!strategyName.trim()) { message.warning(t('conv.strategyName')); return }
+    const req = { name: strategyName.trim(), remark: strategyRemark.trim(), memberIds: strategyTeammates.map((m) => m.id) }
+    try {
+      if (editingId) await updateAssignGroup(editingId, req)
+      else await createAssignGroup(req)
+      setStrategyModal(false)
+      message.success(t('mse.saved'))
+      reloadGroups()
+    } catch { message.error(t('common.failed')) }
+  }
+  // 表格「队友管理」:只改队友,名称/备注不动
+  const applyManageTeam = async (ms: MemberVO[]) => {
+    const r = manageStrategy
+    setManageStrategy(null)
+    if (!r) return
+    try {
+      await updateAssignGroup(r.id, { name: r.name, remark: r.remark, memberIds: ms.map((m) => m.id) })
+      reloadGroups()
+    } catch { message.error(t('common.failed')) }
+  }
+  const delStrategy = async (r: Strategy) => {
+    try { await deleteAssignGroup(r.id); reloadGroups() } catch { message.error(t('common.failed')) }
+  }
+  // 专属接入 URL / 插件代码(带 groupId)
+  const strategyUrl = (mark: string) => `${host}?groupId=${mark}&appId=${appId}`
 
   const styles: Record<string, CSSProperties> = {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
@@ -177,17 +231,17 @@ export default function ConversationSettings() {
   const columns: ColumnsType<Strategy> = [
     { title: t('conv.colName'), dataIndex: 'name', width: 130 },
     { title: t('conv.colMark'), dataIndex: 'mark', render: (v) => copyCell(v), width: 160 },
-    { title: t('conv.colMembers'), render: (_, r) => r.teammates.length ? <a>{t('conv.viewAll')}</a> : <span style={{ color: '#cf1322', fontSize: 12 }}>{t('conv.needTeammate')}</span>, width: 150 },
+    { title: t('conv.colMembers'), render: (_, r) => r.teammates.length ? <a onClick={() => setManageStrategy(r)}>{t('conv.viewAll')}</a> : <span style={{ color: '#cf1322', fontSize: 12 }}>{t('conv.needTeammate')}</span>, width: 150 },
     { title: t('conv.colRemark'), dataIndex: 'remark', render: (v) => v || '--', width: 80 },
-    { title: t('conv.colUrl'), render: (_, r) => copyCell(`${host}?groupId=${r.mark}`), width: 200 },
-    { title: t('conv.colPlugin'), render: () => <a>{t('conv.viewCode')}</a>, width: 100 },
+    { title: t('conv.colUrl'), render: (_, r) => copyCell(strategyUrl(r.mark)), width: 200 },
+    { title: t('conv.colPlugin'), render: (_, r) => <a onClick={() => setCodeStrategy(r)}>{t('conv.viewCode')}</a>, width: 100 },
     {
       title: t('conv.colAction'), fixed: 'right', width: 180,
       render: (_, r) => (
         <span style={{ display: 'flex', gap: 12 }}>
-          <a onClick={() => setStrategyTeamModal(true)}>{t('conv.manageTeammate')}</a>
-          <a>{t('conv.editStrategy')}</a>
-          <a style={{ color: '#cf1322' }} onClick={() => setStrategies((s) => s.filter((x) => x.id !== r.id))}>{t('conv.delStrategy')}</a>
+          <a onClick={() => setManageStrategy(r)}>{t('conv.manageTeammate')}</a>
+          <a onClick={() => openEditStrategy(r)}>{t('conv.editStrategy')}</a>
+          <a style={{ color: '#cf1322' }} onClick={() => delStrategy(r)}>{t('conv.delStrategy')}</a>
         </span>
       ),
     },
@@ -285,7 +339,7 @@ export default function ConversationSettings() {
       {/* 专属分配模式 */}
       <Card k="exclusive" icon={<CustomerServiceOutlined />} title={t('conv.exclusiveTitle')} desc={t('conv.exclusiveDesc')} body={
         <>
-          <Button style={{ marginTop: 14, marginBottom: 16 }} icon={<PlusOutlined />} onClick={() => { setStrategyName(''); setStrategyRemark(''); setStrategyTeammates([]); setStrategyModal(true) }}>{t('conv.exclusiveAdd')}</Button>
+          <Button style={{ marginTop: 14, marginBottom: 16 }} icon={<PlusOutlined />} onClick={openCreateStrategy}>{t('conv.exclusiveAdd')}</Button>
           <Table<Strategy> rowKey="id" size="small" columns={columns} dataSource={strategies}
             scroll={{ x: 1000 }} pagination={{ pageSize: 10, size: 'small' }} />
         </>
@@ -317,19 +371,21 @@ export default function ConversationSettings() {
         onCancel={() => setNormalModal(false)}
         onOk={applyNormalTeammates} />
 
-      {/* 专属分配 - 添加队友(新增策略弹窗内 / 队友管理) */}
+      {/* 专属分配 - 新增/编辑弹窗内的队友选择 */}
       <AddTeammateModal open={strategyTeamModal} initial={strategyTeammates}
         onCancel={() => setStrategyTeamModal(false)}
         onOk={(ms) => { setStrategyTeammates(ms); setStrategyTeamModal(false) }} />
 
-      {/* 新增专属分配 */}
-      <Modal open={strategyModal} title={t('conv.exclusiveAdd')} okText={t('common.save')} cancelText={t('common.cancel')}
+      {/* 专属分配 - 表格「队友管理」:确定即落库 */}
+      <AddTeammateModal open={manageStrategy != null} initial={manageStrategy?.teammates}
+        onCancel={() => setManageStrategy(null)}
+        onOk={applyManageTeam} />
+
+      {/* 新增/编辑专属分配 */}
+      <Modal open={strategyModal} title={editingId ? t('conv.exclusiveEdit') : t('conv.exclusiveAdd')}
+        okText={t('common.save')} cancelText={t('common.cancel')}
         onCancel={() => setStrategyModal(false)}
-        onOk={() => {
-          if (!strategyName.trim()) { message.warning(t('conv.strategyName')); return }
-          setStrategies((s) => [...s, { id: `tmp-${s.length + 1}`, name: strategyName.trim(), mark: Math.random().toString(36).slice(2, 10), teammates: strategyTeammates, remark: strategyRemark.trim() }])
-          setStrategyModal(false)
-        }}>
+        onOk={submitStrategy}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 13, marginBottom: 8 }}><span style={{ color: '#cf1322' }}>* </span>{t('conv.strategyName')}</div>
           <Input value={strategyName} onChange={(e) => setStrategyName(e.target.value)} maxLength={50} />
@@ -347,6 +403,23 @@ export default function ConversationSettings() {
           <div style={{ fontSize: 13, marginBottom: 8 }}>{t('conv.remark')}</div>
           <Input.TextArea rows={3} value={strategyRemark} onChange={(e) => setStrategyRemark(e.target.value)} placeholder={t('conv.remarkPh')} />
         </div>
+      </Modal>
+
+      {/* 专属分配 - 查看接入代码(URL + 网页插件,均带 groupId) */}
+      <Modal open={codeStrategy != null} title={t('conv.viewCode')} footer={null} onCancel={() => setCodeStrategy(null)}>
+        {codeStrategy && (
+          <>
+            <div style={{ fontSize: 14, fontWeight: 600, margin: '8px 0 10px' }}>{t('conv.accessUrl')}</div>
+            <div style={{ background: token.colorFillTertiary, borderRadius: 8, padding: '12px 16px', fontSize: 13, color: token.colorTextSecondary, wordBreak: 'break-all' }}>{strategyUrl(codeStrategy.mark)}</div>
+            <Button type="primary" style={{ marginTop: 12 }} onClick={() => copy(strategyUrl(codeStrategy.mark))}>{t('conv.copyLink')}</Button>
+            <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessPlugin')}</div>
+            <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>{t('conv.pluginCodeTip')}</div>
+            <pre style={{ background: '#0b1f33', color: '#7ee787', borderRadius: 8, padding: 16, fontSize: 12, overflowX: 'auto' }}>
+{`<script src="${host}/bytetrack.js"></script>
+<script>new bytetrack({ appId: "${appId}", groupId: "${codeStrategy.mark}" })</script>`}
+            </pre>
+          </>
+        )}
       </Modal>
     </div>
   )

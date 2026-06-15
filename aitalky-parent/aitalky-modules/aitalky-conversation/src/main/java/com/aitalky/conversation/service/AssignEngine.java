@@ -48,8 +48,10 @@ public class AssignEngine {
         if (mode == 0) {
             return null; // 手动:留未分配,待坐席认领/指派
         }
-        // 参与范围:P1 普通分配名单;P2 将按 conv.groupId 切到专属策略队友
-        List<Long> scope = assignService.participantIds(conv.getProjectId());
+        // 参与范围:命中专属策略(conv.groupId 非空)→ 该策略队友;否则普通分配名单
+        List<Long> scope = conv.getGroupId() != null
+                ? assignService.groupMembers(conv.getGroupId())
+                : assignService.participantIds(conv.getProjectId());
         if (scope.isEmpty()) {
             return null;
         }

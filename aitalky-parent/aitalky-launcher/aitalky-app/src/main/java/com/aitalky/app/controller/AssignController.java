@@ -1,6 +1,7 @@
 package com.aitalky.app.controller;
 
 import com.aitalky.common.api.R;
+import com.aitalky.conversation.dto.AsnGroupVO;
 import com.aitalky.conversation.dto.AssignConfigVO;
 import com.aitalky.conversation.service.AssignService;
 import com.aitalky.framework.tenant.TenantContext;
@@ -66,9 +67,46 @@ public class AssignController {
         return R.ok();
     }
 
+    // ============ 专属分配模式(P2):专属策略 CRUD ============
+
+    /** 专属策略列表(含各自参与队友ID;昵称/头像前端用成员表映射) */
+    @GetMapping("/groups")
+    @RequiresFunction("assign.setting")
+    public R<List<AsnGroupVO>> groups() {
+        return R.ok(assignService.listGroups(TenantContext.getProjectId()));
+    }
+
+    /** 新增专属策略:返回含 id/groupKey(接入标识)的策略 */
+    @PostMapping("/groups")
+    @RequiresFunction("assign.setting")
+    public R<AsnGroupVO> createGroup(@RequestBody GroupReq req) {
+        return R.ok(assignService.createGroup(TenantContext.getProjectId(),
+                req.name(), req.remark(), req.memberIds()));
+    }
+
+    /** 编辑专属策略(名称/备注/队友全量覆盖;接入标识不变) */
+    @PutMapping("/groups/{groupId}")
+    @RequiresFunction("assign.setting")
+    public R<Void> updateGroup(@PathVariable Long groupId, @RequestBody GroupReq req) {
+        assignService.updateGroup(TenantContext.getProjectId(), groupId,
+                req.name(), req.remark(), req.memberIds());
+        return R.ok();
+    }
+
+    /** 删除专属策略 */
+    @DeleteMapping("/groups/{groupId}")
+    @RequiresFunction("assign.setting")
+    public R<Void> deleteGroup(@PathVariable Long groupId) {
+        assignService.deleteGroup(TenantContext.getProjectId(), groupId);
+        return R.ok();
+    }
+
     public record AssignConfigReq(Integer assignMode, Integer maxConcurrent) {
     }
 
     public record MemberRef(Long memberId) {
+    }
+
+    public record GroupReq(String name, String remark, List<Long> memberIds) {
     }
 }

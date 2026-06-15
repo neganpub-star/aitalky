@@ -1,5 +1,8 @@
 package com.aitalky.conversation.service.impl;
 
+import com.aitalky.common.api.ResultCode;
+import com.aitalky.common.exception.BizException;
+import com.aitalky.conversation.dto.AsnGroupVO;
 import com.aitalky.conversation.dto.AssignConfigVO;
 import com.aitalky.conversation.entity.AsnConfig;
 import com.aitalky.conversation.entity.AsnGroup;
@@ -11,8 +14,12 @@ import com.aitalky.conversation.service.AssignService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 会话分配设置实现(基于 asn_* 表)。
@@ -28,6 +35,12 @@ public class AssignServiceImpl implements AssignService {
     private static final int DEFAULT_MODE = 1;
     private static final int DEFAULT_MAX = 0;
     private static final int GROUP_NORMAL = 1; // asn_group.type 普通组
+    private static final int GROUP_EXCLUSIVE = 2; // asn_group.type 专属组
+
+    /** groupKey 字符集(去掉易混 0/O/1/I/l)与长度,与项目 appId 同风格 */
+    private static final String KEY_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    private static final int KEY_LEN = 10;
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final AsnConfigMapper configMapper;
     private final AsnGroupMapper groupMapper;
@@ -122,6 +135,125 @@ public class AssignServiceImpl implements AssignService {
             configMapper.updateById(cfg);
         }
         return picked;
+    }
+
+    // ============ 专属分配模式(P2) ============
+
+    @Override
+    public List<AsnGroupVO> listGroups(Long projectId) {
+        List<AsnGroup> groups = groupMapper.selectList(Wrappers.<AsnGroup>lambdaQuery()
+                .eq(AsnGroup::getProjectId, projectId)
+                .eq(AsnGroup::getType, GROUP_EXCLUSIVE)
+                .orderByAsc(AsnGroup::getId));
+        if (groups.isEmpty()) {
+            return List.of();
+        }
+        // 批量取各组队友,避免 N+1
+        List<Long> groupIds = groups.stream().map(AsnGroup::getId).toList();
+        Map<Long, List<Long>> membersByGroup = groupMemberMapper.selectList(Wrappers.<AsnGroupMember>lambdaQuery()
+                        .in(AsnGroupMember::getGroupId, groupIds))
+                .stream()
+                .collect(Collectors.groupingBy(AsnGroupMember::getGroupId,
+                        Collectors.mapping(AsnGroupMember::getMemberId, Collectors.toList())));
+        return groups.stream()
+                .map(g -> new AsnGroupVO(g.getId(), g.getName(), g.getGroupKey(), g.getRemark(),
+                        membersByGroup.getOrDefault(g.getId(), List.of())))
+                .toList();
+    }
+
+    @Override
+    public AsnGroupVO createGroup(Long projectId, String name, String remark, List<Long> memberIds) {
+        if (!StringUtils.hasText(name)) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        AsnGroup g = new AsnGroup();
+        g.setProjectId(projectId);
+        g.setType(GROUP_EXCLUSIVE);
+        g.setName(name.trim());
+        g.setRemark(remark == null ? null : remark.trim());
+        g.setGroupKey(generateUniqueGroupKey());
+        groupMapper.insert(g);
+        replaceMembers(projectId, g.getId(), memberIds);
+        return new AsnGroupVO(g.getId(), g.getName(), g.getGroupKey(), g.getRemark(),
+                memberIds == null ? List.of() : memberIds);
+    }
+
+    @Override
+    public void updateGroup(Long projectId, Long groupId, String name, String remark, List<Long> memberIds) {
+        AsnGroup g = requireGroup(projectId, groupId);
+        if (StringUtils.hasText(name)) {
+            g.setName(name.trim());
+        }
+        g.setRemark(remark == null ? null : remark.trim());
+        groupMapper.updateById(g); // groupKey 保持不变
+        replaceMembers(projectId, groupId, memberIds);
+    }
+
+    @Override
+    public void deleteGroup(Long projectId, Long groupId) {
+        AsnGroup g = requireGroup(projectId, groupId);
+        groupMemberMapper.physicalDeleteByGroup(groupId);
+        groupMapper.deleteById(g.getId()); // 软删策略;存量会话保留 group_id 引用
+    }
+
+    @Override
+    public List<Long> groupMembers(Long groupId) {
+        return groupMemberMapper.selectList(Wrappers.<AsnGroupMember>lambdaQuery()
+                        .eq(AsnGroupMember::getGroupId, groupId))
+                .stream().map(AsnGroupMember::getMemberId).toList();
+    }
+
+    @Override
+    public Long resolveGroupId(Long projectId, String groupKey) {
+        if (!StringUtils.hasText(groupKey)) {
+            return null;
+        }
+        AsnGroup g = groupMapper.selectOne(Wrappers.<AsnGroup>lambdaQuery()
+                .eq(AsnGroup::getProjectId, projectId)
+                .eq(AsnGroup::getType, GROUP_EXCLUSIVE)
+                .eq(AsnGroup::getGroupKey, groupKey)
+                .last("limit 1"));
+        return g == null ? null : g.getId();
+    }
+
+    /** 取本项目下指定专属策略,不存在/类型不符则报错 */
+    private AsnGroup requireGroup(Long projectId, Long groupId) {
+        AsnGroup g = groupMapper.selectById(groupId);
+        if (g == null || !projectId.equals(g.getProjectId()) || !Integer.valueOf(GROUP_EXCLUSIVE).equals(g.getType())) {
+            throw new BizException(ResultCode.NOT_FOUND);
+        }
+        return g;
+    }
+
+    /** 全量覆盖组队友:物理清空旧成员后按新名单重建(物理删避免唯一键复活冲突) */
+    private void replaceMembers(Long projectId, Long groupId, List<Long> memberIds) {
+        groupMemberMapper.physicalDeleteByGroup(groupId);
+        if (memberIds == null || memberIds.isEmpty()) {
+            return;
+        }
+        for (Long memberId : memberIds.stream().distinct().toList()) {
+            AsnGroupMember m = new AsnGroupMember();
+            m.setProjectId(projectId);
+            m.setGroupId(groupId);
+            m.setMemberId(memberId);
+            groupMemberMapper.insert(m);
+        }
+    }
+
+    /** 生成全局唯一 groupKey(随机串,碰撞极低,仍做唯一性校验重试) */
+    private String generateUniqueGroupKey() {
+        while (true) {
+            StringBuilder sb = new StringBuilder(KEY_LEN);
+            for (int i = 0; i < KEY_LEN; i++) {
+                sb.append(KEY_CHARS.charAt(RANDOM.nextInt(KEY_CHARS.length())));
+            }
+            String key = sb.toString();
+            boolean exists = groupMapper.exists(Wrappers.<AsnGroup>lambdaQuery()
+                    .eq(AsnGroup::getGroupKey, key));
+            if (!exists) {
+                return key;
+            }
+        }
     }
 
     private AsnConfig findConfig(Long projectId) {

@@ -52,6 +52,7 @@ public class PublicMessengerController {
     private final com.aitalky.messenger.service.MessengerConfigService messengerConfigService;
     private final com.aitalky.identity.service.MemberService memberService;
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
+    private final com.aitalky.conversation.service.AssignService assignService;
 
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
@@ -68,8 +69,11 @@ public class PublicMessengerController {
         }
         // 黑名单不拦接入:被拉黑用户仍可打开聊天框,只在发消息时拦(send 返回 CONVERSATION_BLOCKED→气泡提示)
         CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), req.lang());
+        // 专属接入:URL 带 groupId(=策略 groupKey)→ 反解专属策略id,会话只在该策略队友内分配;
+        // groupId 不合法(非本项目/已删)→ 降级为普通分配(groupId=null)
+        Long groupId = assignService.resolveGroupId(project.getId(), req.groupId());
         var openResult = conversationService.openOrCreate(new OpenConversationCmd(
-                project.getId(), customer.getId(), null, req.source(), null, clientIp(request), null));
+                project.getId(), customer.getId(), groupId, req.source(), null, clientIp(request), null));
         CnvConversation conv = openResult.conversation();
         // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
         assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
