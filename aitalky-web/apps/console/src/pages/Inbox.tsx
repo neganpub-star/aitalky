@@ -192,9 +192,11 @@ export default function Inbox() {
   const loadSeqRef = useRef(0)
   const loadList = useCallback(async () => {
     const mySeq = ++loadSeqRef.current
+    console.log('[DBG loadList start]', 'seq', mySeq, 'view', active, 'tab', tab) // [DBG]
     setLoadingList(true)
     try {
       const res = await listConversations({ view: active, status: statusOf(tab), page: 1, size: 50 })
+      console.log('[DBG loadList done]', 'seq', mySeq, 'curSeq', loadSeqRef.current, 'discard', mySeq !== loadSeqRef.current, 'records', res.records.length) // [DBG]
       if (mySeq !== loadSeqRef.current) return // 已被更新的请求(或切视图)取代 → 丢弃这次旧响应
       // 未读以服务端 DB 为权威;但当前打开会话强制显示 0(避免轮询把"边看边来的消息"算成未读)
       const cur = selectedRef.current
@@ -246,6 +248,7 @@ export default function Inbox() {
   useEffect(() => {
     return wsClient.onMessage((msg) => {
       const isCurrent = selectedRef.current === msg.conversationId
+      console.log('[DBG onMsg]', msg.conversationId, 'sender', msg.senderType, 'type', msg.type, 'seq', msg.seq, 'isCurrent', isCurrent, 'active', activeRef.current, 'myMemberId', myMemberId) // [DBG]
       if (isCurrent) {
         // 网②:seq 跳号(> localMax+1)说明中间漏帧 → 触发补拉;这条本身也并入(去重)
         if (msg.seq > localMaxSeqRef.current + 1) {
@@ -264,6 +267,7 @@ export default function Inbox() {
       }
       // 未知会话(如新会话经项目频道广播来)→ 列表里没有
       const known = listRef.current.some((c) => c.id === msg.conversationId)
+      console.log('[DBG known]', known, 'listLen', listRef.current.length) // [DBG]
       if (!known) {
         // 「分配给我」的系统消息 = 新会话归我的确定信号(低频):立即 loadList(不走防抖),
         // 保证「我的」视图新会话即时出现,不被项目频道广播的防抖合并拖延/饿死。
@@ -271,6 +275,7 @@ export default function Inbox() {
           msg.senderType === 'system' && msg.type === 'assign'
           && String(msg.senderId) === String(myMemberId)
         ) {
+          console.log('[DBG assign-to-me → 立即 loadList]') // [DBG]
           loadListRef.current()
           return
         }
