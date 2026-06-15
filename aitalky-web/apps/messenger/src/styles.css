@@ -203,10 +203,10 @@ body {
   flex-shrink: 0;
 }
 .hc-avatar {
+  position: relative;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  overflow: hidden;
   border: 2px solid #fff;
   margin-left: -10px;
   background: #e9eef8;
@@ -214,6 +214,21 @@ body {
 }
 .hc-avatar:first-child {
   margin-left: 0;
+}
+.hc-avatar img,
+.hc-avatar-fb {
+  border-radius: 50%;
+}
+/* 在线绿点(已分配·在线):头像右下角 */
+.hc-dot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #21c55d;
+  border: 2px solid #fff;
 }
 .hc-avatar img {
   width: 100%;

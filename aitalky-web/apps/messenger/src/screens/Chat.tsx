@@ -82,8 +82,9 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
   const ag = agent
   const assigned = ag?.mode === 'ASSIGNED_ONLINE' || ag?.mode === 'ASSIGNED_OFFLINE'
   const agentName = assigned ? ag?.agents?.[0]?.name ?? null : null
-  // 状态文案:在线态=预计回复时间;已分配离线=离线;无人在线=忙碌留言
-  const agentReply = (ag?.mode === 'ASSIGNED_ONLINE' || ag?.mode === 'POOL_ONLINE') ? ag?.replyTime ?? null : null
+  // 已分配·在线:头像带绿点(参考截图)。文案分态:已分配在线=在线 / 已分配离线=离线 /
+  // 未分配有在线=预计回复时间 / 未分配无在线=忙碌留言
+  const showOnlineDot = ag?.mode === 'ASSIGNED_ONLINE'
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -118,6 +119,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
               {ag.agents.slice(0, 3).map((a, i) => (
                 <span className="hc-avatar" key={i} style={{ zIndex: 3 - i }}>
                   {a.avatar ? <img src={a.avatar} alt="" /> : <span className="hc-avatar-fb" />}
+                  {showOnlineDot && i === 0 && <span className="hc-dot" />}
                 </span>
               ))}
             </div>
@@ -130,13 +132,13 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 </>
               ) : ag.mode === 'ASSIGNED_OFFLINE' ? (
                 <div className="hc-status">{t('agentOffline')}</div>
-              ) : agentReply ? (
+              ) : ag.mode === 'ASSIGNED_ONLINE' ? (
+                <div className="hc-status">{t('agentOnline')}</div>
+              ) : (
                 <>
                   <div className="hc-status">{t('agentReplyTime')}</div>
-                  <div className="hc-status-sub">🕑 {agentReply}</div>
+                  {ag.replyTime && <div className="hc-status-sub">🕑 {ag.replyTime}</div>}
                 </>
-              ) : (
-                <div className="hc-status">{t('agentOnline')}</div>
               )}
             </div>
           </div>
