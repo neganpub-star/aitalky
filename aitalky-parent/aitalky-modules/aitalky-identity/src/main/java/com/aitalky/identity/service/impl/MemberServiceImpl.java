@@ -38,6 +38,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MemberServiceImpl implements MemberService {
 
+    /** 系统负责人角色名(全项目唯一,不可经"调整角色"赋予) */
+    private static final String OWNER_ROLE_NAME = "负责人";
+
     private final IdMemberMapper memberMapper;
     private final IdAccountMapper accountMapper;
     private final IdRoleMapper roleMapper;
@@ -79,7 +82,15 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public void updateRole(Long memberId, Long roleId) {
         IdMember member = requireMember(memberId);
-        checkNotOwner(member); // 负责人角色不可改
+        checkNotOwner(member); // 负责人本人的角色不可改
+        // 负责人全项目唯一,不能通过"调整角色"把成员设为负责人(变更负责人走"转让负责人")
+        IdRole target = roleMapper.selectById(roleId);
+        if (target == null) {
+            throw new BizException(ResultCode.ROLE_NOT_FOUND);
+        }
+        if (target.getIsSystem() != null && target.getIsSystem() == 1 && OWNER_ROLE_NAME.equals(target.getName())) {
+            throw new BizException(ResultCode.OPERATE_OWNER_FORBIDDEN);
+        }
         member.setRoleId(roleId);
         memberMapper.updateById(member);
     }

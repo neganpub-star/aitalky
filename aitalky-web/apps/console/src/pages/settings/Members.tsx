@@ -172,7 +172,7 @@ export default function Members() {
         <Space wrap>
           <Select
             placeholder={t('member.filterRole')} allowClear style={{ width: 140 }}
-            options={roles.map((r) => ({ value: r.id, label: r.name }))}
+            options={roles.map((r) => ({ value: r.id, label: roleLabel(r.name, t) }))}
             onChange={(roleId) => setQuery((q) => ({ ...q, roleId, page: 1 }))}
           />
           <Select
@@ -207,7 +207,8 @@ export default function Members() {
       <Modal title={t('member.adjustRole')} open={!!roleModal} onCancel={() => setRoleModal(null)} onOk={onSubmitRole} destroyOnClose>
         <Form form={form} layout="vertical">
           <Form.Item name="roleId" label={t('member.role')} rules={[{ required: true }]}>
-            <Select options={roles.map((r) => ({ value: r.id, label: r.name }))} />
+            {/* 排除「负责人」:负责人全项目唯一,变更走「转让负责人」,不可经调整角色赋予 */}
+            <Select options={roles.filter((r) => !(r.isSystem === 1 && r.name === OWNER_ROLE)).map((r) => ({ value: r.id, label: roleLabel(r.name, t) }))} />
           </Form.Item>
         </Form>
       </Modal>
