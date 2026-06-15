@@ -92,8 +92,6 @@ class WsClient {
       // 控制帧:connected / pong 直接忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
       if (typeof data.msgId !== 'undefined') {
         const msg = normMessage(data as unknown as MessageVO)
-        // [DBG] 临时诊断:确认消息帧到达 WS 客户端并分发给监听器(listeners 数量)
-        console.log('[DBG ws-recv]', msg.conversationId, 'sender', msg.senderType, 'type', msg.type, 'seq', msg.seq, 'listeners', this.messageListeners.size)
         this.messageListeners.forEach((fn) => fn(msg))
       }
     }

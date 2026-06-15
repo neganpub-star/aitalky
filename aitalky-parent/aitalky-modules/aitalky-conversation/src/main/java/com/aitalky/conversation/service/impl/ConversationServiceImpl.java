@@ -66,6 +66,9 @@ public class ConversationServiceImpl implements ConversationService {
             conv.setAutoTranslate(0);
             conv.setUnreadCount(0);
             conv.setLastSeq(0L);
+            // 关键:新会话即置 last_message_at=创建时间。列表按 last_message_at 倒序排,
+            // 若留 NULL,MySQL DESC 会把新会话排到最底部(在所有有消息的会话之下)→ 坐席顶部看不到。
+            conv.setLastMessageAt(LocalDateTime.now());
             conversationMapper.insert(conv);
             log.info("创建会话 conversationId={}, customerId={}", conv.getId(), cmd.customerId());
             // 自动分配(手动模式/无在线/全满 返回 null,会话留未分配或进等待队列)
