@@ -235,7 +235,7 @@ export default function Inbox() {
   useEffect(() => {
     loadList()
     // 轮询兜底:WS 只覆盖已打开/已订阅会话,新会话靠轮询进列表
-    const timer = setInterval(loadList, 100_000)
+    const timer = setInterval(loadList, 10_000)
     return () => clearInterval(timer)
   }, [loadList])
 
