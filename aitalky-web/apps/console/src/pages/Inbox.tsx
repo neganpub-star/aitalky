@@ -569,6 +569,14 @@ export default function Inbox() {
 
   // ===== 单条消息气泡(坐席右蓝 / 客户左白 / 内部消息黄)=====
   const renderMessage = (m: MessageVO) => {
+    // 系统消息(如「该会话分配给了X」):居中灰字,仅坐席可见(信使端 internal 已过滤)
+    if (m.senderType === 'system') {
+      return (
+        <div key={m.msgId} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
+          <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{m.content}</span>
+        </div>
+      )
+    }
     const mine = m.senderType === 'agent'
     // 已撤回(isVisible=false):居中系统行,不显原文。坐席端始终显示(信使端开关只控信使侧)
     if (m.isVisible === false) {
