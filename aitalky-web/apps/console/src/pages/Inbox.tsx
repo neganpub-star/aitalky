@@ -265,6 +265,15 @@ export default function Inbox() {
       // 未知会话(如新会话经项目频道广播来)→ 列表里没有
       const known = listRef.current.some((c) => c.id === msg.conversationId)
       if (!known) {
+        // 「分配给我」的系统消息 = 新会话归我的确定信号(低频):立即 loadList(不走防抖),
+        // 保证「我的」视图新会话即时出现,不被项目频道广播的防抖合并拖延/饿死。
+        if (
+          msg.senderType === 'system' && msg.type === 'assign'
+          && String(msg.senderId) === String(myMemberId)
+        ) {
+          loadListRef.current()
+          return
+        }
         // 「全部」视图 + 客户消息 → 用消息里的客户名/头像/预览本地即时插入,体感即时;
         // 「我的/未分配」依赖分配信息,不本地插(可能不属于该视图),交给 loadList 服务端正确判定
         if (msg.senderType === 'customer' && activeRef.current === 'all') {
