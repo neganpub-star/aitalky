@@ -48,7 +48,8 @@ public class MemberServiceImpl implements MemberService {
                 Page.of(q.getPage(), q.getSize()),
                 Wrappers.<IdMember>lambdaQuery()
                         .eq(q.getRoleId() != null, IdMember::getRoleId, q.getRoleId())
-                        .eq(q.getOnlineStatus() != null, IdMember::getOnlineStatus, q.getOnlineStatus())
+                        // 「在线状态」筛选=工作状态(对齐参考:在线状态即坐席自助工作状态)
+                        .eq(q.getOnlineStatus() != null, IdMember::getWorkStatus, q.getOnlineStatus())
                         .eq(q.getStatus() != null, IdMember::getStatus, q.getStatus())
                         .like(StringUtils.hasText(q.getKeyword()), IdMember::getNickname, q.getKeyword())
                         .orderByDesc(IdMember::getCreateTime));
@@ -97,6 +98,14 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    public void updateWorkStatus(Long memberId, Integer workStatus) {
+        IdMember member = requireMember(memberId);
+        // 归一:非 1 即 0(0离开 1在线)
+        member.setWorkStatus(workStatus != null && workStatus == 1 ? 1 : 0);
+        memberMapper.updateById(member);
+    }
+
+    @Override
     public void updateStatus(Long memberId, Integer status) {
         IdMember member = requireMember(memberId);
         checkNotOwner(member); // 负责人不可被禁用
@@ -130,7 +139,7 @@ public class MemberServiceImpl implements MemberService {
                 account == null ? null : account.getInviteCode(),
                 m.getProjectId(), project == null ? null : project.getName(), owner,
                 m.getId(), m.getNickname(), m.getAvatar(), role == null ? null : role.getName(),
-                m.getLanguage(), m.getSoundEnabled(), m.getPushEnabled());
+                m.getLanguage(), m.getSoundEnabled(), m.getPushEnabled(), m.getWorkStatus());
     }
 
     @Override

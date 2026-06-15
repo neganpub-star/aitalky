@@ -120,7 +120,7 @@ export default function Members() {
     { title: t('member.colEmail'), dataIndex: 'email', render: (v) => maskEmail(v) },
     { title: t('member.colRole'), dataIndex: 'roleName', render: (v) => v || '-' },
     {
-      title: t('member.colOnline'), dataIndex: 'onlineStatus', width: 140,
+      title: t('member.colOnline'), dataIndex: 'workStatus', width: 140,
       render: (v) => (
         <Space size={6}>
           <span style={{

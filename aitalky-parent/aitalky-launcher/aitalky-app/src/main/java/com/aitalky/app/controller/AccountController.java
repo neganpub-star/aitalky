@@ -5,6 +5,7 @@ import com.aitalky.app.dto.ChangePasswordReq;
 import com.aitalky.app.dto.PreferencesReq;
 import com.aitalky.app.dto.ResetPasswordReq;
 import com.aitalky.app.dto.UsernameReq;
+import com.aitalky.app.dto.WorkStatusReq;
 import com.aitalky.common.api.R;
 import com.aitalky.framework.log.Log;
 import com.aitalky.framework.tenant.TenantContext;
@@ -104,6 +105,14 @@ public class AccountController {
     }
 
     /** 更新偏好(语言/声音/推送) */
+    /** 设置工作状态(1在线 0离开)。在线是参与自动分配的前提,并对客户端展示坐席在线/离线 */
+    @PutMapping("/work-status")
+    @Log("设置工作状态")
+    public R<Void> updateWorkStatus(@Valid @RequestBody WorkStatusReq req) {
+        memberService.updateWorkStatus(TenantContext.getMemberId(), req.workStatus());
+        return R.ok();
+    }
+
     @PutMapping("/preferences")
     @Log("个人中心-改偏好")
     public R<Void> preferences(@RequestBody PreferencesReq req) {

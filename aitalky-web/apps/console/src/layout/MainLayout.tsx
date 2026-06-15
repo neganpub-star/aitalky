@@ -13,7 +13,7 @@ import { canAccessSettings, hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
-import { getProfile } from '../api/account'
+import { getProfile, updateWorkStatus } from '../api/account'
 import { fetchLanguages } from '../api/language'
 import { setLanguageDict } from '../constants/languages'
 import { setTitleUnread } from '../notify'
@@ -33,7 +33,7 @@ export default function MainLayout() {
   const themeMode = useAppStore((s) => s.themeMode)
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const lang = useAppStore((s) => s.lang)
-  const [workOnline, setWorkOnline] = useState(true) // 工作状态(暂本地;接成员自助接口后落库)
+  const [workOnline, setWorkOnline] = useState(true) // 工作状态:进入时由 profile 回显,切换即落库
   const wsToken = useAppStore((s) => s.token)
   const nickname = useAppStore((s) => s.nickname)
   const avatar = useAppStore((s) => s.avatar)
@@ -50,8 +50,17 @@ export default function MainLayout() {
 
   // 拉取个人资料,供头像栏/菜单显示成员昵称与头像
   useEffect(() => {
-    getProfile().then((p) => setMember(p.nickname ?? undefined, p.avatar ?? undefined)).catch(() => {})
+    getProfile().then((p) => {
+      setMember(p.nickname ?? undefined, p.avatar ?? undefined)
+      setWorkOnline(p.workStatus !== 0) // 回显工作状态(默认在线)
+    }).catch(() => {})
   }, [setMember])
+
+  // 切换工作状态:乐观更新 + 落库;失败回滚
+  const changeWork = (on: boolean) => {
+    setWorkOnline(on)
+    updateWorkStatus(on ? 1 : 0).catch(() => setWorkOnline(!on))
+  }
 
   // 拉取平台语种字典(候选语种全集),覆盖本地兜底种子;失败则继续用种子
   useEffect(() => {
@@ -150,7 +159,7 @@ export default function MainLayout() {
       {/* 工作状态 */}
       <div className="at-row" style={{ ...styles.userRow, justifyContent: 'space-between' }}>
         <span>工作状态</span>
-        <Switch checked={workOnline} onChange={setWorkOnline} />
+        <Switch checked={workOnline} onChange={changeWork} />
       </div>
       <Divider style={{ margin: 0 }} />
 

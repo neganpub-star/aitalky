@@ -8,5 +8,7 @@ public record ProfileVO(
         String email, String username, String inviteCode,
         Long projectId, String projectName, boolean owner,
         Long memberId, String nickname, String avatar, String roleName,
-        String language, Integer soundEnabled, Integer pushEnabled) {
+        String language, Integer soundEnabled, Integer pushEnabled,
+        // workStatus=工作状态(1在线 0离开),供头像菜单开关回显
+        Integer workStatus) {
 }

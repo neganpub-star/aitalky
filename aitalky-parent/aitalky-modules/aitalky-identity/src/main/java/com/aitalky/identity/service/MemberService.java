@@ -25,6 +25,9 @@ public interface MemberService {
     /** 修改头像 */
     void updateAvatar(Long memberId, String avatar);
 
+    /** 设置工作状态(坐席自助:1在线 0离开)。对齐参考系统——在线是参与自动分配的前提 */
+    void updateWorkStatus(Long memberId, Integer workStatus);
+
     /** 启用/禁用(status 1启用 0禁用) */
     void updateStatus(Long memberId, Integer status);
 

@@ -116,7 +116,7 @@ public class ProjectServiceImpl implements ProjectService {
         owner.setAvatar(DefaultAvatar.urlFor(owner.getId())); // 默认头像
         owner.setStatus(1);
         owner.setOnlineStatus(0);
-        owner.setWorkStatus(0);
+        owner.setWorkStatus(1); // 默认在线(对齐参考:开关默认开,参与自动分配)
         owner.setLanguage("zh_CN");
         owner.setSoundEnabled(1);
         owner.setPushEnabled(1);

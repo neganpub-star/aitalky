@@ -446,7 +446,7 @@ public class InviteServiceImpl implements InviteService {
         member.setAvatar(DefaultAvatar.urlFor(member.getId())); // 默认头像(对齐参考)
         member.setStatus(1);
         member.setOnlineStatus(0);
-        member.setWorkStatus(0);
+        member.setWorkStatus(1); // 默认在线(对齐参考:开关默认开,参与自动分配)
         member.setLanguage("zh_CN");
         member.setSoundEnabled(1);
         member.setPushEnabled(1);

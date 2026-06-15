@@ -16,6 +16,7 @@ export interface ProfileVO {
   language: string | null
   soundEnabled: number | null
   pushEnabled: number | null
+  workStatus: number | null // 工作状态 1在线 0离开
 }
 
 // 系统推送设置(对应后端 PushSettingsVO);1=开 0=关
@@ -48,6 +49,11 @@ export function updateMyAvatar(avatar: string) {
 /** 更新偏好(语言/声音/推送);传 null 的字段不改 */
 export function updatePreferences(p: { language?: string; soundEnabled?: number; pushEnabled?: number }) {
   return client.put<unknown, void>('/account/preferences', p)
+}
+
+/** 设置工作状态(1在线 0离开);影响自动分配与客户端坐席在线展示 */
+export function updateWorkStatus(workStatus: number) {
+  return client.put<unknown, void>('/account/work-status', { workStatus })
 }
 
 /** 改用户名(账号显示名) */
