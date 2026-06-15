@@ -18,8 +18,8 @@ import java.util.Set;
  *       <b>坐席本人各端 + 代发的负责人都收到</b>，客户端按 msgId 去重</li>
  *   <li>客户多端：推该客户的全部连接</li>
  * </ul>
- * <p>横向扩展：目标连接可能分布在不同实例。本地连接直接 write；
- * 非本实例的连接通过 RocketMQ 广播（见 {@code TODO}），由目标实例消费后本地下发。
+ * <p>横向扩展：目标连接可能分布在不同实例。推送事件以 RocketMQ <b>广播模式</b>分发到每个 ws 实例,
+ * 每实例只 write 本地连接、忽略非本实例节点;连接归属唯一实例 → 恰好被那台投递(见 MessagePushListener)。
  */
 @Slf4j
 @Service
@@ -82,10 +82,9 @@ public class PushService {
                 if (ch != null && ch.isActive()) {
                     ch.writeAndFlush(new TextWebSocketFrame(payloadJson));
                 }
-            } else {
-                // TODO 跨实例：发 RocketMQ（topic=ws-push, tag=instance）→ 目标实例消费后本地下发该 connId
-                log.debug("跨实例推送（待接 MQ）target={}, instance={}", connId, instance);
             }
+            // 非本实例节点:不在此投递。推送事件以广播模式分发,该连接所在实例会收到同一事件的
+            // 广播副本并本地下发(见 MessagePushListener)。连接归属唯一实例 → 恰好一次,不漏不重。
         }
     }
 }
