@@ -140,6 +140,8 @@ export default function Inbox() {
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
   const selectedRef = useRef<string | null>(null)
   selectedRef.current = selectedId
+  const activeRef = useRef(active)
+  activeRef.current = active
   // 当前列表镜像(WS 处理器里判断"未知会话"用,避免闭包拿到旧 list)
   const listRef = useRef<ConversationVO[]>([])
   const msgEndRef = useRef<HTMLDivElement>(null)
@@ -245,10 +247,29 @@ export default function Inbox() {
       if (msg.senderType === 'customer' && !isCurrent) {
         refreshCountsRef.current()
       }
-      // 未知会话(如未分配新会话经项目频道广播来)→ 列表里没有,刷新列表+计数让它实时出现
+      // 未知会话(如新会话经项目频道广播来)→ 列表里没有
       const known = listRef.current.some((c) => c.id === msg.conversationId)
       if (!known) {
-        if (msg.senderType === 'customer') loadListRef.current()
+        if (msg.senderType === 'customer') {
+          // 「全部」视图本就显示所有会话 → 用消息里的客户名/头像/预览本地即时插入,无需等 loadList 往返;
+          // 「我的/未分配」依赖分配信息,不本地插(可能不属于该视图),交给 loadList 服务端正确判定
+          if (activeRef.current === 'all') {
+            setList((prev) => prev.some((c) => c.id === msg.conversationId) ? prev : [{
+              id: msg.conversationId,
+              customerId: msg.senderId,
+              customerName: msg.senderName || '',
+              customerAvatar: msg.senderAvatar,
+              customerUid: null,
+              assigneeMemberId: null,
+              status: 1,
+              lastMessagePreview: msg.content,
+              lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
+              unreadCount: isCurrent ? 0 : 1,
+              lastSeq: msg.seq,
+            }, ...prev])
+          }
+          loadListRef.current() // 兜底校正(分配/UID/排序/未读以服务端为权威)
+        }
         return
       }
       setList((prev) =>
