@@ -50,6 +50,10 @@ public class PublicMessengerController {
     private final ObjectMapper objectMapper;
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
     private final com.aitalky.messenger.service.MessengerConfigService messengerConfigService;
+    private final com.aitalky.identity.service.MemberService memberService;
+
+    /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
+    private static final int AGENT_AVATAR_MAX = 3;
 
     /** 初始化会话:校验 appId,解析/创建客户与会话,签发客户令牌 */
     @PostMapping("/init")
@@ -77,8 +81,49 @@ public class PublicMessengerController {
                     config.popupEnabled(), config.popupAllowClose(), config.customerRetractEnabled(),
                     config.lang());
         }
+        // 服务坐席头部:已分配=显示该坐席(在线/离线);未分配=显示项目在线坐席(预计回复)或忙碌留言
+        var agent = resolveAgent(project.getId(), conv.getAssigneeMemberId(),
+                config == null ? null : config.replyTime());
         return R.ok(new MessengerInitVO(token, conv.getId(),
-                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config));
+                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config, agent));
+    }
+
+    /** 刷新服务坐席头部(客户令牌):坐席上下线/会话被认领后,信使端 focus/重连时拉最新 */
+    @GetMapping("/agent")
+    public R<com.aitalky.app.dto.MessengerAgentVO> agent(@RequestHeader("Authorization") String auth,
+                                                         @RequestParam Long conversationId) {
+        var principal = customerTokenService.parse(auth);
+        CnvConversation conv = conversationService.getById(conversationId);
+        if (!conv.getCustomerId().equals(principal.customerId()) || !conv.getProjectId().equals(principal.projectId())) {
+            throw new BizException(ResultCode.FORBIDDEN);
+        }
+        var cfg = messengerConfigService.getPublicConfig(conv.getProjectId(), null);
+        return R.ok(resolveAgent(conv.getProjectId(), conv.getAssigneeMemberId(),
+                cfg == null ? null : cfg.replyTime()));
+    }
+
+    /** 计算信使头部坐席信息(4 态);assignee 被删则退回未分配逻辑 */
+    private com.aitalky.app.dto.MessengerAgentVO resolveAgent(Long projectId, Long assigneeMemberId, String replyTime) {
+        if (assigneeMemberId != null) {
+            var a = memberService.agentOf(projectId, assigneeMemberId);
+            if (a != null) {
+                String mode = a.online() ? "ASSIGNED_ONLINE" : "ASSIGNED_OFFLINE";
+                var item = new com.aitalky.app.dto.MessengerAgentVO.AgentItem(a.nickname(), a.avatar());
+                return new com.aitalky.app.dto.MessengerAgentVO(mode, List.of(item), a.online() ? replyTime : null);
+            }
+        }
+        // 未分配:优先展示在线坐席(预计回复),否则全部坐席头像 + 忙碌留言
+        var online = memberService.agentsOf(projectId, true, AGENT_AVATAR_MAX);
+        if (!online.isEmpty()) {
+            return new com.aitalky.app.dto.MessengerAgentVO("POOL_ONLINE", toItems(online), replyTime);
+        }
+        var any = memberService.agentsOf(projectId, false, AGENT_AVATAR_MAX);
+        return new com.aitalky.app.dto.MessengerAgentVO("POOL_BUSY", toItems(any), null);
+    }
+
+    private List<com.aitalky.app.dto.MessengerAgentVO.AgentItem> toItems(List<com.aitalky.identity.dto.MemberAgent> list) {
+        // 池子态不展示名字(只叠头像),name 传 null
+        return list.stream().map(a -> new com.aitalky.app.dto.MessengerAgentVO.AgentItem(null, a.avatar())).toList();
     }
 
     /** 客户发送消息(客户令牌) */

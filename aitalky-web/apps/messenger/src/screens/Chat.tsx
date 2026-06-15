@@ -1,13 +1,12 @@
 import type { KeyboardEvent } from 'react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
-import type { MessageVO, MessengerInit, PendingMsg } from '../types'
-import type { WsStatus } from '../ws'
+import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
 
 interface Props {
   data: MessengerInit
+  agent: MessengerAgent | null
   messages: MessageVO[]
-  status: WsStatus
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   onSend: (text: string) => void
@@ -15,7 +14,6 @@ interface Props {
   onRetract: (msgId: string) => void
   onTyping: () => void
   peerTyping: boolean
-  onBack: () => void
 }
 
 // 黑名单错误码:发消息被拦时,失败气泡上方加一条「会话暂不可用」系统提示(文案随信使语言)
@@ -42,8 +40,19 @@ function fmtTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
+// 头部日期(会话起始日):本地化短日期,如 6月6日 / Jun 6
+function fmtHeaderDate(ms: number): string {
+  const d = new Date(ms)
+  if (Number.isNaN(d.getTime())) return ''
+  try {
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  } catch {
+    return `${d.getMonth() + 1}-${d.getDate()}`
+  }
+}
+
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, messages, status, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping }: Props) {
   const [input, setInput] = useState('')
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
@@ -65,6 +74,16 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
 
   // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
   const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
+
+  // ===== 头部:项目名 + 日期 + 服务坐席(4 态,见 MessengerAgentVO)=====
+  const brandName = data.config?.brandName || data.customerName || ''
+  const firstMsg = messages.find((m) => m.isVisible !== false)
+  const headerDate = fmtHeaderDate(firstMsg ? firstMsg.timestamp : Date.now())
+  const ag = agent
+  const assigned = ag?.mode === 'ASSIGNED_ONLINE' || ag?.mode === 'ASSIGNED_OFFLINE'
+  const agentName = assigned ? ag?.agents?.[0]?.name ?? null : null
+  // 状态文案:在线态=预计回复时间;已分配离线=离线;无人在线=忙碌留言
+  const agentReply = (ag?.mode === 'ASSIGNED_ONLINE' || ag?.mode === 'POOL_ONLINE') ? ag?.replyTime ?? null : null
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -89,14 +108,39 @@ export default function Chat({ data, messages, status, pending, unreadAfterSeq, 
 
   return (
     <>
-      <div className="chat-header">
-        <div className="back" onClick={onBack}>
-          ‹
-        </div>
-        <div className="title">
-          {data.customerName}
-          {status !== 'open' && <span className="chat-status">  {t('offline')}</span>}
-        </div>
+      {/* 头部卡片(对齐参考):项目名 + 日期 + 服务坐席 */}
+      <div className="chat-headcard">
+        <div className="hc-brand">{brandName}</div>
+        {headerDate && <div className="hc-date">{headerDate}</div>}
+        {ag && ag.agents.length > 0 && (
+          <div className="hc-agent">
+            <div className="hc-avatars">
+              {ag.agents.slice(0, 3).map((a, i) => (
+                <span className="hc-avatar" key={i} style={{ zIndex: 3 - i }}>
+                  {a.avatar ? <img src={a.avatar} alt="" /> : <span className="hc-avatar-fb" />}
+                </span>
+              ))}
+            </div>
+            <div className="hc-info">
+              {agentName && <div className="hc-name">{agentName}</div>}
+              {ag.mode === 'POOL_BUSY' ? (
+                <>
+                  <div className="hc-status">{t('agentBusyTitle')}</div>
+                  <div className="hc-status-sub">{t('agentBusyDesc')}</div>
+                </>
+              ) : ag.mode === 'ASSIGNED_OFFLINE' ? (
+                <div className="hc-status">{t('agentOffline')}</div>
+              ) : agentReply ? (
+                <>
+                  <div className="hc-status">{t('agentReplyTime')}</div>
+                  <div className="hc-status-sub">🕑 {agentReply}</div>
+                </>
+              ) : (
+                <div className="hc-status">{t('agentOnline')}</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 紧急通知红条(对齐 ByteTrack:标题栏下方,可关闭) */}

@@ -32,6 +32,14 @@ export interface PendingMsg {
   errorCode?: number
 }
 
+// 服务坐席头部(对应后端 MessengerAgentVO)。mode 决定头部样式:
+// ASSIGNED_ONLINE 已分配·在线 | ASSIGNED_OFFLINE 已分配·离线 | POOL_ONLINE 未分配有在线 | POOL_BUSY 未分配无人在线
+export interface MessengerAgent {
+  mode: 'ASSIGNED_ONLINE' | 'ASSIGNED_OFFLINE' | 'POOL_ONLINE' | 'POOL_BUSY'
+  agents: { name: string | null; avatar: string | null }[]
+  replyTime: string | null // 仅在线态有值(预计回复时长)
+}
+
 // 信使初始化结果(对应后端 MessengerInitVO)
 export interface MessengerInit {
   token: string
@@ -41,6 +49,7 @@ export interface MessengerInit {
   customerAvatar: string | null
   lastSeq: number
   config: MessengerConfig | null
+  agent: MessengerAgent | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

@@ -5,6 +5,7 @@ import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.common.util.MaskUtil;
 import com.aitalky.framework.tenant.TenantContext;
+import com.aitalky.identity.dto.MemberAgent;
 import com.aitalky.identity.dto.MemberQuery;
 import com.aitalky.identity.dto.MemberVO;
 import com.aitalky.identity.dto.ProfileVO;
@@ -95,6 +96,49 @@ public class MemberServiceImpl implements MemberService {
         IdMember member = requireMember(memberId);
         member.setAvatar(avatar);
         memberMapper.updateById(member);
+    }
+
+    @Override
+    public MemberAgent agentOf(Long projectId, Long memberId) {
+        if (projectId == null || memberId == null) {
+            return null;
+        }
+        // 信使无成员租户上下文:绕租户 + 显式锁 projectId,避免越权读到别项目成员
+        com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.handle(
+                com.baomidou.mybatisplus.core.plugins.IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            IdMember m = memberMapper.selectOne(Wrappers.<IdMember>lambdaQuery()
+                    .eq(IdMember::getId, memberId)
+                    .eq(IdMember::getProjectId, projectId)
+                    .eq(IdMember::getStatus, 1));
+            return m == null ? null : new MemberAgent(m.getNickname(), m.getAvatar(),
+                    m.getWorkStatus() != null && m.getWorkStatus() == 1);
+        } finally {
+            com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.clearIgnoreStrategy();
+        }
+    }
+
+    @Override
+    public java.util.List<MemberAgent> agentsOf(Long projectId, boolean onlineOnly, int limit) {
+        if (projectId == null || limit <= 0) {
+            return java.util.List.of();
+        }
+        com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.handle(
+                com.baomidou.mybatisplus.core.plugins.IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            return memberMapper.selectList(Wrappers.<IdMember>lambdaQuery()
+                            .eq(IdMember::getProjectId, projectId)
+                            .eq(IdMember::getStatus, 1)
+                            .eq(onlineOnly, IdMember::getWorkStatus, 1)
+                            .orderByAsc(IdMember::getCreateTime)
+                            .last("limit " + limit))
+                    .stream()
+                    .map(m -> new MemberAgent(m.getNickname(), m.getAvatar(),
+                            m.getWorkStatus() != null && m.getWorkStatus() == 1))
+                    .toList();
+        } finally {
+            com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper.clearIgnoreStrategy();
+        }
     }
 
     @Override

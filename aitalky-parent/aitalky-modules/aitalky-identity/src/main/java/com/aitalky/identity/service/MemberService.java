@@ -28,6 +28,18 @@ public interface MemberService {
     /** 设置工作状态(坐席自助:1在线 0离开)。对齐参考系统——在线是参与自动分配的前提 */
     void updateWorkStatus(Long memberId, Integer workStatus);
 
+    /**
+     * 信使端用:取指定项目某成员的坐席展示信息(含在线工作状态)。
+     * 信使无成员租户上下文,故显式 projectId + 绕开多租户拦截器;成员不存在/被删返回 null。
+     */
+    com.aitalky.identity.dto.MemberAgent agentOf(Long projectId, Long memberId);
+
+    /**
+     * 信使端用:取项目的坐席列表。onlineOnly=true 只取工作状态在线的;按创建时间升序,最多 limit 个。
+     * 仅含启用(status=1)成员;显式 projectId + 绕租户。
+     */
+    java.util.List<com.aitalky.identity.dto.MemberAgent> agentsOf(Long projectId, boolean onlineOnly, int limit);
+
     /** 启用/禁用(status 1启用 0禁用) */
     void updateStatus(Long memberId, Integer status);
 
