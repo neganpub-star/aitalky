@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AccessParams, MessageVO, MessengerAgent, MessengerInit } from './types'
+import type { AccessParams, MessageVO, MessengerInit } from './types'
 import { normInit, normMessage } from './normalize'
 
 // 信使端请求客户端:拆解后端统一响应 R(成功取 data,失败 reject)。客户令牌存内存,不落 localStorage(安全)
@@ -66,11 +66,6 @@ export async function retractMessage(conversationId: string, msgId: string): Pro
   return normMessage(
     await client.post<unknown, MessageVO>(`/messages/${msgId}/retract`, undefined, { params: { conversationId } }),
   )
-}
-
-/** 刷新服务坐席头部(坐席上下线/会话被认领后,focus/重连时拉最新) */
-export async function getAgent(conversationId: string): Promise<MessengerAgent> {
-  return client.get<unknown, MessengerAgent>('/agent', { params: { conversationId } })
 }
 
 /** 拉消息:afterSeq 增量(不传取最近 50 条);客户看不到内部消息(后端已过滤) */

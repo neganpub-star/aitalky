@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
+import { init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
-import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, PendingMsg } from './types'
+import type { AccessParams, MessageVO, MessengerInit, PendingMsg } from './types'
+import Home from './screens/Home'
 import Chat from './screens/Chat'
 
 // 游客身份:无 userId/visitorId 时按 appId 维度生成并持久化匿名 visitorId
@@ -57,18 +58,16 @@ const SYNC_POLL = 12_000
 
 export default function App() {
   const [phase, setPhase] = useState<'loading' | 'error' | 'ready'>('loading')
-  // 信使端直接进聊天页(无 Home 首页,对齐参考系统)
+  const [screen, setScreen] = useState<'home' | 'chat'>('home')
   const [data, setData] = useState<MessengerInit | null>(null)
-  const [agent, setAgent] = useState<MessengerAgent | null>(null) // 服务坐席头部(随上下线/认领刷新)
   const [messages, setMessages] = useState<MessageVO[]>([])
-  // WS 状态:头部已不展示连接态(对齐参考),仅保留 setter 驱动重连补漏逻辑
-  const [, setStatus] = useState<WsStatus>('closed')
+  const [status, setStatus] = useState<WsStatus>('closed')
   // 本地待发/失败消息(乐观渲染,未落库);成功后移除并以服务端消息按 seq 入列
   const [pending, setPending] = useState<PendingMsg[]>([])
   // 对方(客服)正在输入(瞬时,4s 无新事件自动消失;受 sysMsgTyping 开关控制)
   const [peerTyping, setPeerTyping] = useState(false)
-  // 未读分割:无 Home 页后不再有"离开再回来"的分割场景,首屏历史视为已读(恒 null,不画分割线)
-  const [unreadAfterSeq] = useState<number | null>(null)
+  // 未读分割:进入聊天时的"已读到 seq",界后首条画"以下为未读消息"(受 sysMsgUnread 控制)
+  const [unreadAfterSeq, setUnreadAfterSeq] = useState<number | null>(null)
 
   // 补漏对账基准:本地已收到的最大 seq(以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
@@ -116,20 +115,12 @@ export default function App() {
   reportReadRef.current = () => {
     const cid = convIdRef.current
     const seq = localMaxSeqRef.current
-    if (!cid || document.hidden || seq <= lastReadReportRef.current) return
+    if (!cid || screen !== 'chat' || document.hidden || seq <= lastReadReportRef.current) return
     lastReadReportRef.current = seq
     void sendRead(cid, seq).catch(() => {})
   }
-  // 新消息到达(在看时)→ 上报已读
-  useEffect(() => { reportReadRef.current() }, [messages])
-
-  // 刷新服务坐席头部(坐席上下线/会话被认领时)
-  const refreshAgentRef = useRef<() => void>(() => {})
-  refreshAgentRef.current = () => {
-    const cid = convIdRef.current
-    if (!cid) return
-    getAgent(cid).then(setAgent).catch(() => {})
-  }
+  // 进聊天 / 新消息到达(在看时)→ 上报已读
+  useEffect(() => { reportReadRef.current() }, [messages, screen])
 
   // ===== 启动:解析参数 → init → 连 WS → 拉历史 =====
   useEffect(() => {
@@ -153,7 +144,6 @@ export default function App() {
         // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
         setLang(d.config?.lang || access.lang)
         setData(d)
-        setAgent(d.agent)
         setPhase('ready')
         // 自定义网站标题(URL 接入,浏览器标签页)
         if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
@@ -184,7 +174,6 @@ export default function App() {
       if (msg.seq > localMaxSeqRef.current + 1) syncRef.current() // 跳号→漏帧→补拉
       if (msg.senderType === 'agent') {
         setPeerTyping(false) // 客服发出消息→输入态结束
-        refreshAgentRef.current() // 坐席回复常意味着会话被认领/分配变化,刷新头部坐席
         // 失焦时新消息提醒:声效恒开,弹窗受 popupEnabled 控制(撤回的空消息不提醒)
         if (document.hidden && msg.isVisible !== false) {
           playBeep()
@@ -202,15 +191,15 @@ export default function App() {
       clearTimeout(typingClearRef.current)
       typingClearRef.current = setTimeout(() => setPeerTyping(false), 4000)
     })
-    // 网①重连补漏 + 网③周期对账/聚焦补漏(顺带刷新坐席头部)
-    const offOpen = messengerWs.onOpen(() => { syncRef.current(); refreshAgentRef.current() })
+    // 网①重连补漏 + 网③周期对账/聚焦补漏
+    const offOpen = messengerWs.onOpen(() => syncRef.current())
     const poll = setInterval(() => syncRef.current(), SYNC_POLL)
-    // 聚焦/可见:清标题未读数 + 对账补漏 + 刷新坐席在线状态
+    // 聚焦/可见:清标题未读数 + 对账补漏
     const clearTitle = () => { hiddenUnreadRef.current = 0; setTitleUnread(0) }
     const onVisible = () => {
-      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current(); reportReadRef.current(); refreshAgentRef.current() }
+      if (document.visibilityState === 'visible') { clearTitle(); syncRef.current(); reportReadRef.current() }
     }
-    const onFocus = () => { clearTitle(); syncRef.current(); reportReadRef.current(); refreshAgentRef.current() }
+    const onFocus = () => { clearTitle(); syncRef.current(); reportReadRef.current() }
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
@@ -244,17 +233,10 @@ export default function App() {
   )
 
   // 乐观发送:先上屏 pending(sending),再异步发;不阻塞连发
-  const audioUnlockedRef = useRef(false)
   const onSend = useCallback(
     (text: string) => {
       const content = text.trim()
       if (!content || !convIdRef.current) return
-      // 首次发送(用户手势内):解锁音频 + 申请通知权限(失焦新消息提醒用);无 Home 页后挪到这里
-      if (!audioUnlockedRef.current) {
-        audioUnlockedRef.current = true
-        unlockAudio()
-        if (popupRef.current) ensureNotifyPermission()
-      }
       const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
       setPending((p) => [...p, { localId, content, status: 'sending', time: Date.now() }])
       void trySend(localId, content)
@@ -304,12 +286,28 @@ export default function App() {
     return <div className="center-tip">{t('loadFail')}</div>
   }
 
-  // 无 Home 首页:直接渲染聊天页(对齐参考系统)
+  if (screen === 'home') {
+    const last = messages[messages.length - 1]
+    return (
+      <Home
+        data={data}
+        lastMessage={last ? last.content : null}
+        onEnter={() => {
+          // 用户手势内:解锁音频 + 申请通知权限(失焦新消息提醒用)
+          unlockAudio()
+          if (popupRef.current) ensureNotifyPermission()
+          // 进入聊天:以"上次离开的已读水位"为未读分割界
+          setUnreadAfterSeq(lastReadSeqRef.current)
+          setScreen('chat')
+        }}
+      />
+    )
+  }
   return (
     <Chat
       data={data}
-      agent={agent}
       messages={messages}
+      status={status}
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       onSend={onSend}
@@ -317,6 +315,12 @@ export default function App() {
       onRetract={onRetract}
       onTyping={onTyping}
       peerTyping={peerTyping}
+      onBack={() => {
+        // 离开聊天:推进已读水位,清除分割线
+        lastReadSeqRef.current = localMaxSeqRef.current
+        setUnreadAfterSeq(null)
+        setScreen('home')
+      }}
     />
   )
 }
