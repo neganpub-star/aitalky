@@ -176,6 +176,7 @@ export default {
     settings: '设置',
     switchProject: '切换项目',
     newProject: '新建项目',
+    pendingInvite: '待加入',
     theme: '切换主题',
     lang: '切换语言',
     profile: '个人中心',

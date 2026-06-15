@@ -43,4 +43,7 @@ public interface InviteService {
 
     /** 接受邀请→建成员→返回项目级令牌(账号级令牌调用) */
     EnterResult accept(Long accountId, String token, AcceptInviteCmd cmd);
+
+    /** 当前账号的「待加入」邮箱邀请(按账号邮箱跨项目查,status=待接受且未过期;同项目取最新去重) */
+    java.util.List<com.aitalky.identity.dto.PendingInviteVO> myPendingInvites(Long accountId);
 }

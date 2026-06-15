@@ -171,6 +171,7 @@ export default {
     settings: 'Settings',
     switchProject: 'Switch project',
     newProject: 'New project',
+    pendingInvite: 'Pending',
     theme: 'Theme',
     lang: 'Language',
     profile: 'Profile',

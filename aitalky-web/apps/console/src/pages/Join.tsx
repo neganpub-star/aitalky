@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import AuthShell from './auth/AuthShell'
 import { login, register, sendCode } from '../api/auth'
 import { acceptInvite, inviteInfo } from '../api/invite'
-import { saveEnter, saveLogin } from '../auth/session'
+import { getToken, saveEnter, saveLogin } from '../auth/session'
 import type { InviteInfoVO } from '../types'
 
 const { Title, Text } = Typography
@@ -32,6 +32,8 @@ export default function Join() {
   useEffect(() => {
     if (!token) { setErr(true); return }
     inviteInfo(token).then(setInfo).catch(() => setErr(true))
+    // 已登录(如从"切换项目-待加入"点入):跳过注册/登录,直接到设昵称步
+    if (getToken()) setMode('nickname')
   }, [token])
 
   const startCountdown = () => {

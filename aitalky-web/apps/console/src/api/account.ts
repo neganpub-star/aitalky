@@ -56,6 +56,21 @@ export function updateWorkStatus(workStatus: number) {
   return client.put<unknown, void>('/account/work-status', { workStatus })
 }
 
+// 当前账号的待加入邀请(对应后端 PendingInviteVO)
+export interface PendingInviteVO {
+  token: string
+  projectId: string
+  projectName: string | null
+  projectLogo: string | null
+  roleName: string | null
+  inviterName: string | null
+}
+
+/** 当前账号的「待加入」邀请(切换项目下拉用) */
+export function getPendingInvites() {
+  return client.get<unknown, PendingInviteVO[]>('/account/pending-invites')
+}
+
 /** 改用户名(账号显示名) */
 export function updateMyUsername(username: string) {
   return client.put<unknown, void>('/account/username', { username })

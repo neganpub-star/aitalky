@@ -13,7 +13,7 @@ import { canAccessSettings, hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
-import { getProfile, updateWorkStatus } from '../api/account'
+import { getPendingInvites, getProfile, updateWorkStatus, type PendingInviteVO } from '../api/account'
 import { fetchLanguages } from '../api/language'
 import { setLanguageDict } from '../constants/languages'
 import { setTitleUnread } from '../notify'
@@ -34,6 +34,7 @@ export default function MainLayout() {
   const toggleTheme = useAppStore((s) => s.toggleTheme)
   const lang = useAppStore((s) => s.lang)
   const [workOnline, setWorkOnline] = useState(true) // 工作状态:进入时由 profile 回显,切换即落库
+  const [pendingInvites, setPendingInvites] = useState<PendingInviteVO[]>([]) // 待加入邀请(切换项目下拉)
   const wsToken = useAppStore((s) => s.token)
   const nickname = useAppStore((s) => s.nickname)
   const avatar = useAppStore((s) => s.avatar)
@@ -55,6 +56,11 @@ export default function MainLayout() {
       setWorkOnline(p.workStatus !== 0) // 回显工作状态(默认在线)
     }).catch(() => {})
   }, [setMember])
+
+  // 拉取当前账号的待加入邀请(切换项目下拉展示「待加入」)
+  useEffect(() => {
+    getPendingInvites().then(setPendingInvites).catch(() => {})
+  }, [])
 
   // 切换工作状态:乐观更新 + 落库;失败回滚
   const changeWork = (on: boolean) => {
@@ -120,6 +126,14 @@ export default function MainLayout() {
             <Avatar shape="square" size={24} src={p.logo || undefined} style={{ background: token.colorPrimary, fontSize: 12 }}>{p.name.charAt(0)}</Avatar>
             <span style={{ flex: 1, marginLeft: 8 }}>{p.name}</span>
             {p.id === ctx.projectId && <CheckOutlined style={{ color: token.colorPrimary }} />}
+          </div>
+        ))}
+        {/* 待加入邀请:点击进入加入落地页(应用内,无需翻邮件) */}
+        {pendingInvites.map((inv) => (
+          <div key={inv.token} style={styles.projItem} onClick={() => nav(`/join?token=${inv.token}`)}>
+            <Avatar shape="square" size={24} src={inv.projectLogo || undefined} style={{ background: token.colorTextQuaternary, fontSize: 12 }}>{(inv.projectName || '?').charAt(0)}</Avatar>
+            <span style={{ flex: 1, marginLeft: 8, color: token.colorTextSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.projectName || '-'}</span>
+            <Tag color="processing" style={{ marginRight: 0 }}>{t('nav.pendingInvite')}</Tag>
           </div>
         ))}
       </div>

@@ -32,6 +32,8 @@ import com.aitalky.identity.mapper.IdRoleMapper;
 import com.aitalky.identity.service.InviteService;
 import com.aitalky.identity.service.ProjectService;
 import com.aitalky.identity.support.DefaultAvatar;
+import com.baomidou.mybatisplus.core.plugins.IgnoreStrategy;
+import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +49,11 @@ import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -417,6 +422,48 @@ public class InviteServiceImpl implements InviteService {
         linkMapper.updateById(link);
         log.info("接受链接邀请 accountId={}, projectId={}, linkId={}", account.getId(), link.getProjectId(), link.getId());
         return projectService.enter(account.getId(), link.getProjectId());
+    }
+
+    @Override
+    public List<com.aitalky.identity.dto.PendingInviteVO> myPendingInvites(Long accountId) {
+        IdAccount account = accountMapper.selectById(accountId);
+        if (account == null || !StringUtils.hasText(account.getEmail())) {
+            return List.of();
+        }
+        String email = account.getEmail().toLowerCase();
+        // 按账号邮箱跨项目查自己的待加入邀请:id_invite/id_role/id_member 均受租户过滤,
+        // 这里持账号级或项目级令牌都要全程绕租户(只读自己邮箱/自己的成员身份,安全)。
+        InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().tenantLine(true).build());
+        try {
+            List<IdInvite> invites = inviteMapper.selectList(Wrappers.<IdInvite>lambdaQuery()
+                    .eq(IdInvite::getEmail, email)
+                    .eq(IdInvite::getStatus, 0)
+                    .orderByDesc(IdInvite::getCreateTime));
+            List<com.aitalky.identity.dto.PendingInviteVO> result = new ArrayList<>();
+            Set<Long> seenProjects = new HashSet<>();
+            for (IdInvite inv : invites) {
+                if (!notExpired(inv.getExpireTime())) {
+                    continue; // 过期跳过
+                }
+                if (!seenProjects.add(inv.getProjectId())) {
+                    continue; // 同项目取最新(已按 create_time 倒序)
+                }
+                if (isMember(inv.getProjectId(), accountId)) {
+                    continue; // 已是该项目成员跳过
+                }
+                IdProject project = projectMapper.selectById(inv.getProjectId());
+                IdRole role = roleMapper.selectById(inv.getRoleId());
+                result.add(new com.aitalky.identity.dto.PendingInviteVO(
+                        inv.getToken(), inv.getProjectId(),
+                        project == null ? null : project.getName(),
+                        project == null ? null : project.getLogo(),
+                        role == null ? null : role.getName(),
+                        memberName(inv.getInviterMemberId())));
+            }
+            return result;
+        } finally {
+            InterceptorIgnoreHelper.clearIgnoreStrategy();
+        }
     }
 
     // ====================================================================

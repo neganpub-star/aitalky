@@ -35,8 +35,15 @@ public class AccountController {
 
     private final MemberService memberService;
     private final AccountService accountService;
+    private final com.aitalky.identity.service.InviteService inviteService;
 
     /** 个人资料:账户邮箱/用户名/邀请码 + 当前项目成员信息(昵称/头像/角色/是否owner/偏好) */
+    /** 当前账号的「待加入」邀请(切换项目下拉用);点 token 直接 accept 加入 */
+    @GetMapping("/pending-invites")
+    public R<java.util.List<com.aitalky.identity.dto.PendingInviteVO>> pendingInvites() {
+        return R.ok(inviteService.myPendingInvites(TenantContext.getAccountId()));
+    }
+
     @GetMapping("/profile")
     public R<ProfileVO> profile() {
         return R.ok(memberService.profile(TenantContext.getMemberId()));
