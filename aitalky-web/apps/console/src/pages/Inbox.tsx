@@ -1054,8 +1054,12 @@ export default function Inbox() {
                   </Avatar>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 600, fontSize: 15, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.customerName || c.customerId}</span>
-                      <span style={{ fontSize: 12, color: token.colorTextTertiary, marginLeft: 8 }}>{fmtListTime(c.lastMessageAt)}</span>
+                      <span style={{ fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.customerName || c.customerId}</span>
+                      {/* 业务系统UID:重名客户靠它区分(名字随机池小易撞名) */}
+                      {c.customerUid && (
+                        <span style={{ fontSize: 12, color: token.colorTextTertiary, marginLeft: 6, flexShrink: 0 }}>({c.customerUid})</span>
+                      )}
+                      <span style={{ fontSize: 12, color: token.colorTextTertiary, marginLeft: 'auto', paddingLeft: 8, flexShrink: 0 }}>{fmtListTime(c.lastMessageAt)}</span>
                     </div>
                     <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>{c.lastMessagePreview || ''}</div>
                   </div>

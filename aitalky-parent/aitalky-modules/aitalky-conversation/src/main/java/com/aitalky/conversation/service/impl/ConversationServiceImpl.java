@@ -95,6 +95,7 @@ public class ConversationServiceImpl implements ConversationService {
             CusCustomer cu = custMap.get(c.getCustomerId());
             return new ConversationVO(c.getId(), c.getCustomerId(),
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
+                    cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
                     c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
@@ -138,6 +139,7 @@ public class ConversationServiceImpl implements ConversationService {
             CusCustomer cu = custMap.get(c.getCustomerId());
             return new ConversationVO(c.getId(), c.getCustomerId(),
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
+                    cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
                     c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();

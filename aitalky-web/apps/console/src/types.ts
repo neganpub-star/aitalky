@@ -148,6 +148,7 @@ export interface ConversationVO {
   customerId: string
   customerName: string
   customerAvatar: string | null
+  customerUid: string | null
   assigneeMemberId: string | null
   status: number
   lastMessagePreview: string | null
