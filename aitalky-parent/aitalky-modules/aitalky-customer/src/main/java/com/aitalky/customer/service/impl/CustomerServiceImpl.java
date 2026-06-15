@@ -22,8 +22,29 @@ import java.security.SecureRandom;
 public class CustomerServiceImpl implements CustomerService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final String[] FIRST = {"Noah", "Zona", "Liam", "Emma", "Olivia", "Mia", "Lucas", "Ava", "Leo", "Nora"};
-    private static final String[] LAST = {"Hobson", "Carnegie", "Roger", "Smith", "Brown", "Davis", "Wang", "Lee", "Kim", "Stone"};
+    // 随机名池:100 名 × 100 姓 = 1 万种组合,大幅降低测试数据撞名概率(真实接入由业务系统传昵称,不走此池)
+    private static final String[] FIRST = {
+            "Noah", "Liam", "Oliver", "Elijah", "James", "William", "Benjamin", "Lucas", "Henry", "Theodore",
+            "Jack", "Levi", "Alexander", "Jackson", "Mateo", "Daniel", "Michael", "Mason", "Sebastian", "Ethan",
+            "Logan", "Owen", "Samuel", "Jacob", "Asher", "Aiden", "John", "Joseph", "Wyatt", "David",
+            "Leo", "Luke", "Julian", "Hudson", "Grayson", "Matthew", "Ezra", "Gabriel", "Carter", "Isaac",
+            "Jayden", "Luca", "Anthony", "Dylan", "Lincoln", "Thomas", "Maverick", "Elias", "Josiah", "Charles",
+            "Olivia", "Emma", "Charlotte", "Amelia", "Sophia", "Mia", "Isabella", "Ava", "Evelyn", "Luna",
+            "Harper", "Camila", "Sofia", "Scarlett", "Elizabeth", "Eleanor", "Emily", "Chloe", "Mila", "Violet",
+            "Penelope", "Gianna", "Aria", "Abigail", "Ella", "Avery", "Hazel", "Nora", "Layla", "Lily",
+            "Aurora", "Nova", "Ellie", "Madison", "Grace", "Isla", "Willow", "Zoe", "Riley", "Stella",
+            "Hannah", "Zona", "Ivy", "Victoria", "Lucy", "Leah", "Naomi", "Ruby", "Eliana", "Maya"};
+    private static final String[] LAST = {
+            "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+            "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+            "Lee", "Perez", "Thompson", "White", "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+            "Walker", "Young", "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
+            "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+            "Hobson", "Carnegie", "Roger", "Wang", "Kim", "Stone", "Carnahan", "Phillips", "Evans", "Turner",
+            "Parker", "Collins", "Edwards", "Stewart", "Morris", "Murphy", "Cook", "Rogers", "Morgan", "Cooper",
+            "Reed", "Bailey", "Bell", "Gomez", "Kelly", "Howard", "Ward", "Cox", "Diaz", "Richardson",
+            "Wood", "Watson", "Brooks", "Bennett", "Gray", "James", "Reyes", "Cruz", "Hughes", "Price",
+            "Myers", "Long", "Foster", "Sanders", "Ross", "Powell", "Sullivan", "Russell", "Ortiz", "Jenkins"};
 
     private final CusCustomerMapper customerMapper;
     private final SnowflakeIdGenerator idGenerator;
