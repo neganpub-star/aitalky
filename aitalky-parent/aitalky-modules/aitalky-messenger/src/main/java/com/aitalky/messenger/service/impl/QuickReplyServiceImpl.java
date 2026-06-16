@@ -44,6 +44,16 @@ public class QuickReplyServiceImpl implements QuickReplyService {
     }
 
     @Override
+    public void renameCategory(Long id, String name) {
+        SupQuickReplyCategory c = categoryMapper.selectById(id);
+        if (c == null) {
+            return;
+        }
+        c.setName(name);
+        categoryMapper.updateById(c);
+    }
+
+    @Override
     public void deleteCategory(Long id) {
         // 其下条目改为未分类(category_id = null)
         replyMapper.update(null, Wrappers.<SupQuickReply>lambdaUpdate()
@@ -53,9 +63,14 @@ public class QuickReplyServiceImpl implements QuickReplyService {
 
     @Override
     public List<QuickReplyVO> list() {
+        // 分类名映射(未分类 category_id 为 null);editorName 由 app 层 Controller 回填
+        java.util.Map<Long, String> catNames = categoryMapper.selectList(Wrappers.<SupQuickReplyCategory>lambdaQuery())
+                .stream().collect(java.util.stream.Collectors.toMap(SupQuickReplyCategory::getId, SupQuickReplyCategory::getName));
         return replyMapper.selectList(Wrappers.<SupQuickReply>lambdaQuery()
                         .orderByAsc(SupQuickReply::getSort).orderByDesc(SupQuickReply::getId))
-                .stream().map(r -> new QuickReplyVO(r.getId(), r.getCategoryId(), r.getTitle(), r.getContent())).toList();
+                .stream().map(r -> new QuickReplyVO(r.getId(), r.getCategoryId(),
+                        r.getCategoryId() == null ? null : catNames.get(r.getCategoryId()),
+                        r.getTitle(), r.getContent(), r.getSort(), r.getUpdateBy(), null, r.getUpdateTime())).toList();
     }
 
     @Override
@@ -80,6 +95,16 @@ public class QuickReplyServiceImpl implements QuickReplyService {
         r.setCategoryId(categoryId);
         r.setTitle(title);
         r.setContent(content);
+        replyMapper.updateById(r);
+    }
+
+    @Override
+    public void updateSort(Long id, Integer sort) {
+        SupQuickReply r = replyMapper.selectById(id);
+        if (r == null) {
+            return;
+        }
+        r.setSort(sort == null ? 0 : sort);
         replyMapper.updateById(r);
     }
 

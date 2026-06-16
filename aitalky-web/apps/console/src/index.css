@@ -17,3 +17,16 @@ body {
 .at-row:hover {
   background: rgba(127, 127, 127, 0.12);
 }
+
+/* 快捷回复话术内容富文本编辑器 */
+.qr-editor:empty::before {
+  content: attr(data-ph);
+  color: #b0b3b8;
+}
+.qr-editor img {
+  display: block;
+  margin: 6px 0;
+  border-radius: 6px;
+  cursor: pointer;
+  max-width: 100%;
+}

@@ -43,7 +43,7 @@ export default function SettingsLayout() {
     },
     {
       key: 'data', icon: <DatabaseOutlined />, label: t('settings.dataManage'),
-      children: [{ key: '/settings/data', label: t('settings.dataManage'), funcs: ['project.setting'] }],
+      children: [{ key: '/settings/quick-replies', label: t('qr.title'), funcs: ['project.setting'] }],
     },
     {
       key: 'sub', icon: <WalletOutlined />, label: t('settings.subscription'),

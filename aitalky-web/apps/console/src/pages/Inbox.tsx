@@ -21,7 +21,8 @@ import {
 import { pageMembers } from '../api/member'
 import { uploadFile } from '../api/file'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
-import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
+import { listQuickReplies, listCategories, type QuickReplyVO, type QuickReplyCategoryVO } from '../api/quickReply'
+import { contentToPlaceholder, parseReplySegments } from '../utils/quickReply'
 import type { ConversationDetailVO, ConversationVO, MemberVO, MessageVO, PendingMsg } from '../types'
 
 // 视图 → 列表查询的 view 参数
@@ -180,9 +181,13 @@ export default function Inbox() {
   const [autoTranslate, setAutoTranslate] = useState(false) // 翻译为占位(AI翻译模块未做)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickReplies, setQuickReplies] = useState<QuickReplyVO[]>([])
+  const [quickCats, setQuickCats] = useState<QuickReplyCategoryVO[]>([])
+  const [quickKw, setQuickKw] = useState('')           // 快捷回复面板搜索
+  const [quickCat, setQuickCat] = useState<string>('__all__') // 快捷回复面板分类筛选
 
   const loadQuickReplies = useCallback(() => {
     listQuickReplies().then(setQuickReplies).catch(() => {})
+    listCategories().then(setQuickCats).catch(() => {})
   }, [])
 
   // selectedId 的最新值给 WS 回调用(避免闭包过期)
@@ -558,6 +563,43 @@ export default function Inbox() {
         : c)))
     } catch { message.error(t('inbox.imageFailed')) } finally { hide() }
   }, [selectedId, replyTab, applyIncoming, t])
+
+  // 快捷回复-放入回复框:把话术「文本部分」插入输入框(内嵌图片此处略去,可用"直接发送")
+  const insertQuickReply = useCallback((q: QuickReplyVO) => {
+    const text = parseReplySegments(q.content).filter((s) => s.type === 'text').map((s) => s.type === 'text' ? s.text : '').join('').trim()
+    if (text) setInput((prev) => (prev ? prev + '\n' : '') + text)
+    setQuickOpen(false)
+  }, [])
+
+  // 快捷回复-直接发送:按序把文本/图片拆成多条消息发出
+  const sendQuickReply = useCallback(async (q: QuickReplyVO) => {
+    if (!selectedId) return
+    setQuickOpen(false)
+    const internal = replyTab === 'internal'
+    const segs = parseReplySegments(q.content)
+    for (const seg of segs) {
+      try {
+        const vo = seg.type === 'text'
+          ? await replyConversation(selectedId, { content: seg.text.trim(), type: 'text', internal })
+          : await replyConversation(selectedId, { content: seg.url, type: 'image', internal })
+        applyIncoming([vo])
+        const prev = seg.type === 'text' ? seg.text.trim() : t('inbox.imageTag')
+        setList((p) => p.map((c) => (c.id === selectedId
+          ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+          : c)))
+      } catch { message.error(t('inbox.imageFailed')) }
+    }
+  }, [selectedId, replyTab, applyIncoming, t])
+
+  // 快捷回复面板过滤(搜索 + 分类)
+  const filteredQuickReplies = useMemo(() => {
+    const kw = quickKw.trim().toLowerCase()
+    return quickReplies.filter((q) => {
+      if (quickCat !== '__all__' && (quickCat === '__none__' ? !!q.categoryId : q.categoryId !== quickCat)) return false
+      if (kw && !(`${q.title || ''}`.toLowerCase().includes(kw) || q.content.toLowerCase().includes(kw))) return false
+      return true
+    })
+  }, [quickReplies, quickKw, quickCat])
 
   // 发送:有暂存附件先发附件(需已上传完成),再发文本(文本走乐观态,失败可重发)
   const onSend = useCallback(async () => {
@@ -1142,22 +1184,45 @@ export default function Inbox() {
                     open={quickOpen}
                     onOpenChange={(o) => { setQuickOpen(o); if (o) loadQuickReplies() }}
                     content={
-                      <div style={{ width: 280, maxHeight: 320, overflow: 'auto' }}>
-                        {quickReplies.length === 0 ? (
-                          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.quickEmpty')} />
-                        ) : (
-                          quickReplies.map((q) => (
-                            <div
-                              key={q.id}
-                              className="at-row"
-                              style={{ padding: '8px 10px', borderRadius: 6, cursor: 'pointer' }}
-                              onClick={() => { setInput((prev) => (prev ? prev + '\n' : '') + q.content); setQuickOpen(false) }}
-                            >
-                              {q.title && <div style={{ fontSize: 13, fontWeight: 600 }}>{q.title}</div>}
-                              <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{q.content}</div>
-                            </div>
-                          ))
-                        )}
+                      <div style={{ width: 720, maxWidth: '80vw' }}>
+                        {/* 头部 */}
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                          <span style={{ fontSize: 16, fontWeight: 600, flex: 1 }}>{t('inbox.toolQuick')}</span>
+                          <CloseOutlined style={{ cursor: 'pointer', color: token.colorTextTertiary }} onClick={() => setQuickOpen(false)} />
+                        </div>
+                        {/* 搜索 + 分类 */}
+                        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+                          <Input allowClear prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+                            placeholder={t('qr.name')} value={quickKw} onChange={(e) => setQuickKw(e.target.value)} style={{ flex: 1 }} />
+                          <Select value={quickCat} onChange={setQuickCat} style={{ width: 160 }}
+                            options={[{ value: '__all__', label: t('qr.catAll') }, { value: '__none__', label: t('qr.catNone') },
+                              ...quickCats.map((c) => ({ value: c.id, label: c.name }))]} />
+                        </div>
+                        {/* 表头 */}
+                        <div style={{ display: 'flex', padding: '0 8px 8px', fontSize: 13, color: token.colorTextTertiary, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
+                          <span style={{ width: 130, flexShrink: 0 }}>{t('qr.name')}</span>
+                          <span style={{ flex: 1, minWidth: 0 }}>{t('qr.content')}</span>
+                          <span style={{ width: 90, flexShrink: 0 }}>{t('qr.category')}</span>
+                          <span style={{ width: 150, flexShrink: 0, textAlign: 'right' }}>{t('qr.action')}</span>
+                        </div>
+                        {/* 列表 */}
+                        <div style={{ maxHeight: 320, overflow: 'auto' }}>
+                          {filteredQuickReplies.length === 0 ? (
+                            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.quickEmpty')} style={{ padding: '24px 0' }} />
+                          ) : (
+                            filteredQuickReplies.map((q) => (
+                              <div key={q.id} className="at-row" style={{ display: 'flex', alignItems: 'center', padding: '10px 8px', fontSize: 13 }}>
+                                <span style={{ width: 130, flexShrink: 0, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 8 }}>{q.title || '--'}</span>
+                                <span style={{ flex: 1, minWidth: 0, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: 8 }}>{contentToPlaceholder(q.content)}</span>
+                                <span style={{ width: 90, flexShrink: 0, color: token.colorTextTertiary }}>{q.categoryName || t('qr.catNone')}</span>
+                                <span style={{ width: 150, flexShrink: 0, textAlign: 'right' }}>
+                                  <a onClick={() => insertQuickReply(q)}>{t('inbox.quickInsert')}</a>
+                                  <a style={{ marginLeft: 12 }} onClick={() => sendQuickReply(q)}>{t('inbox.quickSend')}</a>
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
                     }
                   >

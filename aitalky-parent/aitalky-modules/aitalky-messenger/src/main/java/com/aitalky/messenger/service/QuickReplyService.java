@@ -14,6 +14,9 @@ public interface QuickReplyService {
     /** 新增分类,返回 id */
     Long addCategory(String name);
 
+    /** 重命名分类 */
+    void renameCategory(Long id, String name);
+
     /** 删除分类(其下条目的 category_id 置空=未分类) */
     void deleteCategory(Long id);
 
@@ -25,6 +28,9 @@ public interface QuickReplyService {
 
     /** 更新条目 */
     void updateReply(Long id, Long categoryId, String title, String content);
+
+    /** 更新条目排序值(列表排序列) */
+    void updateSort(Long id, Integer sort);
 
     /** 删除条目 */
     void deleteReply(Long id);
