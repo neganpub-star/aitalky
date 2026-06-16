@@ -307,6 +307,9 @@ export default function Inbox() {
         const updated = {
           ...prev[idx],
           lastMessagePreview: msg.content,
+          // 同步最近发送者头像/昵称,列表小头像即时更新(否则要等下次 loadList 才刷)
+          lastSenderAvatar: msg.senderAvatar,
+          lastSenderName: msg.senderName || '',
           lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
           // 当前会话已打开 → 不累加未读;仅客户发来的才记未读
           unreadCount: isCurrent || msg.senderType !== 'customer' ? prev[idx].unreadCount : prev[idx].unreadCount + 1,
@@ -454,7 +457,7 @@ export default function Inbox() {
         setList((prev) =>
           prev.map((c) =>
             c.id === cid
-              ? { ...c, lastMessagePreview: content, lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+              ? { ...c, lastMessagePreview: content, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
               : c,
           ),
         )
