@@ -231,7 +231,14 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
-                  {m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
+                  {m.type === 'rich' ? (
+                    // 富消息(图文混排):一个气泡内按序渲染文本/图片
+                    <div className={`bubble ${mine ? 'mine' : 'agent'} rich-bubble`}>
+                      {(m.payload?.segments || []).map((seg, i) => (seg.type === 'text'
+                        ? <div key={i} className="rich-text">{mine ? (seg.text || '') : renderRichText(seg.text || '', setWebview)}</div>
+                        : <img key={i} className="rich-img" src={seg.url} alt="" onClick={() => seg.url && setPreview(seg.url)} />))}
+                    </div>
+                  ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
                     // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
                     <div className={`media-bubble ${mine ? 'mine' : 'agent'} ${m.payload?.caption ? 'has-cap' : ''}`}>
                       {m.type === 'image' ? (

@@ -572,24 +572,24 @@ export default function Inbox() {
     setQuickOpen(false)
   }, [])
 
-  // 快捷回复-直接发送:按序把文本/图片拆成多条消息发出
+  // 快捷回复-直接发送:含图则整条作为「一个气泡」的富消息(rich,图文按序);纯文本则普通文本
   const sendQuickReply = useCallback(async (q: QuickReplyVO) => {
     if (!selectedId) return
     setQuickOpen(false)
     const internal = replyTab === 'internal'
     const segs = parseReplySegments(q.content)
-    for (const seg of segs) {
-      try {
-        const vo = seg.type === 'text'
-          ? await replyConversation(selectedId, { content: seg.text.trim(), type: 'text', internal })
-          : await replyConversation(selectedId, { content: seg.url, type: 'image', internal })
-        applyIncoming([vo])
-        const prev = seg.type === 'text' ? seg.text.trim() : t('inbox.imageTag')
-        setList((p) => p.map((c) => (c.id === selectedId
-          ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
-          : c)))
-      } catch { message.error(t('inbox.imageFailed')) }
-    }
+    const hasImg = segs.some((s) => s.type === 'image')
+    try {
+      const body = hasImg
+        ? { content: contentToPlaceholder(q.content), type: 'rich', payload: { segments: segs }, internal }
+        : { content: q.content.trim(), type: 'text', internal }
+      const vo = await replyConversation(selectedId, body)
+      applyIncoming([vo])
+      const prev = hasImg ? contentToPlaceholder(q.content) : q.content.trim()
+      setList((p) => p.map((c) => (c.id === selectedId
+        ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+        : c)))
+    } catch { message.error(t('inbox.imageFailed')) }
   }, [selectedId, replyTab, applyIncoming, t])
 
   // 快捷回复面板过滤(搜索 + 分类)
@@ -869,7 +869,14 @@ export default function Inbox() {
           {internal && <span style={{ fontSize: 11, color: token.colorWarning, marginBottom: 2 }}>{t('inbox.internalNote')}</span>}
           {/* 自己消息:工具条在气泡左侧;别人消息:在气泡右侧(都朝会话中心) */}
           <div style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-            {m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
+            {m.type === 'rich' ? (
+              // 富消息(快捷回复图文混排):一个气泡内按序渲染文本/图片
+              <div style={{ maxWidth: 280, borderRadius: 8, [mine ? 'borderTopRightRadius' : 'borderTopLeftRadius']: 2, background: bubbleBg, color: bubbleColor, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(m.payload?.segments || []).map((seg, i) => (seg.type === 'text'
+                  ? <div key={i} style={{ fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{mine ? renderRichText(seg.text || '', linkColor) : (seg.text || '')}</div>
+                  : <Image key={i} src={seg.url} style={{ display: 'block', maxWidth: 256, maxHeight: 300, borderRadius: 6 }} />))}
+              </div>
+            ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
               // 富消息:媒体 +(可选)文字说明在「同一个气泡」里(媒体在上、文字在下)
               <div style={{ width: 'fit-content', maxWidth: 260, borderRadius: 10, overflow: 'hidden', background: m.payload?.caption ? bubbleBg : 'transparent' }}>
                 {m.type === 'image' ? (

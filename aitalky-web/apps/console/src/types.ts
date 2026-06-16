@@ -215,10 +215,14 @@ export interface MessageVO {
   senderId: string
   senderName: string | null
   senderAvatar: string | null
-  type: string          // text / image / video / file
-  content: string       // 文本内容,或 图片/视频/文件 的 URL
-  payload?: { name?: string; size?: number; caption?: string } | null  // 文件名/大小 + 图片/视频/文件的附带文字说明
+  type: string          // text / image / video / file / rich
+  content: string       // 文本内容,或 图片/视频/文件 的 URL;rich 时为占位预览文本
+  // 文件名/大小 + 图片/视频/文件的附带文字说明;rich(图文混排)时 segments 存有序片段
+  payload?: { name?: string; size?: number; caption?: string; segments?: RichSegment[] } | null
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number
 }
+
+// 富消息有序片段(图文混排,一个气泡内按序渲染)
+export interface RichSegment { type: 'text' | 'image'; text?: string; url?: string }

@@ -560,6 +560,23 @@ body {
   cursor: pointer;
   display: block;
 }
+/* 富消息(图文混排):一个气泡内按序堆叠文本/图片 */
+.rich-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rich-bubble .rich-img {
+  max-width: 200px;
+  max-height: 240px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+}
+.rich-bubble .rich-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 /* 富消息气泡:媒体 + 文字说明在同一个圆角卡片里(媒体在上、文字在下) */
 .media-bubble {
   width: fit-content;
