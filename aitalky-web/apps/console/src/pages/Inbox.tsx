@@ -424,25 +424,27 @@ export default function Inbox() {
     clearTimeout(typingClearRef.current)
   }, [selectedId])
 
-  // 滚到底:用瞬时定位(图片/文件等异步撑高会让 smooth 停在半路)
-  const scrollToBottom = useCallback((smooth = false) => {
-    const el = msgScrollRef.current
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
-  }, [])
-  // 新消息(含本地待发/输入态):新消息平滑滚;切会话(selectedId 变)瞬时贴底
-  useEffect(() => { scrollToBottom(true) }, [messages, pending, customerTyping, scrollToBottom])
-  useEffect(() => { scrollToBottom(false) }, [selectedId, scrollToBottom])
-  // 内容高度变化(图片/视频/文件晚加载撑高)时,若用户已在底部附近则继续贴底,避免停在半路
+  // 黏底标志:打开会话默认黏底;用户主动往上滚则取消(避免翻历史时被拽回)。
+  // 用标志而非"距底阈值":图片/文件晚加载可能撑高很多,阈值法会误判已离底而不贴底。
+  const stickRef = useRef(true)
+  const bottomNow = useCallback(() => { const el = msgScrollRef.current; if (el) el.scrollTop = el.scrollHeight }, [])
+  // 新消息/待发/输入态:黏底时贴底
+  useEffect(() => { if (stickRef.current) bottomNow() }, [messages, pending, customerTyping, bottomNow])
+  // 切会话:重置黏底并瞬时贴底
+  useEffect(() => { stickRef.current = true; bottomNow() }, [selectedId, bottomNow])
+  // 内容高度变化(图片/视频/文件晚加载撑高):只要仍黏底就持续贴底,直到真正到底
   useEffect(() => {
-    const el = msgScrollRef.current
     const content = msgContentRef.current
-    if (!el || !content || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(() => {
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) el.scrollTop = el.scrollHeight
-    })
+    if (!content || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => { if (stickRef.current) bottomNow() })
     ro.observe(content)
     return () => ro.disconnect()
-  }, [selectedId])
+  }, [selectedId, bottomNow])
+  // 监听用户滚动:接近底部(<60px)= 黏底,否则取消黏底
+  const onMsgScroll = useCallback(() => {
+    const el = msgScrollRef.current
+    if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
+  }, [])
 
   // 当前列表镜像(WS 处理器判断"未知会话"用)
   useEffect(() => { listRef.current = list }, [list])
@@ -1134,7 +1136,7 @@ export default function Inbox() {
               </span>
             </div>
 
-            <div ref={msgScrollRef} style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
+            <div ref={msgScrollRef} onScroll={onMsgScroll} style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
               <div ref={msgContentRef}>
                 {loadingMsgs ? (
                   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spin /></div>
