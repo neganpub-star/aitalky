@@ -501,36 +501,57 @@ body {
   cursor: pointer;
   display: block;
 }
-/* 富消息:媒体 + 文字说明堆叠 */
-.bubble-rich {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-}
-.msg-row.mine .bubble-rich {
-  align-items: flex-end;
-}
-/* 视频消息:内嵌播放器 */
-.bubble-video {
-  max-width: 220px;
-  max-height: 220px;
+/* 富消息气泡:媒体 + 文字说明在同一个圆角卡片里(媒体在上、文字在下) */
+.media-bubble {
+  width: fit-content;
+  max-width: 230px;
   border-radius: 10px;
+  overflow: hidden;
+}
+.media-bubble.has-cap.agent {
+  background: var(--bubble-agent);
+}
+.media-bubble.has-cap.mine {
+  background: var(--bubble-customer);
+}
+.media-img {
   display: block;
+  max-width: 230px;
+  max-height: 280px;
+  cursor: pointer;
+}
+.media-video {
+  display: block;
+  max-width: 230px;
+  max-height: 280px;
   background: #000;
 }
-/* 文件消息:卡片(图标+文件名+大小) */
-.bubble-file {
+.media-file {
   display: flex;
   align-items: center;
   gap: 10px;
-  max-width: 220px;
   padding: 10px 12px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
   text-decoration: none;
   color: var(--text);
+}
+/* 无文字说明的文件:单独成卡(带边框);有说明时融入气泡(上面规则去边框) */
+.media-bubble:not(.has-cap) .media-file {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.media-caption {
+  padding: 8px 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
+.media-bubble.mine .media-caption {
+  color: #fff;
+}
+.media-bubble.mine .media-file {
+  color: #fff;
 }
 .bubble-file-ico {
   font-size: 22px;

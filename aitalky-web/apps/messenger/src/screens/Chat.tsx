@@ -210,14 +210,14 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
                   {m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
-                    // 富消息:媒体 +(可选)文字说明,堆叠为同一条
-                    <div className="bubble-rich">
+                    // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
+                    <div className={`media-bubble ${mine ? 'mine' : 'agent'} ${m.payload?.caption ? 'has-cap' : ''}`}>
                       {m.type === 'image' ? (
-                        <img className="bubble-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
+                        <img className="media-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
                       ) : m.type === 'video' ? (
-                        <video className="bubble-video" src={m.content} controls preload="metadata" />
+                        <video className="media-video" src={m.content} controls preload="metadata" />
                       ) : (
-                        <a className="bubble-file" href={m.content} target="_blank" rel="noreferrer" download>
+                        <a className="media-file" href={m.content} target="_blank" rel="noreferrer" download>
                           <span className="bubble-file-ico">📎</span>
                           <span className="bubble-file-meta">
                             <span className="bubble-file-name">{m.payload?.name || m.content.split('/').pop()}</span>
@@ -225,7 +225,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                           </span>
                         </a>
                       )}
-                      {m.payload?.caption && <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.payload.caption}</div>}
+                      {m.payload?.caption && <div className="media-caption">{m.payload.caption}</div>}
                     </div>
                   ) : (
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>

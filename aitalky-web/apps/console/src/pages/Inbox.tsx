@@ -798,24 +798,24 @@ export default function Inbox() {
           {/* 自己消息:工具条在气泡左侧;别人消息:在气泡右侧(都朝会话中心) */}
           <div style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
             {m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
-              // 富消息:媒体 +(可选)文字说明,堆叠为同一条消息(同头像同时间)
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: mine ? 'flex-end' : 'flex-start' }}>
+              // 富消息:媒体 +(可选)文字说明在「同一个气泡」里(媒体在上、文字在下)
+              <div style={{ width: 'fit-content', maxWidth: 260, borderRadius: 10, overflow: 'hidden', background: m.payload?.caption ? bubbleBg : 'transparent' }}>
                 {m.type === 'image' ? (
-                  <Image src={m.content} style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, objectFit: 'cover' }} />
+                  <Image src={m.content} style={{ display: 'block', maxWidth: 260, maxHeight: 300 }} />
                 ) : m.type === 'video' ? (
-                  <video src={m.content} controls preload="metadata" style={{ maxWidth: 260, maxHeight: 240, borderRadius: 10, background: '#000', display: 'block' }} />
+                  <video src={m.content} controls preload="metadata" style={{ display: 'block', maxWidth: 260, maxHeight: 300, background: '#000' }} />
                 ) : (
                   <a href={m.content} target="_blank" rel="noreferrer" download
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, maxWidth: 240, padding: '10px 12px', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, color: token.colorText }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: m.payload?.caption ? 'transparent' : token.colorBgElevated, border: m.payload?.caption ? 'none' : `1px solid ${token.colorBorderSecondary}`, borderRadius: m.payload?.caption ? 0 : 10, color: m.payload?.caption ? bubbleColor : token.colorText }}>
                     <span style={{ fontSize: 22, flexShrink: 0 }}>📎</span>
                     <span style={{ minWidth: 0 }}>
                       <span style={{ display: 'block', fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.payload?.name || m.content.split('/').pop()}</span>
-                      {m.payload?.size != null && <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtSize(m.payload.size)}</span>}
+                      {m.payload?.size != null && <span style={{ fontSize: 12, opacity: 0.7 }}>{fmtSize(m.payload.size)}</span>}
                     </span>
                   </a>
                 )}
                 {m.payload?.caption && (
-                  <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                  <div style={{ padding: '8px 12px', color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                     {m.payload.caption}
                   </div>
                 )}
