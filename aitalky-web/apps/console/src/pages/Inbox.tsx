@@ -615,38 +615,31 @@ export default function Inbox() {
           borderLeft: `3px solid ${on ? token.colorPrimary : 'transparent'}`,
         }}
       >
-        {/* 头像未读红点:该会话有未读即亮,进入会话(清未读)才消(对齐现网) */}
-        <Badge dot count={c.unreadCount > 0 ? 1 : 0} offset={[-4, 4]}>
+        {/* 未读数:角标在客户头像上(红色数字),进入会话清未读才消(对齐现网) */}
+        <Badge count={c.unreadCount} size="small" offset={[-4, 4]}>
           <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
             {(c.customerName || 'U').charAt(0).toUpperCase()}
           </Avatar>
         </Badge>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontWeight: 600, fontSize: 15, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {/* 对齐参考:有业务系统UID 显示 UID(便于按业务身份识别),游客无 UID 显示昵称 */}
-              {c.customerUid || c.customerName || c.customerId}
-            </span>
-            <span style={{ fontSize: 12, color: token.colorTextTertiary, flexShrink: 0, marginLeft: 8 }}>{fmtListTime(c.lastMessageAt)}</span>
+          <div style={{ fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {/* 对齐参考:有业务系统UID 显示 UID(便于按业务身份识别),游客无 UID 显示昵称 */}
+            {c.customerUid || c.customerName || c.customerId}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {c.lastMessagePreview || ''}
-            </span>
-            {c.unreadCount > 0 && (
-              <span style={{ flexShrink: 0, marginLeft: 8, minWidth: 18, height: 18, padding: '0 5px', borderRadius: 9, background: token.colorError, color: '#fff', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {c.unreadCount}
-              </span>
-            )}
+          <div style={{ marginTop: 4, fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {c.lastMessagePreview || ''}
           </div>
         </div>
-        {/* 右下角小头像=最近一条消息的发送者(谁最后回复显示谁);无快照(历史会话)则不显示 */}
-        {(c.lastSenderAvatar || c.lastSenderName) && (
-          <Avatar size={20} src={c.lastSenderAvatar || undefined}
-            style={{ alignSelf: 'flex-end', flexShrink: 0, fontSize: 10, background: token.colorFillSecondary, color: token.colorTextSecondary }}>
-            {(c.lastSenderName || 'U').charAt(0).toUpperCase()}
-          </Avatar>
-        )}
+        {/* 右列:时间(上)+ 最近消息发送者小头像(下),分列避免与未读数挤在一起 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between', flexShrink: 0, marginLeft: 8 }}>
+          <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtListTime(c.lastMessageAt)}</span>
+          {(c.lastSenderAvatar || c.lastSenderName) && (
+            <Avatar size={20} src={c.lastSenderAvatar || undefined}
+              style={{ fontSize: 10, background: token.colorFillSecondary, color: token.colorTextSecondary }}>
+              {(c.lastSenderName || 'U').charAt(0).toUpperCase()}
+            </Avatar>
+          )}
+        </div>
       </div>
     )
   }
