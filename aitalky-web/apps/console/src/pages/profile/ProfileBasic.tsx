@@ -379,6 +379,7 @@ function ChangePasswordModal({ open, onClose }: { open: boolean; onClose: () => 
 // 重置密码:发往本账号邮箱的验证码 + 新密码 + 确认
 function ResetPasswordModal({ open, email, onClose }: { open: boolean; email: string; onClose: () => void }) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [form] = Form.useForm<{ code: string; newPassword: string; confirm: string }>()
   const [submitting, setSubmitting] = useState(false)
 
@@ -398,7 +399,7 @@ function ResetPasswordModal({ open, email, onClose }: { open: boolean; email: st
 
   return (
     <Modal title={t('profile.resetPasswordTitle')} open={open} onCancel={onClose} onOk={submit} confirmLoading={submitting} okText={t('common.confirm')} cancelText={t('common.cancel')} destroyOnClose>
-      <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13, marginBottom: 12 }}>{t('profile.resetTip', { email })}</div>
+      <div style={{ color: token.colorTextTertiary, fontSize: 13, marginBottom: 12 }}>{t('profile.resetTip', { email })}</div>
       <Form form={form} layout="vertical" requiredMark={false}>
         <Form.Item label={t('profile.verifyCode')} required>
           <div style={{ display: 'flex', gap: 8 }}>

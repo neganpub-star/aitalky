@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Select, Spin, message } from 'antd'
+import { Button, Select, Spin, message, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { getProfile, updatePreferences } from '../../api/account'
 import { changeLang } from '../../i18n'
@@ -7,6 +7,7 @@ import { changeLang } from '../../i18n'
 // 个人中心 - 偏好设置(对齐 ByteTrack):系统语言 + 保存按钮(点保存才落库并切换前端)
 export default function ProfilePreferences() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [lang, setLang] = useState<string>('zh_CN')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -32,7 +33,7 @@ export default function ProfilePreferences() {
 
   return (
     <div style={{ maxWidth: 720 }}>
-      <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 13, marginBottom: 10 }}>{t('profile.language')}</div>
+      <div style={{ color: token.colorTextTertiary, fontSize: 13, marginBottom: 10 }}>{t('profile.language')}</div>
       <Select
         value={lang}
         style={{ width: 416, maxWidth: '100%' }}

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Modal, Form, Input, Typography, message } from 'antd'
+import { Modal, Form, Input, Typography, message, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { sendCode } from '../../api/auth'
 import { getCtx } from '../../auth/session'
@@ -17,6 +17,7 @@ interface Props {
 // 危险操作二次校验弹窗(负责人转让 / 注销项目共用):项目名 + 登录密码 + 邮箱验证码
 export default function DangerVerifyModal({ open, title, topNode, onClose, onConfirm }: Props) {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
@@ -55,7 +56,7 @@ export default function DangerVerifyModal({ open, title, topNode, onClose, onCon
         </Form.Item>
         <Form.Item name="code" label={t('auth.code')} rules={[{ required: true }]}>
           <Input placeholder={t('auth.code')}
-            suffix={countdown > 0 ? <span style={{ color: '#999' }}>{countdown}s</span> : <a onClick={onSendCode}>{t('team.getCode')}</a>} />
+            suffix={countdown > 0 ? <span style={{ color: token.colorTextTertiary }}>{countdown}s</span> : <a onClick={onSendCode}>{t('team.getCode')}</a>} />
         </Form.Item>
       </Form>
     </Modal>

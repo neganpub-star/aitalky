@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Avatar, Button, Input, Select, Spin, Typography, Upload, message } from 'antd'
+import { Avatar, Button, Input, Select, Spin, Typography, Upload, message, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { getCurrentProject, transferOwner, updateProject } from '../../api/project'
 import { pageMembers } from '../../api/member'
@@ -12,6 +12,7 @@ import type { MemberVO, ProjectDetailVO } from '../../types'
 // 基本信息(对齐现网):Logo + 项目名称 + 负责人 + 保存修改;改名/换Logo/转让 仅负责人
 export default function TeamBasic() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const setProject = useAppStore((s) => s.setProject)
   const [detail, setDetail] = useState<ProjectDetailVO | null>(null)
   const [members, setMembers] = useState<MemberVO[]>([])
@@ -84,7 +85,7 @@ export default function TeamBasic() {
               <Upload showUploadList={false} accept=".jpg,.jpeg,.png" beforeUpload={onUpload}>
                 <a>{t('team.changeLogo')}</a>
               </Upload>
-              <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>{t('team.logoHint')}</div>
+              <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 4 }}>{t('team.logoHint')}</div>
             </div>
           )}
         </div>
