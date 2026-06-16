@@ -195,6 +195,7 @@ export interface ConversationDetailVO {
   // 来源渠道:groupId 非空=专属分配(channelName=专属策略名);空=普通分配
   groupId: string | null
   channelName: string | null
+  customerOnline: boolean | null  // 客户当前是否在线(信使端 WS 连接)
 }
 
 // 坐席端本地待发/失败消息(乐观渲染,未落库,按会话隔离);成功后移除并以服务端消息按 seq 入列

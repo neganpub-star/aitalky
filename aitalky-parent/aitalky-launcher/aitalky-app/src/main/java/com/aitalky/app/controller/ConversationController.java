@@ -48,6 +48,7 @@ public class ConversationController {
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
     private final com.aitalky.conversation.service.AssignService assignService;
+    private final org.redisson.api.RedissonClient redisson; // 查客户 WS 在线状态(ws:conn:cust:{id})
 
     /** 收件箱列表 */
     @GetMapping
@@ -94,6 +95,9 @@ public class ConversationController {
                 : blacklistService.findBlockedId(c.getProjectId(), cu.getExternalUserId(), cu.getVisitorId());
         // 来源渠道:会话带 groupId=专属分配,取专属策略名作渠道名称;无 groupId=普通分配(channelName=null)
         String channelName = assignService.groupName(c.getGroupId());
+        // 客户在线:WS 连接集合 ws:conn:cust:{customerId} 非空(与 ws ConnectionRegistry 同一约定)
+        boolean customerOnline = c.getCustomerId() != null
+                && !redisson.getSet("ws:conn:cust:" + c.getCustomerId()).isEmpty();
         return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
                 c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
                 cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
@@ -103,7 +107,7 @@ public class ConversationController {
                 cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName, assigneeAvatar,
                 c.getCustomerReadSeq(),
                 blacklistId != null, blacklistId,
-                c.getGroupId(), channelName));
+                c.getGroupId(), channelName, customerOnline));
     }
 
     /** 更新客户联系方式/邮箱(详情面板编辑) */

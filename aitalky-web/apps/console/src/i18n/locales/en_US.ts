@@ -552,6 +552,8 @@ export default {
     assignNone: 'Unassign',
     unassignedTag: 'Unassigned',
     reconnecting: 'Connecting...',
+    online: 'Online',
+    offline: 'Offline',
     autoTranslate: 'Auto-translate',
     customerLang: 'Customer language',
     translate: 'Translate',

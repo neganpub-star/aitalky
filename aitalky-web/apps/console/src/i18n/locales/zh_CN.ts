@@ -566,6 +566,8 @@ export default {
     assignNone: '不分配',
     unassignedTag: '未分配',
     reconnecting: '连接中...',
+    online: '在线',
+    offline: '离线',
     autoTranslate: '自动翻译',
     customerLang: '客户源语言',
     translate: '翻译',

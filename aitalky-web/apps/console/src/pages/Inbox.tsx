@@ -1042,8 +1042,23 @@ export default function Inbox() {
         ) : (
           <>
             <div style={{ ...styles.colHeader, background: token.colorBgContainer }}>
-              <span style={styles.colTitle}>{detail.externalUserId || detail.customerName || detail.customerId}</span>
+              {/* 左:客户头像 + 名字 + 在线/离线状态(对齐参考) */}
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <Avatar size={36} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+                  {(detail.customerName || 'U').charAt(0).toUpperCase()}
+                </Avatar>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ ...styles.colTitle, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {detail.externalUserId || detail.customerName || detail.customerId}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: detail.customerOnline ? token.colorSuccess : token.colorTextTertiary }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: detail.customerOnline ? token.colorSuccess : token.colorTextQuaternary }} />
+                    {detail.customerOnline ? t('inbox.online') : t('inbox.offline')}
+                  </span>
+                </span>
+              </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: token.colorTextTertiary, fontSize: 13 }}>
+                {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
                 {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
                 {/* 指派下拉(对齐参考:搜索队友/分配给队友/不分配),所有坐席可操作 */}
                 {!closed && (
