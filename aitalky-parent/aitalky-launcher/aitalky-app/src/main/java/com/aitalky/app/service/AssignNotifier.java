@@ -39,7 +39,7 @@ public class AssignNotifier {
         Message msg = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), conv.getCustomerId(),
                 "system", toMemberId, null, null,
-                "assign", "该会话分配给了 " + nick, true, null));
+                "assign", "该会话分配给了 " + nick, null, true, null));
         try {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             // customerId=null:不回推客户;assignee=toMemberId:推给被分配坐席(+订阅者/项目频道)

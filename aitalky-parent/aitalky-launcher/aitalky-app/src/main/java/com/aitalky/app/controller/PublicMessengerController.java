@@ -159,7 +159,7 @@ public class PublicMessengerController {
         Message m = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), customer.getId(),
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
-                req.type(), req.content(), false, null));
+                req.type(), req.content(), req.payload(), false, null));
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), true);
         // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端
@@ -269,7 +269,8 @@ public class PublicMessengerController {
         boolean retracted = Boolean.FALSE.equals(m.getIsVisible());
         return new MessageVO(m.getMsgId(), m.getSeq(), m.getConversationId(),
                 m.getSenderType(), m.getSenderId(), m.getSenderName(), m.getSenderAvatar(),
-                m.getType(), retracted ? null : m.getContent(), m.getInternal(), m.getIsVisible(), m.getTimestamp());
+                m.getType(), retracted ? null : m.getContent(), retracted ? null : m.getPayload(),
+                m.getInternal(), m.getIsVisible(), m.getTimestamp());
     }
 
     private static LocalDateTime toLdt(Long ts) {
@@ -280,12 +281,14 @@ public class PublicMessengerController {
         return content == null ? "" : (content.length() > 50 ? content.substring(0, 50) : content);
     }
 
-    /** 列表预览:图片/文件等富消息不展示原始 URL,显示占位文案 */
+    /** 列表预览:图片/视频/文件等富消息不展示原始 URL,显示占位文案 */
     private static String preview(String type, String content) {
-        if ("image".equals(type)) {
-            return "[图片]";
-        }
-        return preview(content);
+        return switch (type == null ? "" : type) {
+            case "image" -> "[图片]";
+            case "video" -> "[视频]";
+            case "file" -> "[文件]";
+            default -> preview(content);
+        };
     }
 
     private String clientIp(HttpServletRequest req) {

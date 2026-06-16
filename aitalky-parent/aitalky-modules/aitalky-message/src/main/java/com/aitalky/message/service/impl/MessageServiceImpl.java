@@ -51,6 +51,7 @@ public class MessageServiceImpl implements MessageService {
         m.setSenderAvatar(cmd.senderAvatar());
         m.setType(cmd.type() == null ? "text" : cmd.type());
         m.setContent(cmd.content());
+        m.setPayload(cmd.payload());
         m.setIsRead(false);
         m.setIsVisible(true);
         m.setInternal(Boolean.TRUE.equals(cmd.internal()));

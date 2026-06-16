@@ -34,6 +34,26 @@ function statusOf(tab: TabKey): number {
   return tab === 'closed' ? 2 : 1
 }
 
+// 暂存待发附件
+type AttKind = 'image' | 'video' | 'file'
+interface StagedAtt { localId: string; name: string; size: number; kind: AttKind; previewUrl: string; url?: string }
+
+// 按扩展名判类(与后端 MinioService 白名单一致);非白名单返回 ''
+function fileKind(name: string): AttKind | '' {
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return 'image'
+  if (['mp4', 'webm', 'mov'].includes(ext)) return 'video'
+  if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar', '7z'].includes(ext)) return 'file'
+  return ''
+}
+
+// 文件大小友好显示
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
 function fmtMsgTime(ms: number): string {
   const d = new Date(ms)
@@ -114,6 +134,7 @@ export default function Inbox() {
 
   const [replyTab, setReplyTab] = useState<'reply' | 'internal'>('reply')
   const [input, setInput] = useState('')
+  const [staged, setStaged] = useState<StagedAtt | null>(null) // 输入框上方待发附件
   // hover 在自己消息上时显示「撤回」入口(对齐桌面端交互)
   const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
   // 客户正在输入(瞬时,4s 自动消失)
@@ -469,16 +490,56 @@ export default function Inbox() {
     [applyIncoming],
   )
 
-  // 乐观发送:先上屏 pending(sending),清空输入,再异步发;失败标红可重发(不阻塞连发)
-  const onSend = useCallback(() => {
+  // 暂存的待发附件(图片/视频/文档):选后先上传,预览在输入框上方,点发送随文本一起发出
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const attachInputRef = useRef<HTMLInputElement>(null)
+  // 选文件:imagesOnly=true 仅接受图片(图片按钮);否则图片/视频/文档(附件按钮)
+  const pickFile = useCallback((file: File, imagesOnly: boolean) => {
+    const kind = fileKind(file.name)
+    if (!kind || (imagesOnly && kind !== 'image')) { message.error(t('inbox.fileUnsupported')); return }
+    const max = kind === 'image' ? 10 * 1024 * 1024 : 20 * 1024 * 1024
+    if (file.size > max) { message.error(t('inbox.fileTooLarge')); return }
+    const localId = `a_${Date.now()}_${Math.random().toString(16).slice(2)}`
+    const previewUrl = kind === 'file' ? '' : URL.createObjectURL(file)
+    setStaged((prev) => { if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl); return { localId, name: file.name, size: file.size, kind, previewUrl } })
+    uploadFile(file)
+      .then((url) => setStaged((s) => (s && s.localId === localId ? { ...s, url } : s)))
+      .catch(() => { message.error(t('inbox.imageFailed')); setStaged((s) => (s && s.localId === localId ? null : s)) })
+  }, [t])
+  const clearStaged = useCallback(() => {
+    setStaged((prev) => { if (prev?.previewUrl) URL.revokeObjectURL(prev.previewUrl); return null })
+  }, [])
+
+  // 发送:有暂存附件先发附件(需已上传完成),再发文本(文本走乐观态,失败可重发)
+  const onSend = useCallback(async () => {
+    if (!selectedId) return
     const content = input.trim()
-    if (!content || !selectedId) return
+    const att = staged
+    if (!content && !att) return
     const internal = replyTab === 'internal'
-    const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
-    setPending((p) => [...p, { localId, conversationId: selectedId, content, internal, status: 'sending', time: Date.now() }])
-    setInput('')
-    void trySend(localId, content, internal, selectedId)
-  }, [input, selectedId, replyTab, trySend])
+    if (att) {
+      if (!att.url) { message.info(t('inbox.imageUploading')); return } // 上传未完成,稍等
+      try {
+        const vo = await replyConversation(selectedId, {
+          content: att.url, type: att.kind,
+          payload: att.kind === 'file' ? { name: att.name, size: att.size } : undefined,
+          internal,
+        })
+        applyIncoming([vo])
+        const prev = att.kind === 'image' ? t('inbox.imageTag') : att.kind === 'video' ? t('inbox.videoTag') : t('inbox.fileTag')
+        setList((p) => p.map((c) => (c.id === selectedId
+          ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+          : c)))
+      } catch { message.error(t('inbox.imageFailed')) }
+      clearStaged()
+    }
+    if (content) {
+      const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
+      setPending((p) => [...p, { localId, conversationId: selectedId, content, internal, status: 'sending', time: Date.now() }])
+      setInput('')
+      void trySend(localId, content, internal, selectedId)
+    }
+  }, [input, selectedId, replyTab, staged, trySend, applyIncoming, clearStaged, t])
 
   // 点击失败消息的❗重发(用同一本地项,成功后并入正常消息流)
   const onResend = useCallback(
@@ -489,28 +550,6 @@ export default function Inbox() {
     [pending, trySend],
   )
 
-  // 发送图片:选图 → 上传拿 URL → 发 image 类型消息(content=URL)。不走文本乐观态,发完由 applyIncoming 入列
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const sendImage = useCallback(async (file: File) => {
-    const cid = selectedId
-    if (!cid) return
-    if (!file.type.startsWith('image/')) { message.error(t('inbox.imageOnly')); return }
-    if (file.size > 5 * 1024 * 1024) { message.error(t('inbox.imageTooLarge')); return }
-    const internal = replyTab === 'internal'
-    const hide = message.loading(t('inbox.imageUploading'), 0)
-    try {
-      const url = await uploadFile(file)
-      const vo = await replyConversation(cid, { content: url, type: 'image', internal })
-      applyIncoming([vo])
-      setList((prev) => prev.map((c) => (c.id === cid
-        ? { ...c, lastMessagePreview: t('inbox.imageTag'), lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
-        : c)))
-    } catch {
-      message.error(t('inbox.imageFailed'))
-    } finally {
-      hide()
-    }
-  }, [selectedId, replyTab, applyIncoming, t])
 
   // 复制消息文本到剪贴板
   const copyMsg = useCallback((text: string) => {
@@ -729,8 +768,21 @@ export default function Inbox() {
           {/* 自己消息:工具条在气泡左侧;别人消息:在气泡右侧(都朝会话中心) */}
           <div style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
             {m.type === 'image' ? (
-              // 图片消息:点击放大预览(antd Image),不套文字气泡样式
+              // 图片:点击放大预览(antd Image),不套文字气泡
               <Image src={m.content} style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, objectFit: 'cover' }} />
+            ) : m.type === 'video' ? (
+              // 视频:内嵌播放器
+              <video src={m.content} controls preload="metadata" style={{ maxWidth: 260, maxHeight: 240, borderRadius: 10, background: '#000', display: 'block' }} />
+            ) : m.type === 'file' ? (
+              // 文件:卡片(文件名+大小),点击下载
+              <a href={m.content} target="_blank" rel="noreferrer" download
+                style={{ display: 'flex', alignItems: 'center', gap: 10, maxWidth: 240, padding: '10px 12px', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, color: token.colorText }}>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>📎</span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.payload?.name || m.content.split('/').pop()}</span>
+                  {m.payload?.size != null && <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtSize(m.payload.size)}</span>}
+                </span>
+              </a>
             ) : (
               <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
                 {m.content}
@@ -978,15 +1030,40 @@ export default function Inbox() {
                 variant="borderless"
                 style={{ padding: 0, fontSize: 15 }}
               />
-              {/* 底部:工具栏图标(左,占位)+ 认领/翻译/发送(右)*/}
+              {/* 待发附件预览:图片/视频缩略图 或 文件卡片;未传完显示 spinner,右上角✕移除 */}
+              {staged && (
+                <div style={{ position: 'relative', display: 'inline-block', marginTop: 8, maxWidth: 200 }}>
+                  {staged.kind === 'image' ? (
+                    <img src={staged.previewUrl} alt="" style={{ maxWidth: 120, maxHeight: 120, borderRadius: 8, objectFit: 'cover', display: 'block', opacity: staged.url ? 1 : 0.6 }} />
+                  ) : staged.kind === 'video' ? (
+                    <video src={staged.previewUrl} style={{ maxWidth: 160, maxHeight: 120, borderRadius: 8, display: 'block', background: '#000', opacity: staged.url ? 1 : 0.6 }} />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, opacity: staged.url ? 1 : 0.6 }}>
+                      <span style={{ fontSize: 20 }}>📎</span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, maxWidth: 130, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{staged.name}</div>
+                        <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtSize(staged.size)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {!staged.url && <Spin size="small" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />}
+                  <CloseOutlined onClick={clearStaged}
+                    style={{ position: 'absolute', top: -6, right: -6, background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: '50%', padding: 3, fontSize: 11, cursor: 'pointer', boxShadow: token.boxShadowTertiary }} />
+                </div>
+              )}
+              {/* 底部:工具栏图标(左)+ 认领/翻译/发送(右)*/}
               <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
                 <div style={{ display: 'flex', gap: 18, flex: 1, color: token.colorTextTertiary, fontSize: 18 }}>
-                  {/* 隐藏文件选择器:图片按钮触发 */}
+                  {/* 隐藏文件选择器:图片按钮(仅图)/ 附件按钮(图/视频/文档) */}
                   <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendImage(f); e.target.value = '' }} />
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) pickFile(f, true); e.target.value = '' }} />
+                  <input ref={attachInputRef} type="file"
+                    accept="image/*,video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+                    style={{ display: 'none' }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) pickFile(f, false); e.target.value = '' }} />
                   {([
                     { icon: <PictureOutlined />, k: 'inbox.toolImage', onClick: () => imageInputRef.current?.click() },
-                    { icon: <PaperClipOutlined />, k: 'inbox.toolFile', onClick: () => message.info(t('settings.wip')) },
+                    { icon: <PaperClipOutlined />, k: 'inbox.toolFile', onClick: () => attachInputRef.current?.click() },
                     { icon: <LinkOutlined />, k: 'inbox.toolLink', onClick: () => message.info(t('settings.wip')) },
                     { icon: <BookOutlined />, k: 'inbox.toolKb', onClick: () => message.info(t('settings.wip')) },
                   ] as const).map(({ icon, k, onClick }) => (

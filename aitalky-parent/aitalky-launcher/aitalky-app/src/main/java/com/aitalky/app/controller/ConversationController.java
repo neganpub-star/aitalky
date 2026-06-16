@@ -132,7 +132,7 @@ public class ConversationController {
         Message m = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), id, conv.getCustomerId(),
                 "agent", me.id(), me.nickname(), me.avatar(),
-                req.type(), req.content(), internal, req.mentions()));
+                req.type(), req.content(), req.payload(), internal, req.mentions()));
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false);
         Long targetAssignee = conv.getAssigneeMemberId();
@@ -226,11 +226,13 @@ public class ConversationController {
         return content == null ? "" : (content.length() > 50 ? content.substring(0, 50) : content);
     }
 
-    /** 列表预览:图片/文件等富消息不展示原始 URL,显示占位文案 */
+    /** 列表预览:图片/视频/文件等富消息不展示原始 URL,显示占位文案 */
     private static String preview(String type, String content) {
-        if ("image".equals(type)) {
-            return "[图片]";
-        }
-        return preview(content);
+        return switch (type == null ? "" : type) {
+            case "image" -> "[图片]";
+            case "video" -> "[视频]";
+            case "file" -> "[文件]";
+            default -> preview(content);
+        };
     }
 }

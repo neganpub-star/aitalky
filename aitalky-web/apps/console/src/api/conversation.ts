@@ -62,9 +62,9 @@ export async function listMessages(id: string, afterSeq?: number) {
 /** 坐席回复。internal=true 为内部消息(客户不可见) */
 export async function replyConversation(
   id: string,
-  payload: { content: string; type?: string; internal?: boolean; mentions?: string[] },
+  body: { content: string; type?: string; payload?: { name?: string; size?: number }; internal?: boolean; mentions?: string[] },
 ) {
-  return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, payload))
+  return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, body))
 }
 
 /** 坐席正在输入(瞬时通知;节流调用,不落库) */

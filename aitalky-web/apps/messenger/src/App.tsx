@@ -269,12 +269,22 @@ export default function App() {
     [trySend],
   )
 
-  // 发送图片:选图 → 上传拿 URL → 发 image 消息;发完由 applyIncoming 入列(不做乐观态,简化)
-  const onSendImage = useCallback(async (file: File) => {
+  // 发送文件(图片/视频/文档):按扩展名判类 + 限大小 → 上传 → 发对应类型消息;发完由 applyIncoming 入列
+  const onSendFile = useCallback(async (file: File) => {
     const cid = convIdRef.current
-    if (!cid || !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) return
+    if (!cid) return
+    const ext = (file.name.split('.').pop() || '').toLowerCase()
+    const kind = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext) ? 'image'
+      : ['mp4', 'webm', 'mov'].includes(ext) ? 'video'
+        : ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar', '7z'].includes(ext) ? 'file'
+          : ''
+    if (!kind) return // 不支持的类型,静默忽略(信使端无 toast)
+    const max = kind === 'image' ? 10 * 1024 * 1024 : 20 * 1024 * 1024
+    if (file.size > max) return
     try {
-      applyIncoming([await sendMessage(cid, await uploadFile(file), 'image')])
+      const url = await uploadFile(file)
+      const payload = kind === 'file' ? { name: file.name, size: file.size } : undefined
+      applyIncoming([await sendMessage(cid, url, kind, payload)])
     } catch {
       // 失败静默(信使端无 toast 体系)
     }
@@ -347,7 +357,7 @@ export default function App() {
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       onSend={onSend}
-      onSendImage={onSendImage}
+      onSendFile={onSendFile}
       onResend={onResend}
       onRetract={onRetract}
       onTyping={onTyping}

@@ -59,9 +59,11 @@ export async function init(p: AccessParams): Promise<MessengerInit> {
   )
 }
 
-/** 客户发送消息 */
-export async function sendMessage(conversationId: string, content: string, type = 'text'): Promise<MessageVO> {
-  return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type }))
+/** 客户发送消息。payload=图片/视频/文件结构化内容(文件名/大小) */
+export async function sendMessage(
+  conversationId: string, content: string, type = 'text', payload?: { name?: string; size?: number },
+): Promise<MessageVO> {
+  return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type, payload }))
 }
 
 /** 客户上传文件(图片/文档),返回 MinIO URL。带客户令牌(拦截器自动附加) */

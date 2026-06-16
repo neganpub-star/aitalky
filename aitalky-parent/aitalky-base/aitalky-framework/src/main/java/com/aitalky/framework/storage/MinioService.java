@@ -31,9 +31,15 @@ import java.util.UUID;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class MinioService {
 
-    /** 允许上传的图片类型(白名单,防止上传可执行文件等) */
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp");
+    // 按"扩展名"白名单(比 content-type 可靠,且能挡住 exe/sh/js/html 等可执行/脚本)。
+    // 分三类,各自大小上限不同:图片 10MB / 文档 50MB / 视频 100MB。
+    private static final Set<String> IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp");
+    private static final Set<String> VIDEO_EXT = Set.of("mp4", "webm", "mov");
+    private static final Set<String> DOC_EXT = Set.of(
+            "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip", "rar", "7z");
+    private static final long IMAGE_MAX = 10L * 1024 * 1024;
+    private static final long DOC_MAX = 20L * 1024 * 1024;   // 文档/视频暂定 20MB,后续按需调整
+    private static final long VIDEO_MAX = 20L * 1024 * 1024;
 
     private static final DateTimeFormatter DATE_DIR = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
@@ -77,13 +83,22 @@ public class MinioService {
         if (file == null || file.isEmpty()) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
-        if (file.getSize() > props.maxSize()) {
+        // 按扩展名判类并取对应大小上限;不在白名单(含 exe/脚本)直接拒
+        String ext = ext(file.getOriginalFilename());
+        long limit;
+        if (IMAGE_EXT.contains(ext)) {
+            limit = IMAGE_MAX;
+        } else if (VIDEO_EXT.contains(ext)) {
+            limit = VIDEO_MAX;
+        } else if (DOC_EXT.contains(ext)) {
+            limit = DOC_MAX;
+        } else {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
+        if (file.getSize() > limit) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
+        String contentType = file.getContentType() == null ? "application/octet-stream" : file.getContentType();
         String objectKey = buildObjectKey(file.getOriginalFilename());
         try (InputStream in = file.getInputStream()) {
             client.putObject(PutObjectArgs.builder()
@@ -114,6 +129,15 @@ public class MinioService {
                 "Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/*"]}]}""".formatted(props.bucket());
         client.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(props.bucket()).config(policy).build());
         log.info("MinIO 桶 {} 已设为匿名只读", props.bucket());
+    }
+
+    /** 取小写扩展名(无则空串),用于白名单判类 */
+    private static String ext(String originalName) {
+        if (originalName == null) {
+            return "";
+        }
+        int dot = originalName.lastIndexOf('.');
+        return dot >= 0 ? originalName.substring(dot + 1).toLowerCase() : "";
     }
 
     /** 对象 key:按日期分目录 + uuid + 原扩展名,避免重名 */

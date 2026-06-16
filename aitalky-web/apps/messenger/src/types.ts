@@ -63,8 +63,9 @@ export interface MessageVO {
   senderId: string
   senderName: string | null
   senderAvatar: string | null
-  type: string
-  content: string
+  type: string          // text / image / video / file
+  content: string       // 文本内容,或 图片/视频/文件 的 URL
+  payload?: { name?: string; size?: number } | null  // 文件消息的文件名/大小
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number

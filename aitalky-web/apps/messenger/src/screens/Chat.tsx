@@ -10,7 +10,7 @@ interface Props {
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   onSend: (text: string) => void
-  onSendImage: (file: File) => void
+  onSendFile: (file: File) => void
   onResend: (localId: string) => void
   onRetract: (msgId: string) => void
   onTyping: () => void
@@ -29,6 +29,13 @@ function copyText(text: string) {
 }
 
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
+// 文件大小友好显示
+function fmtSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
 function fmtTime(ms: number): string {
   const d = new Date(ms)
   if (Number.isNaN(d.getTime())) return ''
@@ -43,7 +50,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendImage, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
   const [urgentClosed, setUrgentClosed] = useState(false)
@@ -203,8 +210,20 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
                   {m.type === 'image' ? (
-                    // 图片消息:点击新窗打开原图;不套文字气泡
+                    // 图片:点击新窗打开原图
                     <img className="bubble-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
+                  ) : m.type === 'video' ? (
+                    // 视频:内嵌播放器
+                    <video className="bubble-video" src={m.content} controls preload="metadata" />
+                  ) : m.type === 'file' ? (
+                    // 文件:卡片(文件名+大小),点击下载
+                    <a className="bubble-file" href={m.content} target="_blank" rel="noreferrer" download>
+                      <span className="bubble-file-ico">📎</span>
+                      <span className="bubble-file-meta">
+                        <span className="bubble-file-name">{m.payload?.name || m.content.split('/').pop()}</span>
+                        {m.payload?.size != null && <span className="bubble-file-size">{fmtSize(m.payload.size)}</span>}
+                      </span>
+                    </a>
                   ) : (
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
                   )}
@@ -277,9 +296,11 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
           }}
           onKeyDown={onKeyDown}
         />
-        {/* 回形针:发送图片(隐藏 input 触发) */}
-        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) onSendImage(f); e.target.value = '' }} />
+        {/* 回形针:发送图片/视频/文档(隐藏 input 触发) */}
+        <input ref={fileInputRef} type="file"
+          accept="image/*,video/mp4,video/webm,video/quicktime,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar,.7z"
+          style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) onSendFile(f); e.target.value = '' }} />
         <button className="attach-btn" onClick={() => fileInputRef.current?.click()} aria-label={t('send')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
