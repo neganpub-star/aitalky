@@ -27,6 +27,7 @@ public class AssignNotifier {
     private final MemberService memberService;
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
+    private final com.aitalky.conversation.service.ConversationService conversationService;
 
     /** toMemberId 为 null(未分配/进等待)不发 */
     public void notifyAssigned(CnvConversation conv, Long toMemberId) {
@@ -44,6 +45,24 @@ public class AssignNotifier {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             // customerId=null:不回推客户;assignee=toMemberId:推给被分配坐席(+订阅者/项目频道)
             pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), toMemberId, null, payload));
+        } catch (Exception ignore) {
+            // 序列化/推送失败忽略:坐席重连按 seq 补拉
+        }
+    }
+
+    /** 保持期超时结束:发「会话超时结束」系统消息(仅坐席可见),并推进会话 lastSeq/预览;推给原负责人+项目频道 */
+    public void notifyTimeoutClosed(CnvConversation conv) {
+        Message msg = messageService.send(new SendMessageCmd(
+                conv.getProjectId(), conv.getId(), conv.getCustomerId(),
+                "system", null, null, null,
+                "timeout", "会话超时结束", null, true, null));
+        // 与正常消息一致:推进 lastSeq + 列表预览显示「会话超时结束」(对齐参考列表)
+        conversationService.onNewMessage(conv.getId(), msg.getSeq(), "会话超时结束",
+                java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(msg.getTimestamp()), java.time.ZoneId.systemDefault()),
+                null, null, false);
+        try {
+            String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), null, payload));
         } catch (Exception ignore) {
             // 序列化/推送失败忽略:坐席重连按 seq 补拉
         }

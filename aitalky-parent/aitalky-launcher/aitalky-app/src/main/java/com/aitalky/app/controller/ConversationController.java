@@ -81,11 +81,13 @@ public class ConversationController {
     public R<ConversationDetailVO> detail(@PathVariable Long id) {
         CnvConversation c = conversationService.getById(id);
         CusCustomer cu = customerService.getById(c.getCustomerId());
-        // 会话分配:展示坐席昵称而非 memberId(未分配为 null)
+        // 会话分配:展示坐席昵称+头像而非 memberId(未分配为 null)
         String assigneeName = null;
+        String assigneeAvatar = null;
         if (c.getAssigneeMemberId() != null) {
             MemberBrief m = memberService.brief(c.getAssigneeMemberId());
             assigneeName = m == null ? null : m.nickname();
+            assigneeAvatar = m == null ? null : m.avatar();
         }
         // 黑名单状态:命中记录 id(无则 null),供详情面板「加入/移除黑名单」切换
         Long blacklistId = cu == null ? null
@@ -98,7 +100,7 @@ public class ConversationController {
                 cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
-                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName,
+                cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName, assigneeAvatar,
                 c.getCustomerReadSeq(),
                 blacklistId != null, blacklistId,
                 c.getGroupId(), channelName));

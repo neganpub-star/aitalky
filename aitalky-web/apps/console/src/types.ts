@@ -186,6 +186,7 @@ export interface ConversationDetailVO {
   customAttrs: string | null
   lastSeq: number | null
   assigneeName: string | null
+  assigneeAvatar: string | null
   // 客户已读到的 seq(已读回执:坐席自己消息 seq<=此值显示"已读")
   customerReadSeq: number | null
   // 该客户是否已在黑名单 + 命中记录 id(详情面板「加入/移除黑名单」状态切换)

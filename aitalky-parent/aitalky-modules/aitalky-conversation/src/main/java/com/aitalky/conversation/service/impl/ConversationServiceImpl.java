@@ -225,7 +225,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public java.util.List<Long> autoCloseIdleConversations() {
+    public java.util.List<CnvConversation> autoCloseIdleConversations() {
         // 无租户上下文 → 多租户拦截器整体放行,可跨项目扫描;只取开启保持期的配置
         List<AsnConfig> configs = asnConfigMapper.selectList(Wrappers.<AsnConfig>lambdaQuery()
                 .gt(AsnConfig::getAutoCloseIdleMinutes, 0));
@@ -233,7 +233,7 @@ public class ConversationServiceImpl implements ConversationService {
             return List.of();
         }
         LocalDateTime now = LocalDateTime.now();
-        java.util.List<Long> affected = new java.util.ArrayList<>();
+        java.util.List<CnvConversation> closed = new java.util.ArrayList<>();
         for (AsnConfig cfg : configs) {
             LocalDateTime cutoff = now.minusMinutes(cfg.getAutoCloseIdleMinutes());
             // 该项目下进行中(status=1)且最后活跃早于保持期阈值的会话
@@ -249,12 +249,12 @@ public class ConversationServiceImpl implements ConversationService {
                 conv.setStatus(2);
                 conv.setClosedAt(now);
                 conversationMapper.updateById(conv);
+                closed.add(conv);
             }
             log.info("保持期自动结束 projectId={}, count={}, idleMinutes={}",
                     cfg.getProjectId(), idle.size(), cfg.getAutoCloseIdleMinutes());
-            affected.add(cfg.getProjectId());
         }
-        return affected;
+        return closed;
     }
 
     @Override

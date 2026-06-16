@@ -1076,7 +1076,13 @@ export default function Inbox() {
                       </div>
                     }
                   >
-                    <span style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, color: token.colorTextSecondary }}>
+                    <span style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, color: token.colorTextSecondary }}>
+                      {/* 已分配:显示负责坐席头像+名字;未分配:只显示「未分配」 */}
+                      {detail.assigneeMemberId != null && (
+                        <Avatar size={22} src={detail.assigneeAvatar || undefined} style={{ flexShrink: 0 }}>
+                          {(detail.assigneeName || 'A').charAt(0).toUpperCase()}
+                        </Avatar>
+                      )}
                       {detail.assigneeName || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : t('inbox.unassignedTag'))}
                       <DownOutlined style={{ fontSize: 10 }} />
                     </span>

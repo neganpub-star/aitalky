@@ -47,9 +47,9 @@ public interface ConversationService {
      * 保持期自动结束:扫描所有开启保持期(asn_config.auto_close_idle_minutes>0)的项目,
      * 把空闲(last_message_at 早于保持期)且进行中的会话置为已结束。
      * <p>由定时任务调用,无租户上下文(跨项目扫描)。
-     * @return 本次有会话被结束的项目id(去重),供上层逐个消费等待队列、发分配系统消息
+     * @return 本次被结束的会话(供上层逐条发「会话超时结束」系统消息、并按项目消费等待队列)
      */
-    java.util.List<Long> autoCloseIdleConversations();
+    java.util.List<CnvConversation> autoCloseIdleConversations();
 
     /** 清零坐席侧未读(打开会话时) */
     void resetUnread(Long conversationId);
