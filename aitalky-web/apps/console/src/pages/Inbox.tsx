@@ -534,6 +534,9 @@ export default function Inbox() {
               : c,
           ),
         )
+        // 坐席回复可能重开会话(已结束→进行中)+ 重新分配 → 立即刷列表,使其及时移出「已结束」/更新归属
+        debouncedLoadListRef.current()
+        if (cid === selectedRef.current) getConversation(cid).then(setDetail).catch(() => {})
       } catch {
         setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'failed' } : x)))
       }

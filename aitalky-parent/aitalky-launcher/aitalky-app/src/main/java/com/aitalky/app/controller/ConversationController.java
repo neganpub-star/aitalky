@@ -143,8 +143,9 @@ public class ConversationController {
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false, true);
         Long targetAssignee = conv.getAssigneeMemberId();
-        // 未分配 → 自动认领;已结束被坐席重新发起 → 重新分配给该坐席(即便原属他人)。内部消息不触发。
-        boolean needAssign = !internal && (targetAssignee == null || (wasClosed && !me.id().equals(targetAssignee)));
+        // 未分配 → 自动认领;已结束被坐席重新发起 → 重新分配给该坐席并发系统消息(即便原属他人/原属自己,
+        // 语义=重新聊天即一次重新分配)。内部消息不触发。
+        boolean needAssign = !internal && (targetAssignee == null || wasClosed);
         if (needAssign) {
             conversationService.claim(id, me.id());
             targetAssignee = me.id();
