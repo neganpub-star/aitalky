@@ -209,21 +209,24 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
-                  {m.type === 'image' ? (
-                    // 图片:点击新窗打开原图
-                    <img className="bubble-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
-                  ) : m.type === 'video' ? (
-                    // 视频:内嵌播放器
-                    <video className="bubble-video" src={m.content} controls preload="metadata" />
-                  ) : m.type === 'file' ? (
-                    // 文件:卡片(文件名+大小),点击下载
-                    <a className="bubble-file" href={m.content} target="_blank" rel="noreferrer" download>
-                      <span className="bubble-file-ico">📎</span>
-                      <span className="bubble-file-meta">
-                        <span className="bubble-file-name">{m.payload?.name || m.content.split('/').pop()}</span>
-                        {m.payload?.size != null && <span className="bubble-file-size">{fmtSize(m.payload.size)}</span>}
-                      </span>
-                    </a>
+                  {m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
+                    // 富消息:媒体 +(可选)文字说明,堆叠为同一条
+                    <div className="bubble-rich">
+                      {m.type === 'image' ? (
+                        <img className="bubble-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
+                      ) : m.type === 'video' ? (
+                        <video className="bubble-video" src={m.content} controls preload="metadata" />
+                      ) : (
+                        <a className="bubble-file" href={m.content} target="_blank" rel="noreferrer" download>
+                          <span className="bubble-file-ico">📎</span>
+                          <span className="bubble-file-meta">
+                            <span className="bubble-file-name">{m.payload?.name || m.content.split('/').pop()}</span>
+                            {m.payload?.size != null && <span className="bubble-file-size">{fmtSize(m.payload.size)}</span>}
+                          </span>
+                        </a>
+                      )}
+                      {m.payload?.caption && <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.payload.caption}</div>}
+                    </div>
                   ) : (
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
                   )}

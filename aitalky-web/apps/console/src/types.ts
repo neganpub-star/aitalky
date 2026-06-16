@@ -217,7 +217,7 @@ export interface MessageVO {
   senderAvatar: string | null
   type: string          // text / image / video / file
   content: string       // 文本内容,或 图片/视频/文件 的 URL
-  payload?: { name?: string; size?: number } | null  // 文件消息的文件名/大小
+  payload?: { name?: string; size?: number; caption?: string } | null  // 文件名/大小 + 图片/视频/文件的附带文字说明
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number

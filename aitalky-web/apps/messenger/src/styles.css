@@ -501,6 +501,16 @@ body {
   cursor: pointer;
   display: block;
 }
+/* 富消息:媒体 + 文字说明堆叠 */
+.bubble-rich {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.msg-row.mine .bubble-rich {
+  align-items: flex-end;
+}
 /* 视频消息:内嵌播放器 */
 .bubble-video {
   max-width: 220px;
