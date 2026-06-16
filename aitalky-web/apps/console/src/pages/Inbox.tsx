@@ -579,8 +579,8 @@ export default function Inbox() {
     colHeader: { height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: splitBorder },
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
-    catItem: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 8px', padding: '11px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15 },
-    catActive: { background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600 },
+    catItem: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 8px', padding: '11px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, border: '1px solid transparent' },
+    catActive: { background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600, borderColor: token.colorPrimaryBorder },
     count: { marginLeft: 'auto', minWidth: 22, height: 20, padding: '0 6px', borderRadius: 6, background: token.colorFillSecondary, color: token.colorTextSecondary, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   }
 
