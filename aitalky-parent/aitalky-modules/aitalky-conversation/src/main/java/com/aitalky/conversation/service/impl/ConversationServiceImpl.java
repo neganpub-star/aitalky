@@ -87,14 +87,18 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public PageResult<ConversationVO> list(ConversationListQuery q, Long memberId, boolean canViewAll) {
-        // mention 视图(@提及)依赖 Mongo,后续实现,这里先返回空
-        if ("mention".equals(q.getView())) {
-            return PageResult.of(List.of(), 0, q.getPage(), q.getSize());
-        }
+    public PageResult<ConversationVO> list(ConversationListQuery q, Long memberId, boolean canViewAll,
+                                           List<Long> mentionConvIds) {
         var wrapper = Wrappers.<CnvConversation>lambdaQuery()
                 .eq(q.getStatus() != null, CnvConversation::getStatus, q.getStatus());
         switch (q.getView()) {
+            case "mention" -> {
+                // @提及我的:上层 Mongo 预查的会话ids;空命中直接返回空(避免 in() 空集合查全表)
+                if (mentionConvIds == null || mentionConvIds.isEmpty()) {
+                    return PageResult.of(List.of(), 0, q.getPage(), q.getSize());
+                }
+                wrapper.in(CnvConversation::getId, mentionConvIds);
+            }
             case "unassigned" -> wrapper.isNull(CnvConversation::getAssigneeMemberId).ne(CnvConversation::getStatus, 2);
             case "all" -> {
                 if (!canViewAll) {
@@ -165,7 +169,8 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll) {
+    public com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll,
+                                                                  List<Long> mentionConvIds) {
         // 进行中(status=1);project_id 由多租户拦截器自动过滤
         long mine = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
                 .eq(CnvConversation::getAssigneeMemberId, memberId).eq(CnvConversation::getStatus, 1));
@@ -181,7 +186,11 @@ public class ConversationServiceImpl implements ConversationService {
         long unassignedUnread = conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
                 .isNull(CnvConversation::getAssigneeMemberId).eq(CnvConversation::getStatus, 1)
                 .gt(CnvConversation::getUnreadCount, 0));
-        return new com.aitalky.conversation.dto.ConversationCounts(mine, unassigned, all, 0, mineUnread, unassignedUnread);
+        // @提及我的:进行中且在「@我」会话集合内的数量
+        long mention = (mentionConvIds == null || mentionConvIds.isEmpty()) ? 0
+                : conversationMapper.selectCount(Wrappers.<CnvConversation>lambdaQuery()
+                        .in(CnvConversation::getId, mentionConvIds).eq(CnvConversation::getStatus, 1));
+        return new com.aitalky.conversation.dto.ConversationCounts(mine, unassigned, all, mention, mineUnread, unassignedUnread);
     }
 
     @Override

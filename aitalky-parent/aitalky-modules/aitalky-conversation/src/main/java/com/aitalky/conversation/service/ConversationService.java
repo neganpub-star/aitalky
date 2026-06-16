@@ -13,8 +13,12 @@ public interface ConversationService {
     /** 建或取该客户的活跃会话(进行中/等待队列);已结束则新建。新建会话经引擎自动分配,结果含分配到的坐席 */
     com.aitalky.conversation.dto.OpenConversationResult openOrCreate(com.aitalky.conversation.dto.OpenConversationCmd cmd);
 
-    /** 收件箱列表(view: mine/unassigned/all/mention) */
-    PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll);
+    /**
+     * 收件箱列表(view: mine/unassigned/all/mention)。
+     * @param mentionConvIds view=mention 时由上层(MessageService)预查的"@我"会话ids;其它视图忽略
+     */
+    PageResult<ConversationVO> list(ConversationListQuery query, Long memberId, boolean canViewAll,
+                                    java.util.List<Long> mentionConvIds);
 
     /**
      * 会话搜索:type=uid 按客户业务UID(本模块查 cus_customer);type=content 用上层 Mongo 命中的会话ids。
@@ -25,8 +29,9 @@ public interface ConversationService {
     PageResult<ConversationVO> search(com.aitalky.conversation.dto.ConversationSearchQuery query,
                                       java.util.List<Long> contentConvIds, Long memberId, boolean canViewAll);
 
-    /** 各视图进行中会话数(分类徽标) */
-    com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll);
+    /** 各视图进行中会话数(分类徽标)。mentionConvIds=「@我」会话ids(上层预查),用于 mention 计数 */
+    com.aitalky.conversation.dto.ConversationCounts counts(Long memberId, boolean canViewAll,
+                                                           java.util.List<Long> mentionConvIds);
 
     /** 取会话 */
     CnvConversation getById(Long conversationId);

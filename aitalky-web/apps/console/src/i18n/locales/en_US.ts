@@ -509,6 +509,7 @@ export default {
     title: 'Inbox',
     mine: 'Mine',
     mention: 'Mentions',
+    mentionEmpty: 'No teammates to mention',
     unassigned: 'Unassigned',
     all: 'All',
     categoryView: 'Views',

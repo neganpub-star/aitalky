@@ -91,6 +91,21 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public List<Long> mentionedConversationIds(Long projectId, Long memberId, int limit) {
+        if (memberId == null) {
+            return List.of();
+        }
+        // 内部消息中 mentions 数组含该成员;本项目、未撤回
+        Query q = new Query(Criteria.where("projectId").is(projectId)
+                .and("internal").is(true)
+                .and("mentions").is(memberId)
+                .and("isVisible").ne(false));
+        @SuppressWarnings("unchecked")
+        List<Long> ids = (List<Long>) (List<?>) mongoTemplate.findDistinct(q, "conversationId", Message.class, Long.class);
+        return ids.size() > limit ? ids.subList(0, limit) : ids;
+    }
+
+    @Override
     public Message retract(Long conversationId, Long msgId, String operatorType, Long operatorId) {
         Message m = messageRepository.findByConversationIdAndMsgId(conversationId, msgId)
                 .orElseThrow(() -> new BizException(ResultCode.MESSAGE_NOT_FOUND));

@@ -25,6 +25,12 @@ public interface MessageService {
     List<Long> searchConversationIds(Long projectId, String keyword, int limit);
 
     /**
+     * @提及当前成员的会话id(去重)。查内部消息(internal=true)中 mentions 含 memberId 的会话,
+     * 供「提及我的」视图过滤。仅本项目、未撤回。
+     */
+    List<Long> mentionedConversationIds(Long projectId, Long memberId, int limit);
+
+    /**
      * 撤回消息:校验"本人发送"+ 时限(默认2分钟),置 isVisible=false(幂等)。
      * @param operatorType 发起方类型 agent/customer;operatorId 对应 memberId/customerId
      * @return 撤回后的消息(isVisible=false),供上层推 WS

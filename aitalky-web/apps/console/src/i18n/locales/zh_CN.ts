@@ -523,6 +523,7 @@ export default {
     title: '收件箱',
     mine: '我的',
     mention: '提及我的',
+    mentionEmpty: '暂无可提及的队友',
     unassigned: '未分配的',
     all: '全部',
     categoryView: '分类视图',

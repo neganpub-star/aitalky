@@ -57,15 +57,32 @@ function fmtSize(bytes: number): string {
 
 // 富文本渲染:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点击链接(新标签打开),其余为纯文本。
 // linkColor 由调用方按气泡底色给定(浅底用蓝、深底用浅蓝),保证对比可读。
+// mention=true 时,额外把 @非空白串 渲染成橙色高亮(内部消息 @提及)。
 const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
-function renderRichText(text: string, linkColor = '#1677ff'): ReactNode[] {
+const MENTION_RE = /@(\S+)/g
+function highlightMentions(text: string, keyPrefix: string): ReactNode[] {
+  const out: ReactNode[] = []
+  let last = 0
+  let mt: RegExpExecArray | null
+  MENTION_RE.lastIndex = 0
+  let i = 0
+  while ((mt = MENTION_RE.exec(text)) !== null) {
+    if (mt.index > last) out.push(text.slice(last, mt.index))
+    out.push(<span key={`${keyPrefix}mt${i++}`} style={{ color: '#fa8c16' }}>{mt[0]}</span>)
+    last = mt.index + mt[0].length
+  }
+  if (last < text.length) out.push(text.slice(last))
+  return out
+}
+function renderRichText(text: string, linkColor = '#1677ff', mention = false): ReactNode[] {
   const nodes: ReactNode[] = []
   let last = 0
   let mt: RegExpExecArray | null
   LINK_RE.lastIndex = 0
   let i = 0
+  const seg = (s: string, k: string): ReactNode[] => (mention ? highlightMentions(s, k) : [s])
   while ((mt = LINK_RE.exec(text)) !== null) {
-    if (mt.index > last) nodes.push(text.slice(last, mt.index))
+    if (mt.index > last) nodes.push(...seg(text.slice(last, mt.index), `s${i}`))
     nodes.push(
       <a key={`lk${i++}`} href={mt[2]} target="_blank" rel="noreferrer"
         style={{ color: linkColor, textDecoration: 'underline' }} onClick={(e) => e.stopPropagation()}>
@@ -74,7 +91,7 @@ function renderRichText(text: string, linkColor = '#1677ff'): ReactNode[] {
     )
     last = mt.index + mt[0].length
   }
-  if (last < text.length) nodes.push(text.slice(last))
+  if (last < text.length) nodes.push(...seg(text.slice(last), `s${i}`))
   return nodes
 }
 
@@ -185,6 +202,10 @@ export default function Inbox() {
   const [quickCats, setQuickCats] = useState<QuickReplyCategoryVO[]>([])
   const [quickKw, setQuickKw] = useState('')           // 快捷回复面板搜索
   const [quickCat, setQuickCat] = useState<string>('__all__') // 快捷回复面板分类筛选
+  // 内部消息 @提及:打 @ 弹队友列表,选中插入「@昵称 」并记录成员;发送时带 mentions
+  const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionMembers, setMentionMembers] = useState<MemberVO[]>([]) // 本条已 @ 的成员(发送/清空重置)
+  const [teammates, setTeammates] = useState<MemberVO[]>([]) // @选人候选(全部队友)
 
   const loadQuickReplies = useCallback(() => {
     listQuickReplies().then(setQuickReplies).catch(() => {})
@@ -294,6 +315,11 @@ export default function Inbox() {
     const timer = setInterval(loadList, 10_000)
     return () => clearInterval(timer)
   }, [loadList])
+
+  // 队友候选(内部消息 @ 选人用):排除自己,加载一次
+  useEffect(() => {
+    pageMembers({ page: 1, size: 500 }).then((r) => setTeammates(r.records.filter((m) => String(m.id) !== String(myMemberId)))).catch(() => {})
+  }, [myMemberId])
 
   // ===== WS 状态订阅 =====
   useEffect(() => wsClient.onStatus(setWsStatus), [])
@@ -465,6 +491,7 @@ export default function Inbox() {
       setSelectedId(conv.id)
       setReplyTab('reply')
       setInput('')
+      setMentionMembers([]) // 切会话清空待 @ 列表
       setEditField(null)
       setDetail(null)
       setMessages([])
@@ -521,10 +548,10 @@ export default function Inbox() {
   // ===== 发送回复 / 内部消息 =====
   // 真正发送:成功→服务端消息入列(去重/有序)并移除本地态+更新列表预览;失败→标红保留可重发
   const trySend = useCallback(
-    async (localId: string, content: string, internal: boolean, cid: string) => {
+    async (localId: string, content: string, internal: boolean, cid: string, mentions: string[] = []) => {
       setPending((p) => p.map((x) => (x.localId === localId ? { ...x, status: 'sending' } : x)))
       try {
-        const vo = await replyConversation(cid, { content, type: 'text', internal })
+        const vo = await replyConversation(cid, { content, type: 'text', internal, mentions })
         applyIncoming([vo]) // WS 回声/补拉按 seq 去重 + 有序插入 + 推进 localMaxSeq
         setPending((p) => p.filter((x) => x.localId !== localId))
         setList((prev) =>
@@ -624,6 +651,13 @@ export default function Inbox() {
     })
   }, [quickReplies, quickKw, quickCat])
 
+  // @选人:把「@昵称 」追加到输入框,记录该成员(用于发送时收集 mentions)
+  const pickMention = useCallback((m: MemberVO) => {
+    setInput((prev) => `${prev}@${m.nickname} `)
+    setMentionMembers((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]))
+    setMentionOpen(false)
+  }, [])
+
   // 发送:有暂存附件先发附件(需已上传完成),再发文本(文本走乐观态,失败可重发)
   const onSend = useCallback(async () => {
     if (!selectedId) return
@@ -653,14 +687,18 @@ export default function Inbox() {
       setInput('')
       return
     }
-    // 纯文字:走乐观态
+    // 纯文字:走乐观态。内部消息收集仍出现在文本里的 @成员 id 作 mentions(进对方「提及我的」)
     if (content) {
+      const mentions = internal
+        ? mentionMembers.filter((m) => content.includes(`@${m.nickname}`)).map((m) => m.id)
+        : []
       const localId = `l_${Date.now()}_${Math.random().toString(16).slice(2)}`
       setPending((p) => [...p, { localId, conversationId: selectedId, content, internal, status: 'sending', time: Date.now() }])
       setInput('')
-      void trySend(localId, content, internal, selectedId)
+      setMentionMembers([])
+      void trySend(localId, content, internal, selectedId, mentions)
     }
-  }, [input, selectedId, replyTab, staged, trySend, applyIncoming, clearStaged, t])
+  }, [input, selectedId, replyTab, staged, mentionMembers, trySend, applyIncoming, clearStaged, t])
 
   // 点击失败消息的❗重发(用同一本地项,成功后并入正常消息流)
   const onResend = useCallback(
@@ -931,7 +969,8 @@ export default function Inbox() {
               // 微信式气泡:贴头像那侧的上角变直成小尖角(自己头像在右→右上直角;对方在左→左上直角)
               <div style={{ padding: '8px 13px', borderRadius: 8, [mine ? 'borderTopRightRadius' : 'borderTopLeftRadius']: 2, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
                 {/* 链接仅对坐席消息解析:客户没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */}
-                {mine ? renderRichText(m.content, linkColor) : m.content}
+                {internal ? renderRichText(m.content, linkColor, true)
+                  : mine ? renderRichText(m.content, linkColor) : m.content}
               </div>
             )}
             {toolbar}
@@ -1294,6 +1333,31 @@ export default function Inbox() {
                       <span style={{ cursor: 'pointer' }}><ThunderboltOutlined /></span>
                     </Tooltip>
                   </Popover>
+                  {/* @提及:仅内部消息可用(@队友 → 进对方「提及我的」)*/}
+                  {replyTab === 'internal' && (
+                    <Popover
+                      trigger="click"
+                      placement="topLeft"
+                      open={mentionOpen}
+                      onOpenChange={setMentionOpen}
+                      content={
+                        <div style={{ width: 220, maxHeight: 280, overflow: 'auto' }}>
+                          {teammates.length === 0 ? (
+                            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.mentionEmpty')} />
+                          ) : teammates.map((m) => (
+                            <div key={m.id} className="at-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 6px', borderRadius: 6, cursor: 'pointer' }} onClick={() => pickMention(m)}>
+                              <Avatar size={22} src={m.avatar || undefined}>{(m.nickname || 'U').charAt(0)}</Avatar>
+                              <span style={{ fontSize: 13 }}>{m.nickname}</span>
+                            </div>
+                          ))}
+                        </div>
+                      }
+                    >
+                      <Tooltip title={t('inbox.mention')}>
+                        <span style={{ cursor: 'pointer', fontWeight: 700 }}>@</span>
+                      </Tooltip>
+                    </Popover>
+                  )}
                 </div>
                 {unassigned && !closed && (
                   <Button size="small" style={{ marginRight: 8 }} onClick={onClaim}>{t('inbox.claim')}</Button>

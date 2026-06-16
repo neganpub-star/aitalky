@@ -54,14 +54,20 @@ public class ConversationController {
     @GetMapping
     public R<PageResult<ConversationVO>> list(ConversationListQuery query) {
         boolean canViewAll = TenantContext.hasFunction("inbox.viewAll");
-        return R.ok(conversationService.list(query, TenantContext.getMemberId(), canViewAll));
+        Long me = TenantContext.getMemberId();
+        // mention 视图:先查「@我」会话ids 传入(其它视图传 null)
+        java.util.List<Long> mentionIds = "mention".equals(query.getView())
+                ? messageService.mentionedConversationIds(TenantContext.getProjectId(), me, 500) : null;
+        return R.ok(conversationService.list(query, me, canViewAll, mentionIds));
     }
 
     /** 各视图进行中会话数(分类徽标) */
     @GetMapping("/counts")
     public R<com.aitalky.conversation.dto.ConversationCounts> counts() {
         boolean canViewAll = TenantContext.hasFunction("inbox.viewAll");
-        return R.ok(conversationService.counts(TenantContext.getMemberId(), canViewAll));
+        Long me = TenantContext.getMemberId();
+        java.util.List<Long> mentionIds = messageService.mentionedConversationIds(TenantContext.getProjectId(), me, 500);
+        return R.ok(conversationService.counts(me, canViewAll, mentionIds));
     }
 
     /** 会话搜索:type=uid 按客户业务UID;type=content 按消息内容(Mongo)。需 inbox.search */
