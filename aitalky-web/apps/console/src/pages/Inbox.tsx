@@ -1299,8 +1299,8 @@ export default function Inbox() {
             <SectionHeader title={t('inbox.detail.bizInfo')} collapsed={bizCollapsed} onToggle={() => setBizCollapsed((c) => !c)} token={token} />
             {!bizCollapsed && (
               <>
-                <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{t('inbox.detail.bizUid')}:</div>
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 8 }}>{t('inbox.detail.bizUid')}:</div>
                   <div style={{ fontSize: 15, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</div>
                 </div>
                 {(['contact', 'email'] as const).map((field) => {
@@ -1308,8 +1308,8 @@ export default function Inbox() {
                   const val = detail[field]
                   const editing = editField === field
                   return (
-                    <div key={field} style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{label}:</div>
+                    <div key={field} style={{ marginBottom: 20 }}>
+                      <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 8 }}>{label}:</div>
                       {editing ? (
                         <Input
                           size="small"
@@ -1505,8 +1505,8 @@ function DetailSection({ title, rows, token }: { title: string; rows: [string, s
       <SectionHeader title={title} collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} token={token} />
       {!collapsed &&
         rows.map(([k, v]) => (
-          <div key={k} style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{k}:</div>
+          <div key={k} style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 8 }}>{k}:</div>
             <div style={{ fontSize: 15, color: token.colorText, wordBreak: 'break-all' }}>{v}</div>
           </div>
         ))}
