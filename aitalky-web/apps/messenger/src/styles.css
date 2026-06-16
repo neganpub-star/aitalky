@@ -408,6 +408,17 @@ body {
   border: 6px solid transparent;
   border-top-color: #4b4f56;
 }
+/* 顶部消息上方空间不足时向下弹:菜单移到 ··· 下方,小三角翻转指向上 */
+.msg-menu.down {
+  bottom: auto;
+  top: calc(100% + 9px);
+}
+.msg-menu.down::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #4b4f56;
+}
 .msg-menu-item {
   display: flex;
   align-items: center;

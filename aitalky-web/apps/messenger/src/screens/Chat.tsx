@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
 import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
@@ -49,6 +49,18 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
   const [headerOpen, setHeaderOpen] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
   const [menuFor, setMenuFor] = useState<string | null>(null)
+  // 菜单弹出方向:顶部消息上方空间不足(会被公告/头部遮挡)时翻转向下弹
+  const [menuDown, setMenuDown] = useState(false)
+  // 点 ··· 切换菜单:测量上方剩余空间决定向上/向下弹
+  const toggleMenu = (e: ReactMouseEvent<HTMLElement>, msgId: string) => {
+    e.stopPropagation()
+    if (menuFor === msgId) { setMenuFor(null); return }
+    const more = e.currentTarget
+    const listTop = more.closest('.msg-list')?.getBoundingClientRect().top ?? 0
+    // 上方可用空间 < 菜单高度(约96px)→ 向下弹,避免顶出滚动区被遮
+    setMenuDown(more.getBoundingClientRect().top - listTop < 96)
+    setMenuFor(msgId)
+  }
   const endRef = useRef<HTMLDivElement>(null)
 
   // 客户撤回权限(信使设置开关下发);关则不显示撤回入口
@@ -193,11 +205,11 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                   {mine && (
                     <span
                       className="msg-more"
-                      onClick={(e) => { e.stopPropagation(); setMenuFor((cur) => (cur === m.msgId ? null : m.msgId)) }}
+                      onClick={(e) => toggleMenu(e, m.msgId)}
                     >
                       ···
                       {menuFor === m.msgId && (
-                        <div className="msg-menu" onClick={(e) => e.stopPropagation()}>
+                        <div className={`msg-menu ${menuDown ? 'down' : ''}`} onClick={(e) => e.stopPropagation()}>
                           <div className="msg-menu-item" onClick={() => { copyText(m.content); setMenuFor(null) }}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
                             <span>{t('copy')}</span>
