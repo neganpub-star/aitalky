@@ -621,7 +621,8 @@ export default function Inbox() {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span style={{ fontWeight: 600, fontSize: 15, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {c.customerName || c.customerId}
+              {/* 对齐参考:有业务系统UID 显示 UID(便于按业务身份识别),游客无 UID 显示昵称 */}
+              {c.customerUid || c.customerName || c.customerId}
             </span>
             <span style={{ fontSize: 12, color: token.colorTextTertiary, flexShrink: 0, marginLeft: 8 }}>{fmtListTime(c.lastMessageAt)}</span>
           </div>
@@ -822,7 +823,7 @@ export default function Inbox() {
         ) : (
           <>
             <div style={{ ...styles.colHeader, background: token.colorBgContainer }}>
-              <span style={styles.colTitle}>{detail.customerName || detail.customerId}</span>
+              <span style={styles.colTitle}>{detail.externalUserId || detail.customerName || detail.customerId}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: token.colorTextTertiary, fontSize: 13 }}>
                 {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
                 {/* 指派下拉(对齐参考:搜索队友/分配给队友/不分配),所有坐席可操作 */}
@@ -1001,7 +1002,7 @@ export default function Inbox() {
             </Avatar>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {detail.customerName || detail.customerId}
+                {detail.externalUserId || detail.customerName || detail.customerId}
               </div>
               <span style={{ display: 'inline-block', marginTop: 4, padding: '1px 8px', borderRadius: 4, background: token.colorPrimaryBg, color: token.colorPrimary, fontSize: 12 }}>
                 {detail.customerType === 1 ? t('inbox.detail.visitor') : t('inbox.detail.user')}
