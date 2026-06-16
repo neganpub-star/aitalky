@@ -67,18 +67,8 @@ public class PublicMessengerController {
         if (!StringUtils.hasText(req.userId()) && !StringUtils.hasText(req.visitorId())) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
-        // 黑名单不拦接入:被拉黑用户仍可打开聊天框,只在发消息时拦(send 返回 CONVERSATION_BLOCKED→气泡提示)
-        CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), req.lang());
-        // 专属接入:URL 带 groupId(=策略 groupKey)→ 反解专属策略id,会话只在该策略队友内分配;
-        // groupId 不合法(非本项目/已删)→ 降级为普通分配(groupId=null)
-        Long groupId = assignService.resolveGroupId(project.getId(), req.groupId());
-        var openResult = conversationService.openOrCreate(new OpenConversationCmd(
-                project.getId(), customer.getId(), groupId, req.source(), null, clientIp(request), null));
-        CnvConversation conv = openResult.conversation();
-        // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
-        assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
-        String token = customerTokenService.issue(project.getId(), customer.getId());
-        // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询
+        // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询。
+        // 提前到建客户之前:据此算"生效语言",落库客户来源语言(详情/坐席侧展示用)。
         var config = messengerConfigService.getPublicConfig(project.getId(), req.lang());
         // 品牌名=项目名称(messenger 模块不依赖 identity,在此注入);LOGO 暂无项目字段
         if (config != null) {
@@ -89,6 +79,20 @@ public class PublicMessengerController {
                     config.popupEnabled(), config.popupAllowClose(), config.customerRetractEnabled(),
                     config.lang());
         }
+        // 生效语言:URL ?lang= 指定优先,否则用信使默认语言(config.lang)。避免落库空串导致详情"语言"为空。
+        String effectiveLang = StringUtils.hasText(req.lang()) ? req.lang()
+                : (config == null ? req.lang() : config.lang());
+        // 黑名单不拦接入:被拉黑用户仍可打开聊天框,只在发消息时拦(send 返回 CONVERSATION_BLOCKED→气泡提示)
+        CusCustomer customer = customerService.resolveOrCreate(project.getId(), req.userId(), req.visitorId(), effectiveLang);
+        // 专属接入:URL 带 groupId(=策略 groupKey)→ 反解专属策略id,会话只在该策略队友内分配;
+        // groupId 不合法(非本项目/已删)→ 降级为普通分配(groupId=null)
+        Long groupId = assignService.resolveGroupId(project.getId(), req.groupId());
+        var openResult = conversationService.openOrCreate(new OpenConversationCmd(
+                project.getId(), customer.getId(), groupId, req.source(), null, clientIp(request), null));
+        CnvConversation conv = openResult.conversation();
+        // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
+        assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
+        String token = customerTokenService.issue(project.getId(), customer.getId());
         // 服务坐席头部:已分配=显示该坐席(在线/离线);未分配=显示项目在线坐席(预计回复)或忙碌留言
         var agent = resolveAgent(project.getId(), conv.getAssigneeMemberId(),
                 config == null ? null : config.replyTime());

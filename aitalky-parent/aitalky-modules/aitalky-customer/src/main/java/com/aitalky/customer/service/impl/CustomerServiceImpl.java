@@ -56,6 +56,11 @@ public class CustomerServiceImpl implements CustomerService {
         String idKey = isUser ? externalUserId : visitorId;
         CusCustomer existing = findOne(projectId, externalUserId, visitorId, isUser);
         if (existing != null) {
+            // 回填来源语言:历史客户可能因早期 init 传空而 sourceLanguage 为空,补写一次(已有则不动)
+            if (!StringUtils.hasText(existing.getSourceLanguage()) && StringUtils.hasText(lang)) {
+                existing.setSourceLanguage(lang);
+                customerMapper.updateById(existing);
+            }
             return existing;
         }
         // 锁内二次查 + 创建,避免并发重复
