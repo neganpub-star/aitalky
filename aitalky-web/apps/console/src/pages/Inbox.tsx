@@ -199,6 +199,8 @@ export default function Inbox() {
   // 当前列表镜像(WS 处理器里判断"未知会话"用,避免闭包拿到旧 list)
   const listRef = useRef<ConversationVO[]>([])
   const msgEndRef = useRef<HTMLDivElement>(null)
+  const msgScrollRef = useRef<HTMLDivElement>(null)   // 消息滚动容器
+  const msgContentRef = useRef<HTMLDivElement>(null)  // 消息内容(ResizeObserver 监听其高度变化贴底)
   // 当前会话「本地已收到的最大 seq」——补漏对账基准(§3 铁律:以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
   const syncingRef = useRef(false)
@@ -422,10 +424,25 @@ export default function Inbox() {
     clearTimeout(typingClearRef.current)
   }, [selectedId])
 
-  // 新消息(含本地待发/输入态)滚到底
+  // 滚到底:用瞬时定位(图片/文件等异步撑高会让 smooth 停在半路)
+  const scrollToBottom = useCallback((smooth = false) => {
+    const el = msgScrollRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' })
+  }, [])
+  // 新消息(含本地待发/输入态):新消息平滑滚;切会话(selectedId 变)瞬时贴底
+  useEffect(() => { scrollToBottom(true) }, [messages, pending, customerTyping, scrollToBottom])
+  useEffect(() => { scrollToBottom(false) }, [selectedId, scrollToBottom])
+  // 内容高度变化(图片/视频/文件晚加载撑高)时,若用户已在底部附近则继续贴底,避免停在半路
   useEffect(() => {
-    msgEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, pending, customerTyping])
+    const el = msgScrollRef.current
+    const content = msgContentRef.current
+    if (!el || !content || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 240) el.scrollTop = el.scrollHeight
+    })
+    ro.observe(content)
+    return () => ro.disconnect()
+  }, [selectedId])
 
   // 当前列表镜像(WS 处理器判断"未知会话"用)
   useEffect(() => { listRef.current = list }, [list])
@@ -1117,22 +1134,24 @@ export default function Inbox() {
               </span>
             </div>
 
-            <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-              {loadingMsgs ? (
-                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spin /></div>
-              ) : messages.length === 0 && currentPending.length === 0 ? (
-                <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40, color: token.colorTextTertiary }}>{t('inbox.noMessages')}</div>
-              ) : (
-                <>
-                  {messages.map(renderMessage)}
-                  {currentPending.map(renderPending)}
-                </>
-              )}
-              {/* 客户正在输入(瞬时;4s 自动消失) */}
-              {customerTyping && (
-                <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>{t('inbox.customerTyping')}</div>
-              )}
-              <div ref={msgEndRef} />
+            <div ref={msgScrollRef} style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
+              <div ref={msgContentRef}>
+                {loadingMsgs ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spin /></div>
+                ) : messages.length === 0 && currentPending.length === 0 ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40, color: token.colorTextTertiary }}>{t('inbox.noMessages')}</div>
+                ) : (
+                  <>
+                    {messages.map(renderMessage)}
+                    {currentPending.map(renderPending)}
+                  </>
+                )}
+                {/* 客户正在输入(瞬时;4s 自动消失) */}
+                {customerTyping && (
+                  <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>{t('inbox.customerTyping')}</div>
+                )}
+                <div ref={msgEndRef} />
+              </div>
             </div>
 
             {/* 输入区:对齐 ByteTrack(tab+翻译开关 / 加高输入框 / 工具栏 + 翻译·发送)*/}
