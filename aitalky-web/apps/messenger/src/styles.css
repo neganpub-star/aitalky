@@ -520,6 +520,59 @@ body {
   max-height: 280px;
   cursor: pointer;
 }
+/* 图片全屏预览(lightbox) */
+.image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-viewer .iv-img {
+  max-width: 92vw;
+  max-height: 80vh;
+  object-fit: contain;
+  transition: transform 0.15s ease;
+  cursor: default;
+}
+.image-viewer .iv-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  opacity: 0.85;
+}
+.image-viewer .iv-bar {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 24px;
+}
+.image-viewer .iv-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-viewer .iv-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
 .media-video {
   display: block;
   max-width: 230px;

@@ -1,4 +1,4 @@
-import type { KeyboardEvent, MouseEvent as ReactMouseEvent } from 'react'
+import type { KeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
 import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
@@ -52,6 +52,7 @@ function fmtTime(ms: number): string {
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
 export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
+  const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 头部默认折叠(只显项目名);点击项目名展开服务坐席(对齐参考)
@@ -213,7 +214,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                     // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
                     <div className={`media-bubble ${mine ? 'mine' : 'agent'} ${m.payload?.caption ? 'has-cap' : ''}`}>
                       {m.type === 'image' ? (
-                        <img className="media-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
+                        <img className="media-img" src={m.content} alt="" onClick={() => setPreview(m.content)} />
                       ) : m.type === 'video' ? (
                         <video className="media-video" src={m.content} controls preload="metadata" />
                       ) : (
@@ -315,6 +316,34 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
           </svg>
         </button>
       </div>
+
+      {/* 图片全屏预览(lightbox):缩放/旋转工具栏,对齐参考系统 */}
+      {preview && <ImageViewer src={preview} onClose={() => setPreview(null)} />}
     </>
+  )
+}
+
+// 轻量图片预览:遮罩 + 居中大图 + 底部工具栏(缩小/放大/左转/右转/重置),点遮罩或✕关闭
+function ImageViewer({ src, onClose }: { src: string; onClose: () => void }) {
+  const [scale, setScale] = useState(1)
+  const [rotate, setRotate] = useState(0)
+  const zoom = (d: number) => setScale((s) => Math.min(4, Math.max(0.5, +(s + d).toFixed(2))))
+  const stop = (e: ReactMouseEvent) => e.stopPropagation()
+  const Btn = ({ onClick, label, children }: { onClick: () => void; label: string; children: ReactNode }) => (
+    <button className="iv-btn" onClick={(e) => { stop(e); onClick() }} aria-label={label}>{children}</button>
+  )
+  return (
+    <div className="image-viewer" onClick={onClose}>
+      <span className="iv-close" onClick={onClose}>✕</span>
+      <img className="iv-img" src={src} alt="" onClick={stop}
+        style={{ transform: `scale(${scale}) rotate(${rotate}deg)` }} />
+      <div className="iv-bar" onClick={stop}>
+        <Btn onClick={() => zoom(-0.25)} label="zoom out">−</Btn>
+        <Btn onClick={() => zoom(0.25)} label="zoom in">+</Btn>
+        <Btn onClick={() => setRotate((r) => r - 90)} label="rotate left">⟲</Btn>
+        <Btn onClick={() => setRotate((r) => r + 90)} label="rotate right">⟳</Btn>
+        <Btn onClick={() => { setScale(1); setRotate(0) }} label="reset">⤢</Btn>
+      </div>
+    </div>
   )
 }
