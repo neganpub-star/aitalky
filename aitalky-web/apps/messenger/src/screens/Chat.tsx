@@ -29,9 +29,10 @@ function copyText(text: string) {
 }
 
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
-// 富文本:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点蓝链(新标签打开),其余为纯文本
+// 富文本:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点蓝链,其余为纯文本。
+// onLink:点击链接的回调(信使端在页内弹窗打开,不跳走)
 const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
-function renderRichText(text: string): ReactNode[] {
+function renderRichText(text: string, onLink: (url: string) => void): ReactNode[] {
   const nodes: ReactNode[] = []
   let last = 0
   let mt: RegExpExecArray | null
@@ -39,7 +40,9 @@ function renderRichText(text: string): ReactNode[] {
   let i = 0
   while ((mt = LINK_RE.exec(text)) !== null) {
     if (mt.index > last) nodes.push(text.slice(last, mt.index))
-    nodes.push(<a key={`lk${i++}`} className="msg-link" href={mt[2]} target="_blank" rel="noreferrer">{mt[1]}</a>)
+    const url = mt[2]
+    nodes.push(<a key={`lk${i++}`} className="msg-link" href={url}
+      onClick={(e) => { e.preventDefault(); onLink(url) }}>{mt[1]}</a>)
     last = mt.index + mt[0].length
   }
   if (last < text.length) nodes.push(text.slice(last))
@@ -70,6 +73,7 @@ function fmtTime(ms: number): string {
 export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
+  const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 头部默认折叠(只显项目名);点击项目名展开服务坐席(对齐参考)
@@ -243,10 +247,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                           </span>
                         </a>
                       )}
-                      {m.payload?.caption && <div className="media-caption">{renderRichText(m.payload.caption)}</div>}
+                      {m.payload?.caption && <div className="media-caption">{renderRichText(m.payload.caption, setWebview)}</div>}
                     </div>
                   ) : (
-                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{renderRichText(m.content)}</div>
+                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{renderRichText(m.content, setWebview)}</div>
                   )}
                   {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack:菜单冒泡在 ··· 正上方,带小三角) */}
                   {mine && (
@@ -336,6 +340,20 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
 
       {/* 图片全屏预览(lightbox):缩放/旋转工具栏,对齐参考系统 */}
       {preview && <ImageViewer src={preview} onClose={() => setPreview(null)} />}
+
+      {/* 点链接:页内弹窗内嵌网页(不跳走),✕ 关闭。部分站点禁止 iframe 内嵌时显示空白,提供「新窗打开」兜底 */}
+      {webview && (
+        <div className="webview-mask" onClick={() => setWebview(null)}>
+          <div className="webview-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="webview-head">
+              <span className="webview-url" title={webview}>{webview}</span>
+              <a className="webview-open" href={webview} target="_blank" rel="noreferrer">↗</a>
+              <span className="webview-close" onClick={() => setWebview(null)}>✕</span>
+            </div>
+            <iframe className="webview-frame" src={webview} title="webview" />
+          </div>
+        </div>
+      )}
     </>
   )
 }

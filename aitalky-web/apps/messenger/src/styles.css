@@ -302,6 +302,56 @@ body {
 .bubble.mine .msg-link {
   color: #fff;
 }
+/* 点链接:页内弹窗内嵌网页 */
+.webview-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.webview-panel {
+  width: 90%;
+  max-width: 420px;
+  height: 80%;
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+}
+.webview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--line);
+}
+.webview-url {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #8a9099);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.webview-open,
+.webview-close {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+}
+.webview-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+}
 .msg-name {
   font-size: 12px;
   color: var(--text-2);
