@@ -842,13 +842,14 @@ export default function Inbox() {
                 )}
                 {m.payload?.caption && (
                   <div style={{ padding: '8px 12px', color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {renderRichText(m.payload.caption)}
+                    {mine ? renderRichText(m.payload.caption) : m.payload.caption}
                   </div>
                 )}
               </div>
             ) : (
               <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
-                {renderRichText(m.content)}
+                {/* 链接仅对坐席消息解析:客户没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */}
+                {mine ? renderRichText(m.content) : m.content}
               </div>
             )}
             {toolbar}
