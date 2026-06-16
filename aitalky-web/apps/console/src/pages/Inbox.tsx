@@ -1085,8 +1085,8 @@ export default function Inbox() {
               <span style={{ display: 'flex', alignItems: 'center', gap: 12, color: token.colorTextTertiary, fontSize: 13 }}>
                 {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
                 {wsStatus !== 'open' && <span style={{ color: token.colorWarning }}>{t('inbox.reconnecting')}</span>}
-                {/* 指派下拉(对齐参考:搜索队友/分配给队友/不分配),所有坐席可操作 */}
-                {!closed && (
+                {/* 指派下拉(对齐参考:搜索队友/分配给队友/不分配),所有坐席可操作;已结束会话也可重新分配 */}
+                {(
                   <Popover
                     trigger="click"
                     placement="bottomRight"

@@ -101,8 +101,11 @@ public class AssignEngine {
     /** 落库分配结果:更新会话 + 写分配流水。type:1认领 2指派 3自动 4转移 */
     public void applyAssign(CnvConversation conv, Long toMemberId, int type, Long operatorMemberId) {
         Long from = conv.getAssigneeMemberId();
+        boolean wasClosed = conv.getStatus() != null && conv.getStatus() == 2;
         conv.setAssigneeMemberId(toMemberId);
-        conv.setStatus(toMemberId == null ? conv.getStatus() : 1);
+        // 分配给队友:激活为进行中;但「已结束」会话被重新分配时保持已结束(对齐参考,仍留已结束栏)。
+        // 取消分配:状态不变。
+        conv.setStatus(toMemberId == null ? conv.getStatus() : (wasClosed ? 2 : 1));
         if (toMemberId == null) {
             // 取消分配:assignee 置 null。updateById 默认跳过 null 字段,故显式 set(null) 写库,
             // 否则负责人清不掉,会话仍留在「我的」。状态保持不变(仅清负责人)。
