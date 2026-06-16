@@ -742,7 +742,7 @@ export default function Inbox() {
     col1: { width: 224, flexShrink: 0, background: panelGray, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col2: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col3: { flex: 1, minWidth: 0, background: panelGray, display: 'flex', flexDirection: 'column' },
-    col4: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderLeft: splitBorder, display: 'flex', flexDirection: 'column', overflow: 'auto' },
+    col4: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderLeft: splitBorder, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
     colHeader: { height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: splitBorder },
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
@@ -1265,6 +1265,8 @@ export default function Inbox() {
             {t('inbox.detail.title')}
           </div>
 
+          {/* 中部内容滚动区(底部「加入黑名单」按钮钉底,不随内容滚动,对齐参考) */}
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           {/* 头像 + 名字 + 用户/访客标签(左对齐横排) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: splitBorder }}>
             <Avatar size={44} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
@@ -1299,17 +1301,17 @@ export default function Inbox() {
             <SectionHeader title={t('inbox.detail.bizInfo')} collapsed={bizCollapsed} onToggle={() => setBizCollapsed((c) => !c)} token={token} />
             {!bizCollapsed && (
               <>
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{t('inbox.detail.bizUid')}:</div>
-                  <div style={{ fontSize: 14, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</div>
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{t('inbox.detail.bizUid')}:</div>
+                  <div style={{ fontSize: 15, wordBreak: 'break-all' }}>{detail.externalUserId || t('inbox.detail.empty')}</div>
                 </div>
                 {(['contact', 'email'] as const).map((field) => {
                   const label = t(field === 'contact' ? 'inbox.detail.contact' : 'inbox.detail.email')
                   const val = detail[field]
                   const editing = editField === field
                   return (
-                    <div key={field} style={{ marginBottom: 14 }}>
-                      <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{label}:</div>
+                    <div key={field} style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{label}:</div>
                       {editing ? (
                         <Input
                           size="small"
@@ -1323,7 +1325,7 @@ export default function Inbox() {
                         />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ flex: 1, minWidth: 0, fontSize: 14, wordBreak: 'break-all' }}>{val || t('inbox.detail.empty')}</span>
+                          <span style={{ flex: 1, minWidth: 0, fontSize: 15, wordBreak: 'break-all' }}>{val || t('inbox.detail.empty')}</span>
                           <EditOutlined
                             onClick={() => { setEditField(field); setEditVal(val || '') }}
                             style={{ cursor: 'pointer', color: token.colorTextTertiary, marginLeft: 6 }}
@@ -1337,8 +1339,10 @@ export default function Inbox() {
             )}
           </div>
 
-          {/* 黑名单按钮:按 detail.blocked 切换「加入/移除」,操作后回刷 detail 同步状态(对齐参考系统) */}
-          <div style={{ padding: '16px' }}>
+          </div>{/* /中部滚动区 */}
+
+          {/* 黑名单按钮:钉在面板底部(flex-shrink:0),按 detail.blocked 切换「加入/移除」 */}
+          <div style={{ padding: '16px', flexShrink: 0, borderTop: splitBorder }}>
             {detail.blocked ? (
               <Button
                 block
@@ -1505,9 +1509,9 @@ function DetailSection({ title, rows, token }: { title: string; rows: [string, s
       <SectionHeader title={title} collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} token={token} />
       {!collapsed &&
         rows.map(([k, v]) => (
-          <div key={k} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 5 }}>{k}:</div>
-            <div style={{ fontSize: 14, color: token.colorText, wordBreak: 'break-all' }}>{v}</div>
+          <div key={k} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: token.colorTextTertiary, marginBottom: 6 }}>{k}:</div>
+            <div style={{ fontSize: 15, color: token.colorText, wordBreak: 'break-all' }}>{v}</div>
           </div>
         ))}
     </div>
