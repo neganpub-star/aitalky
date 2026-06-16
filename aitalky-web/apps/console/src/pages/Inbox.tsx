@@ -742,7 +742,7 @@ export default function Inbox() {
     col1: { width: 224, flexShrink: 0, background: panelGray, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col2: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderRight: splitBorder, display: 'flex', flexDirection: 'column' },
     col3: { flex: 1, minWidth: 0, background: panelGray, display: 'flex', flexDirection: 'column' },
-    col4: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderLeft: splitBorder, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+    col4: { width: 300, flexShrink: 0, background: token.colorBgContainer, borderLeft: splitBorder, display: 'flex', flexDirection: 'column', overflow: 'auto' },
     colHeader: { height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: splitBorder },
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
@@ -1265,8 +1265,6 @@ export default function Inbox() {
             {t('inbox.detail.title')}
           </div>
 
-          {/* 中部内容滚动区(底部「加入黑名单」按钮钉底,不随内容滚动,对齐参考) */}
-          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           {/* 头像 + 名字 + 用户/访客标签(左对齐横排) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: splitBorder }}>
             <Avatar size={44} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
@@ -1339,10 +1337,8 @@ export default function Inbox() {
             )}
           </div>
 
-          </div>{/* /中部滚动区 */}
-
-          {/* 黑名单按钮:钉在面板底部(flex-shrink:0),按 detail.blocked 切换「加入/移除」 */}
-          <div style={{ padding: '16px', flexShrink: 0, borderTop: splitBorder }}>
+          {/* 黑名单按钮:跟在内容后(对齐参考,内容不足时不强行拉到底);按 detail.blocked 切换「加入/移除」 */}
+          <div style={{ padding: '16px' }}>
             {detail.blocked ? (
               <Button
                 block
