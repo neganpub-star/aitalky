@@ -580,7 +580,8 @@ export default function Inbox() {
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
     catItem: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 8px', padding: '11px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15, border: '1px solid transparent' },
-    catActive: { background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600, borderColor: token.colorPrimaryBorder },
+    // 选中态用完整 border 简写(勿与 catItem 的 border 简写混 borderColor 单属性,否则 React 切换时旧边框残留)
+    catActive: { background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600, border: `1px solid ${token.colorPrimaryBorder}` },
     count: { marginLeft: 'auto', minWidth: 22, height: 20, padding: '0 6px', borderRadius: 6, background: token.colorFillSecondary, color: token.colorTextSecondary, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   }
 
