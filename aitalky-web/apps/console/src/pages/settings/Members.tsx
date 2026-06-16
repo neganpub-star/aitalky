@@ -14,6 +14,7 @@ import {
 } from '../../api/member'
 import InviteMemberModal from './InviteMemberModal'
 import { roleLabel } from '../../auth/roleLabel'
+import { hasFunction } from '../../auth/perm'
 import type { MemberVO, RoleVO } from '../../types'
 
 const OWNER_ROLE = '负责人'
@@ -32,6 +33,7 @@ function maskEmail(email?: string) {
 export default function Members() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const canEdit = hasFunction('member.manage') // 普通成员只读 → 隐藏邀请/操作
   const [inviteOpen, setInviteOpen] = useState(false)
   const [data, setData] = useState<MemberVO[]>([])
   const [total, setTotal] = useState(0)
@@ -137,6 +139,7 @@ export default function Members() {
     {
       title: t('common.action'), width: 160, align: 'right',
       render: (_, m) => {
+        if (!canEdit) return <span style={{ color: token.colorTextQuaternary }}>—</span> // 只读:无操作
         // 负责人:仅可重命名;其他成员:调整角色 | 更多(重命名/禁用启用/改头像/删除)
         if (m.roleName === OWNER_ROLE) {
           return <Button type="link" style={{ padding: 0 }} onClick={() => openRename(m)}>{t('member.rename')}</Button>
@@ -165,7 +168,7 @@ export default function Members() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <span style={{ fontSize: 18, fontWeight: 600 }}>{t('settings.members')}</span>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>{t('member.invite')}</Button>
+        {canEdit && <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>{t('member.invite')}</Button>}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>

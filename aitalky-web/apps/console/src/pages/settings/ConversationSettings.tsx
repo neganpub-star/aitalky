@@ -18,6 +18,7 @@ import {
 } from '../../api/assign'
 import { pageMembers } from '../../api/member'
 import { roleLabel } from '../../auth/roleLabel'
+import { hasFunction } from '../../auth/perm'
 import type { MemberVO } from '../../types'
 import AddTeammateModal from './AddTeammateModal'
 
@@ -35,6 +36,7 @@ export default function ConversationSettings() {
   const projects = useAppStore((s) => s.projects)
   const appId = projects.find((p) => p.id === projectId)?.appId || 'U8PZhhCG'
   const { token } = theme.useToken()
+  const canEdit = hasFunction('assign.setting') // 普通成员只读 → 禁用各写操作
 
   const [openKey, setOpenKey] = useState<string | null>('basic')
   const [host, setHost] = useState('https://msg.example.top')
@@ -250,7 +252,7 @@ export default function ConversationSettings() {
   const saveBtns = (extra?: boolean) => (
     <div style={styles.actions}>
       {extra && <Button onClick={() => setOpenKey(null)}>{t('common.cancel')}</Button>}
-      <Button type="primary" onClick={todoSave}>{t('common.save')}</Button>
+      <Button type="primary" disabled={!canEdit} onClick={todoSave}>{t('common.save')}</Button>
     </div>
   )
 
@@ -282,7 +284,7 @@ export default function ConversationSettings() {
             <InputNumber min={1} max={9999} value={limitNum} onChange={(v) => setLimitNum(v || 1)} style={{ marginTop: 12, width: 160 }} />
           )}
           <div style={styles.actions}>
-            <Button type="primary" onClick={saveBasic}>{t('common.save')}</Button>
+            <Button type="primary" disabled={!canEdit} onClick={saveBasic}>{t('common.save')}</Button>
           </div>
         </>
       } />
@@ -308,7 +310,7 @@ export default function ConversationSettings() {
       {/* 普通分配模式 */}
       <Card k="normal" icon={<TeamOutlined />} title={t('conv.normalTitle')} desc={t('conv.normalDesc')} body={
         <>
-          <Button style={{ marginTop: 14 }} icon={<PlusOutlined />} onClick={() => setNormalModal(true)}>{t('conv.addTeammate')}</Button>
+          <Button style={{ marginTop: 14 }} icon={<PlusOutlined />} disabled={!canEdit} onClick={() => setNormalModal(true)}>{t('conv.addTeammate')}</Button>
           {normalTeammates.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, background: token.colorFillTertiary, borderRadius: 8, padding: 14, marginTop: 14 }}>
               {normalTeammates.map((m) => teammateChip(m, () => removeNormalTeammate(m)))}
@@ -339,7 +341,7 @@ export default function ConversationSettings() {
       {/* 专属分配模式 */}
       <Card k="exclusive" icon={<CustomerServiceOutlined />} title={t('conv.exclusiveTitle')} desc={t('conv.exclusiveDesc')} body={
         <>
-          <Button style={{ marginTop: 14, marginBottom: 16 }} icon={<PlusOutlined />} onClick={openCreateStrategy}>{t('conv.exclusiveAdd')}</Button>
+          <Button style={{ marginTop: 14, marginBottom: 16 }} icon={<PlusOutlined />} disabled={!canEdit} onClick={openCreateStrategy}>{t('conv.exclusiveAdd')}</Button>
           <Table<Strategy> rowKey="id" size="small" columns={columns} dataSource={strategies}
             scroll={{ x: 1000 }} pagination={{ pageSize: 10, size: 'small' }} />
         </>

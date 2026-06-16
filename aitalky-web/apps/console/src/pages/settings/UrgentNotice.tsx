@@ -5,12 +5,14 @@ import { useTranslation } from 'react-i18next'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
 import { langLabel } from '../../constants/languages'
 import MessengerPreview from './MessengerPreview'
+import { hasFunction } from '../../auth/perm'
 
 // 会话服务 - 紧急通知设置(对齐 ByteTrack):左=头部总开关+各启用语种内容平铺(/500);右=信使端聊天窗预览(红条随语种变)
 export default function UrgentNotice() {
   const { t, i18n } = useTranslation()
   const { token } = theme.useToken()
   const lng = i18n.language
+  const canEdit = hasFunction('messenger.setting') // 普通成员只读 → 禁用保存
   const [cfg, setCfg] = useState<MessengerConfigVO | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -99,7 +101,7 @@ export default function UrgentNotice() {
           </div>
 
           <div style={{ marginTop: 8, display: 'flex', gap: 10 }}>
-            <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
+            <Button type="primary" loading={saving} disabled={!canEdit} onClick={save}>{t('common.save')}</Button>
           </div>
         </div>
       </div>

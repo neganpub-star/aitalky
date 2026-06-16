@@ -7,6 +7,7 @@ import {
   createRole, deleteRole, listRoles, renameRole, roleCatalog, rolePermissions, updateRolePermissions,
 } from '../../api/role'
 import { roleLabel } from '../../auth/roleLabel'
+import { hasFunction } from '../../auth/perm'
 import type { PermModule, PermNode, RoleVO } from '../../types'
 
 // 角色管理(对齐现网):左栏系统默认 + 自定义角色;右栏权限树(模块/页面/功能 勾选),系统角色只读
@@ -22,7 +23,9 @@ export default function RolePage() {
   const [permLoading, setPermLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  const readonly = !current || current.isSystem === 1
+  // 无 role.manage(普通成员只有 role.view)→ 只读:不能改权限/建/删/改名,只能查看
+  const canManage = hasFunction('role.manage')
+  const readonly = !current || current.isSystem === 1 || !canManage
 
   const allNodes = useMemo<PermNode[]>(
     () => catalog.flatMap((m) => [...m.pages, ...m.functions]),
@@ -188,9 +191,9 @@ export default function RolePage() {
             {systemRoles.map((r) => roleItem(r, false))}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: token.colorTextTertiary, fontSize: 12, padding: '0 12px', margin: '12px 0 4px' }}>
               <span>{t('role.customGroup')}</span>
-              <PlusOutlined style={{ cursor: 'pointer', color: token.colorPrimary }} onClick={onCreate} />
+              {canManage && <PlusOutlined style={{ cursor: 'pointer', color: token.colorPrimary }} onClick={onCreate} />}
             </div>
-            {customRoles.length ? customRoles.map((r) => roleItem(r, true))
+            {customRoles.length ? customRoles.map((r) => roleItem(r, canManage))
               : <div style={{ color: token.colorTextQuaternary, fontSize: 13, padding: '8px 12px' }}>{t('role.noCustom')}</div>}
           </Spin>
         </div>

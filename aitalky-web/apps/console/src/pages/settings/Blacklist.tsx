@@ -4,11 +4,13 @@ import { SearchOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageBlacklist, removeBlacklist, type BlacklistVO } from '../../api/blacklist'
+import { hasFunction } from '../../auth/perm'
 
 // 信使设置 - 黑名单:顶部搜索 + 列表 + 移除(加入入口在会话详情面板「加入黑名单」)。列对齐参考系统
 export default function Blacklist() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const canEdit = hasFunction('blacklist.manage') // 普通成员只读 → 不可移出
   const [data, setData] = useState<BlacklistVO[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -58,11 +60,11 @@ export default function Blacklist() {
     {
       title: t('blacklist.action'),
       width: 120,
-      render: (_, r) => (
+      render: (_, r) => (canEdit ? (
         <Popconfirm title={t('blacklist.removeConfirm')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={() => onRemove(r.id)}>
           <a>{t('blacklist.remove')}</a>
         </Popconfirm>
-      ),
+      ) : <span style={{ color: token.colorTextQuaternary }}>—</span>),
     },
   ]
 

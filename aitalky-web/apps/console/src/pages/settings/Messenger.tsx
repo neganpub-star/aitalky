@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { getMessengerConfig, saveMessengerConfig, type MessengerConfigVO, type MessengerI18n } from '../../api/messengerConfig'
 import { uploadFile } from '../../api/file'
 import { langLabel } from '../../constants/languages'
+import { hasFunction } from '../../auth/perm'
 import MessengerPreview from './MessengerPreview'
 
 // 空配置默认值:后端未就绪/无数据时也能渲染页面供 UI 走查
@@ -33,6 +34,7 @@ function emptyConfig(): MessengerConfigVO {
 export default function Messenger() {
   const { t, i18n } = useTranslation()
   const { token } = theme.useToken()
+  const canEdit = hasFunction('messenger.setting') // 普通成员只读 → 禁用保存
   const lng = i18n.language
   const nav = useNavigate()
   const [cfg, setCfg] = useState<MessengerConfigVO>(emptyConfig())
@@ -133,7 +135,7 @@ export default function Messenger() {
   const saveBtns = (
     <div style={styles.actions}>
       <Button onClick={() => setOpenKey(null)}>{t('common.cancel')}</Button>
-      <Button type="primary" loading={saving} onClick={save}>{t('common.save')}</Button>
+      <Button type="primary" loading={saving} disabled={!canEdit} onClick={save}>{t('common.save')}</Button>
     </div>
   )
 

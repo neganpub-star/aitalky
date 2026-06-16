@@ -5,6 +5,7 @@ import { getCurrentProject, transferOwner, updateProject } from '../../api/proje
 import { pageMembers } from '../../api/member'
 import { uploadFile } from '../../api/file'
 import { useAppStore } from '../../store/useAppStore'
+import { hasFunction } from '../../auth/perm'
 import DangerVerifyModal from './DangerVerifyModal'
 import type { MemberVO, ProjectDetailVO } from '../../types'
 
@@ -19,6 +20,7 @@ export default function TeamBasic() {
   const [ownerMemberId, setOwnerMemberId] = useState<string>()
   const [saving, setSaving] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
+  const canEdit = hasFunction('project.setting') // 无写权(普通成员只读)→ 禁用保存
 
   const load = async () => {
     const d = await getCurrentProject()
@@ -103,7 +105,7 @@ export default function TeamBasic() {
       </div>
 
       {!readonly && (
-        <Button type="primary" loading={saving} onClick={onSave}>{t('team.saveChanges')}</Button>
+        <Button type="primary" loading={saving} disabled={!canEdit} onClick={onSave}>{t('team.saveChanges')}</Button>
       )}
 
       <DangerVerifyModal
