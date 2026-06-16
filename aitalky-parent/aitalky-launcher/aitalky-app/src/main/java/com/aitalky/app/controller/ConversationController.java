@@ -129,10 +129,11 @@ public class ConversationController {
         return R.ok(list.stream().map(PublicMessengerController::toVO).toList());
     }
 
-    /** 坐席回复(代发归属=真实发送成员;未分配则自动认领) */
+    /** 坐席回复(代发归属=真实发送成员;未分配 / 已结束被重新发起 则分配给当前坐席) */
     @PostMapping("/{id}/messages")
     public R<MessageVO> reply(@PathVariable Long id, @Valid @RequestBody AgentReplyReq req) {
         CnvConversation conv = conversationService.getById(id);
+        boolean wasClosed = conv.getStatus() != null && conv.getStatus() == 2; // 取消息前状态:已结束坐席重发→重开+归属当前坐席
         MemberBrief me = memberService.brief(TenantContext.getMemberId());
         boolean internal = Boolean.TRUE.equals(req.internal());
         Message m = messageService.send(new SendMessageCmd(
@@ -142,8 +143,10 @@ public class ConversationController {
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false, true);
         Long targetAssignee = conv.getAssigneeMemberId();
-        if (targetAssignee == null && !internal) {
-            conversationService.claim(id, me.id()); // 直接回复未分配会话即认领
+        // 未分配 → 自动认领;已结束被坐席重新发起 → 重新分配给该坐席(即便原属他人)。内部消息不触发。
+        boolean needAssign = !internal && (targetAssignee == null || (wasClosed && !me.id().equals(targetAssignee)));
+        if (needAssign) {
+            conversationService.claim(id, me.id());
             targetAssignee = me.id();
             assignNotifier.notifyAssigned(conv, me.id()); // 「该会话分配给了X」系统消息
         }
