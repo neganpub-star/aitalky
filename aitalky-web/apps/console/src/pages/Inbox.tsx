@@ -55,9 +55,10 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-// 富文本渲染:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点击蓝链(新标签打开),其余为纯文本
+// 富文本渲染:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点击链接(新标签打开),其余为纯文本。
+// linkColor 由调用方按气泡底色给定(浅底用蓝、深底用浅蓝),保证对比可读。
 const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
-function renderRichText(text: string): ReactNode[] {
+function renderRichText(text: string, linkColor = '#1677ff'): ReactNode[] {
   const nodes: ReactNode[] = []
   let last = 0
   let mt: RegExpExecArray | null
@@ -67,7 +68,7 @@ function renderRichText(text: string): ReactNode[] {
     if (mt.index > last) nodes.push(text.slice(last, mt.index))
     nodes.push(
       <a key={`lk${i++}`} href={mt[2]} target="_blank" rel="noreferrer"
-        style={{ color: '#1677ff', textDecoration: 'underline' }} onClick={(e) => e.stopPropagation()}>
+        style={{ color: linkColor, textDecoration: 'underline' }} onClick={(e) => e.stopPropagation()}>
         {mt[1]}
       </a>,
     )
@@ -834,8 +835,11 @@ export default function Inbox() {
     }
     const internal = !!m.internal
     // 对方气泡:暗色用中灰、浅色用浅灰(都比各自背景明显;原 colorBgContainer 白贴白/黑贴黑都看不清)
-    const bubbleBg = internal ? (isDark ? '#5c4b1f' : '#fff7e6') : mine ? token.colorPrimary : (isDark ? '#3a3b42' : '#eceef2')
-    const bubbleColor = internal ? token.colorText : mine ? '#fff' : token.colorText
+    // 坐席自己消息:浅蓝底+深字(原纯蓝底导致蓝色链接看不清);对方:浅灰底。内部消息:暖黄。
+    const bubbleBg = internal ? (isDark ? '#5c4b1f' : '#fff7e6') : mine ? (isDark ? '#2b3a55' : '#e7ecff') : (isDark ? '#3a3b42' : '#eceef2')
+    const bubbleColor = internal ? token.colorText : token.colorText
+    // 链接色:深色主题用浅蓝,浅色主题用标准蓝,保证在各气泡底色上可读
+    const linkColor = isDark ? '#69b1ff' : '#1677ff'
     // 自己发的、2分钟内 → 可撤回(hover 显示入口)
     const retractable = mine && String(m.senderId) === String(myMemberId) && Date.now() - m.timestamp < RETRACT_WINDOW_MS
     const iconStyle = { fontSize: 14, color: token.colorTextSecondary, cursor: 'pointer', padding: 4 }
@@ -884,14 +888,14 @@ export default function Inbox() {
                 )}
                 {m.payload?.caption && (
                   <div style={{ padding: '8px 12px', color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {mine ? renderRichText(m.payload.caption) : m.payload.caption}
+                    {mine ? renderRichText(m.payload.caption, linkColor) : m.payload.caption}
                   </div>
                 )}
               </div>
             ) : (
               <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
                 {/* 链接仅对坐席消息解析:客户没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */}
-                {mine ? renderRichText(m.content) : m.content}
+                {mine ? renderRichText(m.content, linkColor) : m.content}
               </div>
             )}
             {toolbar}
@@ -912,8 +916,9 @@ export default function Inbox() {
 
   // 本地待发/失败消息(坐席自己,右侧);失败时气泡左侧红色感叹号,点击重发
   const renderPending = (p: PendingMsg) => {
-    const bubbleBg = p.internal ? (isDark ? '#5c4b1f' : '#fff7e6') : token.colorPrimary
-    const bubbleColor = p.internal ? token.colorText : '#fff'
+    // 与已发消息一致:坐席自己浅蓝底深字(内部消息暖黄)
+    const bubbleBg = p.internal ? (isDark ? '#5c4b1f' : '#fff7e6') : (isDark ? '#2b3a55' : '#e7ecff')
+    const bubbleColor = token.colorText
     return (
       <div key={p.localId} style={{ display: 'flex', flexDirection: 'row-reverse', gap: 8, marginBottom: 16, alignItems: 'center' }}>
         <Avatar size={32} style={{ background: token.colorPrimary, flexShrink: 0 }}>A</Avatar>
