@@ -133,7 +133,7 @@ public class ConversationController {
                 conv.getProjectId(), id, conv.getCustomerId(),
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), internal, req.mentions()));
-        conversationService.onNewMessage(id, m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()),
+        conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false);
         Long targetAssignee = conv.getAssigneeMemberId();
         if (targetAssignee == null && !internal) {
@@ -224,5 +224,13 @@ public class ConversationController {
 
     private static String preview(String content) {
         return content == null ? "" : (content.length() > 50 ? content.substring(0, 50) : content);
+    }
+
+    /** 列表预览:图片/文件等富消息不展示原始 URL,显示占位文案 */
+    private static String preview(String type, String content) {
+        if ("image".equals(type)) {
+            return "[图片]";
+        }
+        return preview(content);
     }
 }

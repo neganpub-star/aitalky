@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setOnUnauthorized, setToken, syncMessages } from './api'
+import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setOnUnauthorized, setToken, syncMessages, uploadFile } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, PendingMsg } from './types'
@@ -269,6 +269,17 @@ export default function App() {
     [trySend],
   )
 
+  // 发送图片:选图 → 上传拿 URL → 发 image 消息;发完由 applyIncoming 入列(不做乐观态,简化)
+  const onSendImage = useCallback(async (file: File) => {
+    const cid = convIdRef.current
+    if (!cid || !file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) return
+    try {
+      applyIncoming([await sendMessage(cid, await uploadFile(file), 'image')])
+    } catch {
+      // 失败静默(信使端无 toast 体系)
+    }
+  }, [applyIncoming])
+
   // 点击失败消息的感叹号重发(对齐参考系统:重发用同一本地项,成功后并入正常消息流)
   const onResend = useCallback(
     (localId: string) => {
@@ -336,6 +347,7 @@ export default function App() {
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       onSend={onSend}
+      onSendImage={onSendImage}
       onResend={onResend}
       onRetract={onRetract}
       onTyping={onTyping}

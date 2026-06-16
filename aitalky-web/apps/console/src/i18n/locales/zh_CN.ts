@@ -551,6 +551,11 @@ export default {
     toolLink: '链接',
     toolKb: '知识库',
     toolQuick: '快捷回复',
+    imageTag: '[图片]',
+    imageOnly: '只能发送图片',
+    imageTooLarge: '图片不能超过 5MB',
+    imageUploading: '图片上传中…',
+    imageFailed: '图片发送失败',
     quickEmpty: '暂无快捷回复,去设置添加',
     detail: {
       title: '详情',

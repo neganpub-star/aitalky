@@ -53,6 +53,7 @@ public class PublicMessengerController {
     private final com.aitalky.identity.service.MemberService memberService;
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
     private final com.aitalky.conversation.service.AssignService assignService;
+    private final com.aitalky.framework.storage.MinioService minioService;
 
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
@@ -159,12 +160,20 @@ public class PublicMessengerController {
                 conv.getProjectId(), conv.getId(), customer.getId(),
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
                 req.type(), req.content(), false, null));
-        conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()),
+        conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), true);
         // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端
         MessageVO vo = toVO(m);
         publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);
         return R.ok(vo);
+    }
+
+    /** 客户上传文件(客户令牌):图片/文档发送前先上传拿 URL,再以富消息发送。校验令牌防止公开端点被滥用 */
+    @PostMapping("/upload")
+    public R<String> upload(@RequestHeader("Authorization") String auth,
+                            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        customerTokenService.parse(auth); // 校验客户令牌(无效抛 401)
+        return R.ok(minioService.upload(file));
     }
 
     /** 客户撤回自己的消息(客户令牌):受信使设置「客户撤回权限」开关控制 + 2分钟时限 */
@@ -269,6 +278,14 @@ public class PublicMessengerController {
 
     private static String preview(String content) {
         return content == null ? "" : (content.length() > 50 ? content.substring(0, 50) : content);
+    }
+
+    /** 列表预览:图片/文件等富消息不展示原始 URL,显示占位文案 */
+    private static String preview(String type, String content) {
+        if ("image".equals(type)) {
+            return "[图片]";
+        }
+        return preview(content);
     }
 
     private String clientIp(HttpServletRequest req) {

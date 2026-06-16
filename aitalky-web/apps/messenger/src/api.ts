@@ -64,6 +64,13 @@ export async function sendMessage(conversationId: string, content: string, type 
   return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type }))
 }
 
+/** 客户上传文件(图片/文档),返回 MinIO URL。带客户令牌(拦截器自动附加) */
+export function uploadFile(file: File): Promise<string> {
+  const fd = new FormData()
+  fd.append('file', file)
+  return client.post<unknown, string>('/upload', fd)
+}
+
 /** 客户正在输入(瞬时通知;客户端节流调用,不落库) */
 export async function sendTyping(conversationId: string): Promise<void> {
   await client.post<unknown, void>('/typing', undefined, { params: { conversationId } })

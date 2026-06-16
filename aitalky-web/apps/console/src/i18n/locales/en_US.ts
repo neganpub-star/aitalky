@@ -537,6 +537,11 @@ export default {
     toolLink: 'Link',
     toolKb: 'Knowledge base',
     toolQuick: 'Quick reply',
+    imageTag: '[Image]',
+    imageOnly: 'Images only',
+    imageTooLarge: 'Image must be under 5MB',
+    imageUploading: 'Uploading image…',
+    imageFailed: 'Failed to send image',
     quickEmpty: 'No quick replies — add some in Settings',
     detail: {
       title: 'Details',

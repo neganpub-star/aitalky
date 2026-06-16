@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Badge, Button, ConfigProvider, Empty, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Badge, Button, ConfigProvider, Empty, Image, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
@@ -19,6 +19,7 @@ import {
   type ConversationCounts,
 } from '../api/conversation'
 import { pageMembers } from '../api/member'
+import { uploadFile } from '../api/file'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
 import { listQuickReplies, type QuickReplyVO } from '../api/quickReply'
 import type { ConversationDetailVO, ConversationVO, MemberVO, MessageVO, PendingMsg } from '../types'
@@ -488,6 +489,29 @@ export default function Inbox() {
     [pending, trySend],
   )
 
+  // 发送图片:选图 → 上传拿 URL → 发 image 类型消息(content=URL)。不走文本乐观态,发完由 applyIncoming 入列
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const sendImage = useCallback(async (file: File) => {
+    const cid = selectedId
+    if (!cid) return
+    if (!file.type.startsWith('image/')) { message.error(t('inbox.imageOnly')); return }
+    if (file.size > 5 * 1024 * 1024) { message.error(t('inbox.imageTooLarge')); return }
+    const internal = replyTab === 'internal'
+    const hide = message.loading(t('inbox.imageUploading'), 0)
+    try {
+      const url = await uploadFile(file)
+      const vo = await replyConversation(cid, { content: url, type: 'image', internal })
+      applyIncoming([vo])
+      setList((prev) => prev.map((c) => (c.id === cid
+        ? { ...c, lastMessagePreview: t('inbox.imageTag'), lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+        : c)))
+    } catch {
+      message.error(t('inbox.imageFailed'))
+    } finally {
+      hide()
+    }
+  }, [selectedId, replyTab, applyIncoming, t])
+
   // 复制消息文本到剪贴板
   const copyMsg = useCallback((text: string) => {
     navigator.clipboard?.writeText(text).then(() => message.success(t('inbox.copied'))).catch(() => {})
@@ -704,9 +728,14 @@ export default function Inbox() {
           {internal && <span style={{ fontSize: 11, color: token.colorWarning, marginBottom: 2 }}>{t('inbox.internalNote')}</span>}
           {/* 自己消息:工具条在气泡左侧;别人消息:在气泡右侧(都朝会话中心) */}
           <div style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
-            <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
-              {m.content}
-            </div>
+            {m.type === 'image' ? (
+              // 图片消息:点击放大预览(antd Image),不套文字气泡样式
+              <Image src={m.content} style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, objectFit: 'cover' }} />
+            ) : (
+              <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
+                {m.content}
+              </div>
+            )}
             {toolbar}
           </div>
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>
@@ -952,14 +981,17 @@ export default function Inbox() {
               {/* 底部:工具栏图标(左,占位)+ 认领/翻译/发送(右)*/}
               <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
                 <div style={{ display: 'flex', gap: 18, flex: 1, color: token.colorTextTertiary, fontSize: 18 }}>
+                  {/* 隐藏文件选择器:图片按钮触发 */}
+                  <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void sendImage(f); e.target.value = '' }} />
                   {([
-                    { icon: <PictureOutlined />, k: 'inbox.toolImage' },
-                    { icon: <PaperClipOutlined />, k: 'inbox.toolFile' },
-                    { icon: <LinkOutlined />, k: 'inbox.toolLink' },
-                    { icon: <BookOutlined />, k: 'inbox.toolKb' },
-                  ] as const).map(({ icon, k }) => (
+                    { icon: <PictureOutlined />, k: 'inbox.toolImage', onClick: () => imageInputRef.current?.click() },
+                    { icon: <PaperClipOutlined />, k: 'inbox.toolFile', onClick: () => message.info(t('settings.wip')) },
+                    { icon: <LinkOutlined />, k: 'inbox.toolLink', onClick: () => message.info(t('settings.wip')) },
+                    { icon: <BookOutlined />, k: 'inbox.toolKb', onClick: () => message.info(t('settings.wip')) },
+                  ] as const).map(({ icon, k, onClick }) => (
                     <Tooltip key={k} title={t(k)}>
-                      <span style={{ cursor: 'pointer' }} onClick={() => message.info(t('settings.wip'))}>{icon}</span>
+                      <span style={{ cursor: 'pointer' }} onClick={onClick}>{icon}</span>
                     </Tooltip>
                   ))}
                   {/* 快捷回复:点击弹出列表,选中插入输入框 */}

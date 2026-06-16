@@ -10,6 +10,7 @@ interface Props {
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   onSend: (text: string) => void
+  onSendImage: (file: File) => void
   onResend: (localId: string) => void
   onRetract: (msgId: string) => void
   onTyping: () => void
@@ -42,8 +43,9 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendImage, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 头部默认折叠(只显项目名);点击项目名展开服务坐席(对齐参考)
   const [headerOpen, setHeaderOpen] = useState(false)
@@ -200,7 +202,12 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                 {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
-                  <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
+                  {m.type === 'image' ? (
+                    // 图片消息:点击新窗打开原图;不套文字气泡
+                    <img className="bubble-img" src={m.content} alt="" onClick={() => window.open(m.content, '_blank')} />
+                  ) : (
+                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
+                  )}
                   {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack:菜单冒泡在 ··· 正上方,带小三角) */}
                   {mine && (
                     <span
@@ -270,6 +277,14 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
           }}
           onKeyDown={onKeyDown}
         />
+        {/* 回形针:发送图片(隐藏 input 触发) */}
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) onSendImage(f); e.target.value = '' }} />
+        <button className="attach-btn" onClick={() => fileInputRef.current?.click()} aria-label={t('send')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+          </svg>
+        </button>
         <button className="send-btn" disabled={!input.trim()} onClick={submit} aria-label={t('send')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />

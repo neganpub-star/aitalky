@@ -475,6 +475,32 @@ body {
   opacity: 0.4;
   cursor: default;
 }
+/* 回形针(发图):无底色圆形按钮,灰色图标 */
+.attach-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #8a9099);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.attach-btn:hover {
+  background: rgba(127, 127, 127, 0.1);
+}
+/* 图片消息气泡:圆角缩略图,点击看大图 */
+.bubble-img {
+  max-width: 180px;
+  max-height: 180px;
+  border-radius: 10px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+}
 
 .center-tip {
   height: 100%;
