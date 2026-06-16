@@ -286,6 +286,8 @@ export default function Inbox() {
             assigneeMemberId: null,
             status: 1,
             lastMessagePreview: msg.content,
+            lastSenderAvatar: msg.senderAvatar,
+            lastSenderName: msg.senderName || '',
             lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
             unreadCount: isCurrent ? 0 : 1,
             lastSeq: msg.seq,
@@ -638,6 +640,13 @@ export default function Inbox() {
             )}
           </div>
         </div>
+        {/* 右下角小头像=最近一条消息的发送者(谁最后回复显示谁);无快照(历史会话)则不显示 */}
+        {(c.lastSenderAvatar || c.lastSenderName) && (
+          <Avatar size={20} src={c.lastSenderAvatar || undefined}
+            style={{ alignSelf: 'flex-end', flexShrink: 0, fontSize: 10, background: token.colorFillSecondary, color: token.colorTextSecondary }}>
+            {(c.lastSenderName || 'U').charAt(0).toUpperCase()}
+          </Avatar>
+        )}
       </div>
     )
   }

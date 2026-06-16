@@ -157,6 +157,9 @@ export interface ConversationVO {
   assigneeMemberId: string | null
   status: number
   lastMessagePreview: string | null
+  // 最后一条消息发送者快照(列表项小头像:谁最后回复显示谁)
+  lastSenderAvatar: string | null
+  lastSenderName: string | null
   lastMessageAt: string | null
   unreadCount: number
   lastSeq: number | null

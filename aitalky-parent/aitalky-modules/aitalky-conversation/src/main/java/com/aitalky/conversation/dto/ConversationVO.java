@@ -8,5 +8,8 @@ public record ConversationVO(
         // customerUid=客户业务系统UID(唯一);昵称随机名池只有100种、易重名,搜索/列表用它区分客户
         String customerUid,
         Long assigneeMemberId, Integer status,
-        String lastMessagePreview, LocalDateTime lastMessageAt, Integer unreadCount, Long lastSeq) {
+        String lastMessagePreview,
+        // 最后一条消息发送者快照(列表项小头像:谁最后回复显示谁;name 供头像缺省时取首字母兜底)
+        String lastSenderAvatar, String lastSenderName,
+        LocalDateTime lastMessageAt, Integer unreadCount, Long lastSeq) {
 }

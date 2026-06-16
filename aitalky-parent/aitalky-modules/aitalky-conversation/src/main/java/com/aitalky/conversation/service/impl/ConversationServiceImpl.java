@@ -113,7 +113,8 @@ public class ConversationServiceImpl implements ConversationService {
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                     cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
-                    c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
+                    c.getLastMessagePreview(), c.getLastSenderAvatar(), c.getLastSenderName(),
+                    c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -157,7 +158,8 @@ public class ConversationServiceImpl implements ConversationService {
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                     cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
-                    c.getLastMessagePreview(), c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
+                    c.getLastMessagePreview(), c.getLastSenderAvatar(), c.getLastSenderName(),
+                    c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
     }
@@ -280,7 +282,8 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time, boolean fromCustomer) {
+    public void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time,
+                             String senderAvatar, String senderName, boolean fromCustomer) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {
             return;
@@ -288,6 +291,9 @@ public class ConversationServiceImpl implements ConversationService {
         conv.setLastSeq(seq);
         conv.setLastMessagePreview(preview);
         conv.setLastMessageAt(time);
+        // 最后发送者快照(列表项小头像:谁最后回复显示谁)
+        conv.setLastSenderAvatar(senderAvatar);
+        conv.setLastSenderName(senderName);
         if (fromCustomer) {
             conv.setUnreadCount((conv.getUnreadCount() == null ? 0 : conv.getUnreadCount()) + 1);
             if (conv.getStatus() == 2) {

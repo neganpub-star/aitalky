@@ -57,9 +57,12 @@ public interface ConversationService {
     /**
      * 新消息落地后更新会话冗余字段(列表展示用)。
      *
+     * @param senderAvatar 发送者头像快照(列表项小头像:谁最后回复显示谁)
+     * @param senderName   发送者昵称快照(头像缺省时兜底)
      * @param fromCustomer 是否客户发来(是则坐席侧未读+1)
      */
-    void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time, boolean fromCustomer);
+    void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time,
+                      String senderAvatar, String senderName, boolean fromCustomer);
 
     /**
      * 客户上报已读位:customer_read_seq 单调前进(取 max)。

@@ -43,6 +43,10 @@ public class CnvConversation extends BaseEntity {
     private Long customerReadSeq;
     /** 最后一条消息预览 */
     private String lastMessagePreview;
+    /** 最后一条消息发送者头像快照(列表项小头像:谁最后回复显示谁) */
+    private String lastSenderAvatar;
+    /** 最后一条消息发送者昵称快照(头像缺省时取首字母兜底) */
+    private String lastSenderName;
     /** 最后消息时间 */
     private LocalDateTime lastMessageAt;
     /** 结束时间 */

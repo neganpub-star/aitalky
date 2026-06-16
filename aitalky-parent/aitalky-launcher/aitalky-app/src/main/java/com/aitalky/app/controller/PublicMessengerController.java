@@ -159,7 +159,8 @@ public class PublicMessengerController {
                 conv.getProjectId(), conv.getId(), customer.getId(),
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
                 req.type(), req.content(), false, null));
-        conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), true);
+        conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()),
+                m.getSenderAvatar(), m.getSenderName(), true);
         // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端
         MessageVO vo = toVO(m);
         publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);

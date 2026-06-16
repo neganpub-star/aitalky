@@ -133,7 +133,8 @@ public class ConversationController {
                 conv.getProjectId(), id, conv.getCustomerId(),
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), internal, req.mentions()));
-        conversationService.onNewMessage(id, m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()), false);
+        conversationService.onNewMessage(id, m.getSeq(), preview(req.content()), toLdt(m.getTimestamp()),
+                m.getSenderAvatar(), m.getSenderName(), false);
         Long targetAssignee = conv.getAssigneeMemberId();
         if (targetAssignee == null && !internal) {
             conversationService.claim(id, me.id()); // 直接回复未分配会话即认领
