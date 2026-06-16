@@ -10,6 +10,13 @@ export function setToken(token: string) {
   customerToken = token
 }
 
+// 客户令牌过期(401)回调:由 App 注册为"重新 init"——令牌存内存、有 TTL(默认12h),页面长开会过期,
+// 过期后需重新签发(换新令牌+会话+重连 WS),否则后台轮询/发送一直 401 卡在"未登录或过期"。
+let onUnauthorized: (() => void) | null = null
+export function setOnUnauthorized(fn: (() => void) | null) {
+  onUnauthorized = fn
+}
+
 client.interceptors.request.use((cfg) => {
   if (customerToken) {
     cfg.headers.Authorization = `Bearer ${customerToken}`
@@ -22,6 +29,10 @@ client.interceptors.response.use(
     const r = resp.data
     if (r && typeof r.code === 'number') {
       if (r.code === 0) return r.data
+      // 客户令牌过期/失效(401):触发 App 重新 init(静默重建会话);init 自身无需令牌不会 401,无循环风险
+      if (r.code === 401 && !resp.config.url?.endsWith('/init')) {
+        onUnauthorized?.()
+      }
       // 业务失败:保留错误码(前端按码本地化提示,如 1024=会话暂不可用)
       const e = new Error(r.message || 'fail') as Error & { code?: number }
       e.code = r.code

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setToken, syncMessages } from './api'
+import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setOnUnauthorized, setToken, syncMessages } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, PendingMsg } from './types'
@@ -133,49 +133,62 @@ export default function App() {
   }
 
   // ===== 启动:解析参数 → init → 连 WS → 拉历史 =====
-  useEffect(() => {
+  // 初始化/重新初始化会话:首次挂载调用;客户令牌过期(401)时也调用,静默换新令牌+会话+重连 WS。
+  // reinit=true 表示是过期后的静默重建,失败不翻成 error 页(保持当前聊天,避免误把可用会话变报错)。
+  const reinitingRef = useRef(false)
+  const everReadyRef = useRef(false)
+  const doInit = useCallback(async (reinit = false) => {
+    if (reinitingRef.current) return // 并发去抖:多个请求同时 401 只重建一次
+    reinitingRef.current = true
     const access = parseAccess()
     if (!access) {
       setPhase('error')
+      reinitingRef.current = false
       return
     }
     setLang(access.lang)
-    let alive = true
-    ;(async () => {
-      try {
-        const d = await init(access)
-        if (!alive) return
-        setToken(d.token)
-        convIdRef.current = d.conversationId
-        localMaxSeqRef.current = 0
-        sysTypingRef.current = d.config?.sysMsgTyping ?? true
-        popupRef.current = d.config?.popupEnabled ?? true
-        brandRef.current = d.config?.brandName || d.customerName || ''
-        // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
-        setLang(d.config?.lang || access.lang)
-        setData(d)
-        setAgent(d.agent)
-        setPhase('ready')
-        // 自定义网站标题(URL 接入,浏览器标签页)
-        if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
-        messengerWs.connect(d.token)
-        // 拉历史(最近 50);localMaxSeq = 最新 seq
-        const history = await syncMessages(d.conversationId)
-        if (!alive) return
-        const sorted = mergeMessages([], history)
-        setMessages(sorted)
-        localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
-        // 历史视为已读:首次进聊天不显未读分割线(只标"离开后新来的")
-        lastReadSeqRef.current = localMaxSeqRef.current
-      } catch {
-        if (alive) setPhase('error')
-      }
-    })()
-    return () => {
-      alive = false
-      messengerWs.close()
+    try {
+      const d = await init(access)
+      setToken(d.token)
+      convIdRef.current = d.conversationId
+      localMaxSeqRef.current = 0
+      sysTypingRef.current = d.config?.sysMsgTyping ?? true
+      popupRef.current = d.config?.popupEnabled ?? true
+      brandRef.current = d.config?.brandName || d.customerName || ''
+      // 生效语言:后端按"URL ?lang= 优先,否则信使设置默认语言"算出 config.lang,前端据此切换
+      setLang(d.config?.lang || access.lang)
+      setData(d)
+      setAgent(d.agent)
+      setPhase('ready')
+      everReadyRef.current = true
+      // 自定义网站标题(URL 接入,浏览器标签页)
+      if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
+      messengerWs.close() // 重建时先断旧连接(旧令牌已失效),再用新令牌连
+      messengerWs.connect(d.token)
+      // 拉历史(最近 50);localMaxSeq = 最新 seq
+      const history = await syncMessages(d.conversationId)
+      const sorted = mergeMessages([], history)
+      setMessages(sorted)
+      localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
+      // 历史视为已读:首次进聊天不显未读分割线(只标"离开后新来的")
+      lastReadSeqRef.current = localMaxSeqRef.current
+    } catch {
+      // 首次 init 失败 → 错误页;过期重建失败 → 保持现状(下次请求/轮询再触发)
+      if (!reinit && !everReadyRef.current) setPhase('error')
+    } finally {
+      reinitingRef.current = false
     }
   }, [])
+
+  useEffect(() => {
+    void doInit()
+    // 注册 401 处理:令牌过期时静默重建(setOnUnauthorized 见 api.ts)
+    setOnUnauthorized(() => { void doInit(true) })
+    return () => {
+      setOnUnauthorized(null)
+      messengerWs.close()
+    }
+  }, [doInit])
 
   // ===== WS 监听:状态 + 消息(网②gap 检测)=====
   useEffect(() => {
