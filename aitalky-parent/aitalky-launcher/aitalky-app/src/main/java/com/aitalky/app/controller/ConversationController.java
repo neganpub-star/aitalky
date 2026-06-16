@@ -201,7 +201,12 @@ public class ConversationController {
     @PostMapping("/{id}/assign")
     public R<Void> assign(@PathVariable Long id, @RequestBody AssignReq req) {
         CnvConversation conv = conversationService.assign(id, req.memberId(), TenantContext.getMemberId());
-        assignNotifier.notifyAssigned(conv, req.memberId()); // 取消分配(null)不发系统消息
+        // 指派给队友→「分配给了X」;不分配(null)→「移除了会话的分配」并回未分配
+        if (req.memberId() == null) {
+            assignNotifier.notifyUnassigned(conv);
+        } else {
+            assignNotifier.notifyAssigned(conv, req.memberId());
+        }
         return R.ok();
     }
 

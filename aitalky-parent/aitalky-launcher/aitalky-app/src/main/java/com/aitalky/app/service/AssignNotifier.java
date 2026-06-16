@@ -48,4 +48,19 @@ public class AssignNotifier {
             // 序列化/推送失败忽略:坐席重连按 seq 补拉
         }
     }
+
+    /** 取消分配(不分配):发「移除了会话的分配」系统消息,仅坐席可见;推项目频道(此时会话已无负责人) */
+    public void notifyUnassigned(CnvConversation conv) {
+        Message msg = messageService.send(new SendMessageCmd(
+                conv.getProjectId(), conv.getId(), conv.getCustomerId(),
+                "system", null, null, null,
+                "assign", "移除了会话的分配", null, true, null));
+        try {
+            String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
+            // assignee=null:推项目频道 + 会话订阅者,让坐席端实时看到;不回推客户(customerId=null)
+            pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), null, null, payload));
+        } catch (Exception ignore) {
+            // 序列化/推送失败忽略:坐席重连按 seq 补拉
+        }
+    }
 }
