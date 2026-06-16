@@ -165,6 +165,7 @@ export default function Inbox() {
   const [linkUrl, setLinkUrl] = useState('')
   // hover 在自己消息上时显示「撤回」入口(对齐桌面端交互)
   const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
+  const [recallOpenId, setRecallOpenId] = useState<string | null>(null) // 正在显示撤回确认的消息(保持工具条不消失)
   // 客户正在输入(瞬时,4s 自动消失)
   const [customerTyping, setCustomerTyping] = useState(false)
   // 当前会话客户已读到的 seq(已读回执:自己消息 seq<=此值显示"已读")
@@ -849,14 +850,18 @@ export default function Inbox() {
     // 自己发的、2分钟内 → 可撤回(hover 显示入口)
     const retractable = mine && String(m.senderId) === String(myMemberId) && Date.now() - m.timestamp < RETRACT_WINDOW_MS
     const iconStyle = { fontSize: 14, color: token.colorTextSecondary, cursor: 'pointer', padding: 4 }
-    // hover 工具条:自己消息=复制+撤回(限时);别人消息=复制(翻译待 AI 翻译模块)
-    const toolbar = hoverMsgId === m.msgId && (
+    // hover 工具条:自己消息=复制+撤回(限时);别人消息=复制(翻译待 AI 翻译模块)。
+    // 撤回确认弹窗打开时也保持工具条显示,否则鼠标移向确认按钮会离开消息行致弹窗消失、点不到。
+    const toolbar = (hoverMsgId === m.msgId || recallOpenId === m.msgId) && (
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '1px 4px', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, boxShadow: token.boxShadowTertiary, flexShrink: 0 }}>
         <Tooltip title={t('inbox.copy')}>
           <CopyOutlined style={iconStyle} onClick={() => copyMsg(m.content)} />
         </Tooltip>
         {retractable && (
-          <Popconfirm title={t('inbox.retract')} okText={t('common.confirm')} cancelText={t('common.cancel')} onConfirm={() => onRetract(m.msgId)}>
+          <Popconfirm title={t('inbox.retract')} okText={t('common.confirm')} cancelText={t('common.cancel')}
+            open={recallOpenId === m.msgId}
+            onOpenChange={(o) => setRecallOpenId(o ? m.msgId : null)}
+            onConfirm={() => { setRecallOpenId(null); onRetract(m.msgId) }}>
             <Tooltip title={t('inbox.retract')}><RollbackOutlined style={iconStyle} /></Tooltip>
           </Popconfirm>
         )}
