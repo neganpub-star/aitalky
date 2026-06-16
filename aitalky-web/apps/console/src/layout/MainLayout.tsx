@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Avatar, Badge, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
 import {
   InboxOutlined, SettingOutlined, PoweroffOutlined, GlobalOutlined, UserOutlined,
@@ -16,8 +16,9 @@ import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
 import { getPendingInvites, getProfile, updateWorkStatus, type PendingInviteVO } from '../api/account'
 import { fetchLanguages } from '../api/language'
+import { getConversationCounts } from '../api/conversation'
 import { setLanguageDict } from '../constants/languages'
-import { setTitleUnread } from '../notify'
+import { setTitleUnread, playBeep } from '../notify'
 import type { ProjectBrief } from '../types'
 
 // 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
@@ -41,6 +42,7 @@ export default function MainLayout() {
   const avatar = useAppStore((s) => s.avatar)
   const setMember = useAppStore((s) => s.setMember)
   const unreadTotal = useAppStore((s) => s.unreadTotal)
+  const setUnreadTotal = useAppStore((s) => s.setUnreadTotal)
 
   // 进入项目即建立 WS 长连接(项目级令牌带 memberId);退出/卸载时断开
   useEffect(() => {
@@ -49,6 +51,27 @@ export default function MainLayout() {
     }
     return () => wsClient.close()
   }, [wsToken])
+
+  // 全局未读跟踪:无论当前在哪个页面,来消息都刷新未读计数(服务端权威),驱动
+  // 收件箱图标红点 + 浏览器标题角标。原逻辑只在 Inbox 页,切到其他页 Inbox 卸载即失效,
+  // 故提到常驻的布局层。收件箱页 Inbox 自己也会刷,两者取同一计数,结果一致。
+  const countsTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const onInboxRef = useRef(false)
+  onInboxRef.current = loc.pathname.startsWith('/inbox')
+  useEffect(() => {
+    const refresh = () => getConversationCounts().then((c) => setUnreadTotal(c.mineUnread)).catch(() => {})
+    refresh() // 首次进入/刷新即拉一次,红点状态正确
+    const off = wsClient.onMessage((msg) => {
+      // 客户消息 / 「分配给我」系统消息 → 未读可能变化,刷新计数(300ms 合并突发)
+      const relevant = msg.senderType === 'customer' || (msg.senderType === 'system' && msg.type === 'assign')
+      if (!relevant) return
+      clearTimeout(countsTimerRef.current)
+      countsTimerRef.current = setTimeout(refresh, 300)
+      // 不在收件箱页时全局兜底响铃(收件箱页由 Inbox 自行处理,避免重复响铃)
+      if (msg.senderType === 'customer' && !onInboxRef.current) playBeep()
+    })
+    return () => { off(); clearTimeout(countsTimerRef.current) }
+  }, [setUnreadTotal])
 
   // 拉取个人资料,供头像栏/菜单显示成员昵称与头像
   useEffect(() => {
