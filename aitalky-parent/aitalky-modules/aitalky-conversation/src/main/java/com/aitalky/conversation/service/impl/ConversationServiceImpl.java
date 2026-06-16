@@ -283,7 +283,7 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time,
-                             String senderAvatar, String senderName, boolean fromCustomer) {
+                             String senderAvatar, String senderName, boolean fromCustomer, boolean reopen) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {
             return;
@@ -296,9 +296,10 @@ public class ConversationServiceImpl implements ConversationService {
         conv.setLastSenderName(senderName);
         if (fromCustomer) {
             conv.setUnreadCount((conv.getUnreadCount() == null ? 0 : conv.getUnreadCount()) + 1);
-            if (conv.getStatus() == 2) {
-                conv.setStatus(1); // 客户在已结束会话回复 → 自动重开
-            }
+        }
+        // 已结束会话被真实消息(坐席或客户)激活 → 自动重开为进行中;系统消息(reopen=false)不触发
+        if (reopen && conv.getStatus() != null && conv.getStatus() == 2) {
+            conv.setStatus(1);
         }
         conversationMapper.updateById(conv);
     }

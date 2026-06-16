@@ -220,7 +220,7 @@ export interface MessageVO {
   type: string          // text / image / video / file / rich
   content: string       // 文本内容,或 图片/视频/文件 的 URL;rich 时为占位预览文本
   // 文件名/大小 + 图片/视频/文件的附带文字说明;rich(图文混排)时 segments 存有序片段
-  payload?: { name?: string; size?: number; caption?: string; segments?: RichSegment[] } | null
+  payload?: { name?: string; size?: number; caption?: string; segments?: RichSegment[]; sysType?: string } | null
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number

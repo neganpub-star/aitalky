@@ -568,6 +568,11 @@ export default {
     reconnecting: '连接中...',
     online: '在线',
     offline: '离线',
+    sys: {
+      assigned: '该会话分配给了 {{name}}',
+      unassigned: '移除了会话的分配',
+      timeout: '会话超时结束',
+    },
     autoTranslate: '自动翻译',
     customerLang: '客户源语言',
     translate: '翻译',

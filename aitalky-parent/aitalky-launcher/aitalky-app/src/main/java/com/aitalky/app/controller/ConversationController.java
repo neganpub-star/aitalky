@@ -140,7 +140,7 @@ public class ConversationController {
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), req.payload(), internal, req.mentions()));
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
-                m.getSenderAvatar(), m.getSenderName(), false);
+                m.getSenderAvatar(), m.getSenderName(), false, true);
         Long targetAssignee = conv.getAssigneeMemberId();
         if (targetAssignee == null && !internal) {
             conversationService.claim(id, me.id()); // 直接回复未分配会话即认领

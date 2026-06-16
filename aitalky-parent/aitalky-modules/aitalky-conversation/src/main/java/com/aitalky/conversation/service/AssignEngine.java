@@ -103,7 +103,15 @@ public class AssignEngine {
         Long from = conv.getAssigneeMemberId();
         conv.setAssigneeMemberId(toMemberId);
         conv.setStatus(toMemberId == null ? conv.getStatus() : 1);
-        conversationMapper.updateById(conv);
+        if (toMemberId == null) {
+            // 取消分配:assignee 置 null。updateById 默认跳过 null 字段,故显式 set(null) 写库,
+            // 否则负责人清不掉,会话仍留在「我的」。状态保持不变(仅清负责人)。
+            conversationMapper.update(null, Wrappers.<CnvConversation>lambdaUpdate()
+                    .eq(CnvConversation::getId, conv.getId())
+                    .set(CnvConversation::getAssigneeMemberId, null));
+        } else {
+            conversationMapper.updateById(conv);
+        }
         CnvAssignLog log = new CnvAssignLog();
         log.setProjectId(conv.getProjectId());
         log.setConversationId(conv.getId());

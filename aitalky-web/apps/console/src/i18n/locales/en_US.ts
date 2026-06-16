@@ -554,6 +554,11 @@ export default {
     reconnecting: 'Connecting...',
     online: 'Online',
     offline: 'Offline',
+    sys: {
+      assigned: 'Assigned to {{name}}',
+      unassigned: 'Conversation unassigned',
+      timeout: 'Conversation closed (timeout)',
+    },
     autoTranslate: 'Auto-translate',
     customerLang: 'Customer language',
     translate: 'Translate',

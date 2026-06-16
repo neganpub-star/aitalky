@@ -36,11 +36,12 @@ public class AssignNotifier {
         }
         MemberBrief m = memberService.brief(toMemberId);
         String nick = m == null ? "" : m.nickname();
-        // senderType=system + internal=true:坐席专属系统消息;客户端不可见
+        // senderType=system + internal=true:坐席专属系统消息;客户端不可见。
+        // payload 带语义码 sysType+name,前端按坐席界面语言本地化(content 中文仅作兜底/列表预览)
         Message msg = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), conv.getCustomerId(),
                 "system", toMemberId, null, null,
-                "assign", "该会话分配给了 " + nick, null, true, null));
+                "assign", "该会话分配给了 " + nick, java.util.Map.of("sysType", "assigned", "name", nick), true, null));
         try {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             // customerId=null:不回推客户;assignee=toMemberId:推给被分配坐席(+订阅者/项目频道)
@@ -55,11 +56,11 @@ public class AssignNotifier {
         Message msg = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), conv.getCustomerId(),
                 "system", null, null, null,
-                "timeout", "会话超时结束", null, true, null));
+                "timeout", "会话超时结束", java.util.Map.of("sysType", "timeout"), true, null));
         // 与正常消息一致:推进 lastSeq + 列表预览显示「会话超时结束」(对齐参考列表)
         conversationService.onNewMessage(conv.getId(), msg.getSeq(), "会话超时结束",
                 java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(msg.getTimestamp()), java.time.ZoneId.systemDefault()),
-                null, null, false);
+                null, null, false, false); // reopen=false:超时系统消息不能把刚结束的会话又重开
         try {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), null, payload));
@@ -73,7 +74,7 @@ public class AssignNotifier {
         Message msg = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), conv.getCustomerId(),
                 "system", null, null, null,
-                "assign", "移除了会话的分配", null, true, null));
+                "assign", "移除了会话的分配", java.util.Map.of("sysType", "unassigned"), true, null));
         try {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             // assignee=null:推项目频道 + 会话订阅者,让坐席端实时看到;不回推客户(customerId=null)

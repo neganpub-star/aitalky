@@ -811,11 +811,17 @@ export default function Inbox() {
 
   // ===== 单条消息气泡(坐席右蓝 / 客户左白 / 内部消息黄)=====
   const renderMessage = (m: MessageVO) => {
-    // 系统消息(如「该会话分配给了X」):居中灰字,仅坐席可见(信使端 internal 已过滤)
+    // 系统消息(分配/移除/超时):居中灰字,仅坐席可见。按 payload.sysType 走界面语言本地化,
+    // 无 sysType(旧数据)回退显示后端 content。
     if (m.senderType === 'system') {
+      const st = m.payload?.sysType
+      const text = st === 'assigned' ? t('inbox.sys.assigned', { name: m.payload?.name || '' })
+        : st === 'unassigned' ? t('inbox.sys.unassigned')
+          : st === 'timeout' ? t('inbox.sys.timeout')
+            : m.content
       return (
         <div key={m.msgId} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
-          <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{m.content}</span>
+          <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{text}</span>
         </div>
       )
     }
