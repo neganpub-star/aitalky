@@ -158,10 +158,10 @@ export default function ConversationSettings() {
 
   const styles: Record<string, CSSProperties> = {
     h1: { fontWeight: 700, fontSize: 20, marginBottom: 20 },
-    cardHead: { display: 'flex', alignItems: 'center', gap: 14, padding: '18px 20px', cursor: 'pointer' },
-    cardTitle: { fontWeight: 600, fontSize: 15, color: token.colorText },
-    cardDesc: { fontSize: 12, color: token.colorTextTertiary, marginTop: 3 },
-    cardBody: { padding: '4px 20px 22px 64px' },
+    cardHead: { display: 'flex', alignItems: 'center', gap: 18, padding: '24px 24px', cursor: 'pointer' },
+    cardTitle: { fontWeight: 600, fontSize: 16, color: token.colorText },
+    cardDesc: { fontSize: 13, color: token.colorTextTertiary, marginTop: 5 },
+    cardBody: { padding: '4px 24px 24px 68px' },
     sectionLabel: { fontWeight: 600, fontSize: 14, margin: '18px 0 12px' },
     actions: { marginTop: 20, display: 'flex', gap: 10 },
   }
@@ -173,7 +173,7 @@ export default function ConversationSettings() {
     return (
       <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 16, border: `1px solid ${token.colorBorder}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
         <div style={styles.cardHead} onClick={() => setOpenKey(open ? null : k)}>
-          <span style={{ fontSize: 22, color: token.colorText }}>{icon}</span>
+          <span style={{ fontSize: 26, color: token.colorText }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={styles.cardTitle}>{title}</div>
             <div style={styles.cardDesc}>{desc}</div>
