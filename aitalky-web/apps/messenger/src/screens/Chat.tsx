@@ -29,6 +29,23 @@ function copyText(text: string) {
 }
 
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
+// 富文本:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点蓝链(新标签打开),其余为纯文本
+const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+function renderRichText(text: string): ReactNode[] {
+  const nodes: ReactNode[] = []
+  let last = 0
+  let mt: RegExpExecArray | null
+  LINK_RE.lastIndex = 0
+  let i = 0
+  while ((mt = LINK_RE.exec(text)) !== null) {
+    if (mt.index > last) nodes.push(text.slice(last, mt.index))
+    nodes.push(<a key={`lk${i++}`} className="msg-link" href={mt[2]} target="_blank" rel="noreferrer">{mt[1]}</a>)
+    last = mt.index + mt[0].length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
 // 文件大小友好显示
 function fmtSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -226,10 +243,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                           </span>
                         </a>
                       )}
-                      {m.payload?.caption && <div className="media-caption">{m.payload.caption}</div>}
+                      {m.payload?.caption && <div className="media-caption">{renderRichText(m.payload.caption)}</div>}
                     </div>
                   ) : (
-                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{m.content}</div>
+                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{renderRichText(m.content)}</div>
                   )}
                   {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack:菜单冒泡在 ··· 正上方,带小三角) */}
                   {mine && (

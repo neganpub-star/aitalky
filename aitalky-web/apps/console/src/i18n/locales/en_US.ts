@@ -546,6 +546,10 @@ export default {
     imageFailed: 'Failed to send',
     fileUnsupported: 'Unsupported file type',
     fileTooLarge: 'File too large (image ≤10MB, file/video ≤20MB)',
+    linkText: 'Link text',
+    linkTextPh: 'Link text (defaults to URL if empty)',
+    linkUrl: 'Link URL',
+    linkUrlRequired: 'Please enter a URL',
     quickEmpty: 'No quick replies — add some in Settings',
     detail: {
       title: 'Details',

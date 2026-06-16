@@ -560,6 +560,10 @@ export default {
     imageFailed: '发送失败',
     fileUnsupported: '不支持的文件类型',
     fileTooLarge: '文件过大(图片≤10MB,文件/视频≤20MB)',
+    linkText: '链接文本',
+    linkTextPh: '链接文本(留空则显示地址)',
+    linkUrl: '链接地址',
+    linkUrlRequired: '请输入链接地址',
     quickEmpty: '暂无快捷回复,去设置添加',
     detail: {
       title: '详情',

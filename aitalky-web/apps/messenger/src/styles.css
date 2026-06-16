@@ -293,6 +293,15 @@ body {
   color: #fff;
   border-bottom-right-radius: 4px;
 }
+/* 消息内超链接:蓝色下划线;在自己(蓝底)气泡里用白色下划线保证对比 */
+.msg-link {
+  color: #1677ff;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.bubble.mine .msg-link {
+  color: #fff;
+}
 .msg-name {
   font-size: 12px;
   color: var(--text-2);

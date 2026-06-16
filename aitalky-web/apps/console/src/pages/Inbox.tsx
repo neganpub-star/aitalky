@@ -54,6 +54,28 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+// 富文本渲染:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点击蓝链(新标签打开),其余为纯文本
+const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
+function renderRichText(text: string): ReactNode[] {
+  const nodes: ReactNode[] = []
+  let last = 0
+  let mt: RegExpExecArray | null
+  LINK_RE.lastIndex = 0
+  let i = 0
+  while ((mt = LINK_RE.exec(text)) !== null) {
+    if (mt.index > last) nodes.push(text.slice(last, mt.index))
+    nodes.push(
+      <a key={`lk${i++}`} href={mt[2]} target="_blank" rel="noreferrer"
+        style={{ color: '#1677ff', textDecoration: 'underline' }} onClick={(e) => e.stopPropagation()}>
+        {mt[1]}
+      </a>,
+    )
+    last = mt.index + mt[0].length
+  }
+  if (last < text.length) nodes.push(text.slice(last))
+  return nodes
+}
+
 // 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
 function fmtMsgTime(ms: number): string {
   const d = new Date(ms)
@@ -135,6 +157,10 @@ export default function Inbox() {
   const [replyTab, setReplyTab] = useState<'reply' | 'internal'>('reply')
   const [input, setInput] = useState('')
   const [staged, setStaged] = useState<StagedAtt | null>(null) // 输入框上方待发附件
+  // 插入链接弹框:链接文本 + 链接地址,确定后以 Markdown 形式 [文本](地址) 插入输入框
+  const [linkModal, setLinkModal] = useState(false)
+  const [linkText, setLinkText] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
   // hover 在自己消息上时显示「撤回」入口(对齐桌面端交互)
   const [hoverMsgId, setHoverMsgId] = useState<string | null>(null)
   // 客户正在输入(瞬时,4s 自动消失)
@@ -816,13 +842,13 @@ export default function Inbox() {
                 )}
                 {m.payload?.caption && (
                   <div style={{ padding: '8px 12px', color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {m.payload.caption}
+                    {renderRichText(m.payload.caption)}
                   </div>
                 )}
               </div>
             ) : (
               <div style={{ padding: '9px 13px', borderRadius: 10, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
-                {m.content}
+                {renderRichText(m.content)}
               </div>
             )}
             {toolbar}
@@ -1101,7 +1127,7 @@ export default function Inbox() {
                   {([
                     { icon: <PictureOutlined />, k: 'inbox.toolImage', onClick: () => imageInputRef.current?.click() },
                     { icon: <PaperClipOutlined />, k: 'inbox.toolFile', onClick: () => attachInputRef.current?.click() },
-                    { icon: <LinkOutlined />, k: 'inbox.toolLink', onClick: () => message.info(t('settings.wip')) },
+                    { icon: <LinkOutlined />, k: 'inbox.toolLink', onClick: () => { setLinkText(''); setLinkUrl(''); setLinkModal(true) } },
                     { icon: <BookOutlined />, k: 'inbox.toolKb', onClick: () => message.info(t('settings.wip')) },
                   ] as const).map(({ icon, k, onClick }) => (
                     <Tooltip key={k} title={t(k)}>
@@ -1354,6 +1380,27 @@ export default function Inbox() {
           </div>
         </div>
       )}
+
+      {/* 插入链接弹框:确定后以 [文本](地址) 形式追加到输入框,渲染为可点蓝链 */}
+      <Modal open={linkModal} title={t('inbox.toolLink')} okText={t('common.confirm')} cancelText={t('common.cancel')}
+        onCancel={() => setLinkModal(false)}
+        onOk={() => {
+          const url = linkUrl.trim()
+          if (!url) { message.warning(t('inbox.linkUrlRequired')); return }
+          const fullUrl = /^https?:\/\//i.test(url) ? url : `https://${url}`
+          const text = linkText.trim() || fullUrl
+          setInput((prev) => (prev ? prev + ' ' : '') + `[${text}](${fullUrl})`)
+          setLinkModal(false)
+        }}>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 13, marginBottom: 6 }}>{t('inbox.linkText')}</div>
+          <Input value={linkText} onChange={(e) => setLinkText(e.target.value)} placeholder={t('inbox.linkTextPh')} />
+        </div>
+        <div>
+          <div style={{ fontSize: 13, marginBottom: 6 }}>{t('inbox.linkUrl')}</div>
+          <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" />
+        </div>
+      </Modal>
     </div>
   )
 }
