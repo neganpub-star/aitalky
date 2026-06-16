@@ -46,10 +46,14 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public com.aitalky.conversation.dto.OpenConversationResult openOrCreate(OpenConversationCmd cmd) {
         return lockTemplate.execute("lock:conv:open:" + cmd.projectId() + ":" + cmd.customerId(), 3, 10, () -> {
-            // 找该客户的活跃会话(进行中/等待队列)
+            // 找该客户的活跃会话(进行中/等待队列)。按渠道隔离:groupId 不同算不同会话
+            // (普通分配=null 单独一类,每个专属策略各自一类),对齐参考——同一客户从
+            // 普通渠道与专属渠道进会分别维护各自会话线,互不复用。
             CnvConversation active = conversationMapper.selectOne(Wrappers.<CnvConversation>lambdaQuery()
                     .eq(CnvConversation::getProjectId, cmd.projectId())
                     .eq(CnvConversation::getCustomerId, cmd.customerId())
+                    .eq(cmd.groupId() != null, CnvConversation::getGroupId, cmd.groupId())
+                    .isNull(cmd.groupId() == null, CnvConversation::getGroupId)
                     .in(CnvConversation::getStatus, 0, 1)
                     .orderByDesc(CnvConversation::getCreateTime)
                     .last("limit 1"));
