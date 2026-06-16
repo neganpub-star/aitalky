@@ -17,6 +17,9 @@ public interface AssignService {
     /** 更新分配规则与最大会话数 */
     void updateConfig(Long projectId, Integer assignMode, Integer maxConcurrent);
 
+    /** 更新会话保持期(分钟):空闲超过该时长由定时任务自动结束;<=0=不自动(开关关)。独立于分配规则,互不覆盖 */
+    void updateRetention(Long projectId, Integer autoCloseIdleMinutes);
+
     /** 参与自动分配的队友成员ID列表 */
     List<Long> participantIds(Long projectId);
 

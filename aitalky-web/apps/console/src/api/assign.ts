@@ -1,9 +1,11 @@
 import client from './client'
 
 // 会话分配配置(对应后端 AssignConfigVO)。assignMode:0手动 1轮流 2负载;maxConcurrent:0=不限
+// autoCloseIdleMinutes:会话保持期(分钟),0=不自动结束(保持期开关关)
 export interface AssignConfig {
   assignMode: number
   maxConcurrent: number
+  autoCloseIdleMinutes: number
 }
 
 /** 取分配配置 */
@@ -14,6 +16,11 @@ export function getAssignConfig() {
 /** 更新分配规则与最大会话数 */
 export function updateAssignConfig(assignMode: number, maxConcurrent: number) {
   return client.put<unknown, void>('/assign/config', { assignMode, maxConcurrent })
+}
+
+/** 更新会话保持期(分钟):minutes<=0=关闭自动结束。独立接口,不影响分配规则 */
+export function updateAssignRetention(minutes: number) {
+  return client.put<unknown, void>('/assign/retention', { minutes })
 }
 
 /** 参与队友成员ID列表(前端用成员表映射昵称/头像/角色) */

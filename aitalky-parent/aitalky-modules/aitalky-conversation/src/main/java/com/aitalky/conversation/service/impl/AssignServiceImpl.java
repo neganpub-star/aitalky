@@ -51,9 +51,28 @@ public class AssignServiceImpl implements AssignService {
     public AssignConfigVO getConfig(Long projectId) {
         AsnConfig cfg = findConfig(projectId);
         if (cfg == null) {
-            return new AssignConfigVO(DEFAULT_MODE, DEFAULT_MAX);
+            return new AssignConfigVO(DEFAULT_MODE, DEFAULT_MAX, 0);
         }
-        return new AssignConfigVO(toVoMode(cfg.getMode()), cfg.getCapacityLimit());
+        int keep = cfg.getAutoCloseIdleMinutes() == null ? 0 : cfg.getAutoCloseIdleMinutes();
+        return new AssignConfigVO(toVoMode(cfg.getMode()), cfg.getCapacityLimit(), keep);
+    }
+
+    @Override
+    public void updateRetention(Long projectId, Integer autoCloseIdleMinutes) {
+        // <=0 统一存 0(=关闭自动结束);只动保持期字段,分配规则/最大会话数不受影响
+        int minutes = autoCloseIdleMinutes == null || autoCloseIdleMinutes < 0 ? 0 : autoCloseIdleMinutes;
+        AsnConfig cfg = findConfig(projectId);
+        if (cfg == null) {
+            cfg = new AsnConfig();
+            cfg.setProjectId(projectId);
+            cfg.setMode(toDbMode(DEFAULT_MODE));
+            cfg.setCapacityLimit(DEFAULT_MAX);
+            cfg.setAutoCloseIdleMinutes(minutes);
+            configMapper.insert(cfg);
+        } else {
+            cfg.setAutoCloseIdleMinutes(minutes);
+            configMapper.updateById(cfg);
+        }
     }
 
     @Override

@@ -44,6 +44,14 @@ public class AssignController {
         return R.ok();
     }
 
+    /** 更新会话保持期(保持期设置卡片):minutes<=0=关闭自动结束。独立接口,不影响分配规则/最大会话数 */
+    @PutMapping("/retention")
+    @RequiresFunction("assign.setting")
+    public R<Void> updateRetention(@RequestBody RetentionReq req) {
+        assignService.updateRetention(TenantContext.getProjectId(), req.minutes());
+        return R.ok();
+    }
+
     /** 参与队友成员ID列表(前端用成员表映射出昵称/头像/角色) */
     @GetMapping("/members")
     @RequiresFunction({"assign.view", "assign.setting"})
@@ -102,6 +110,9 @@ public class AssignController {
     }
 
     public record AssignConfigReq(Integer assignMode, Integer maxConcurrent) {
+    }
+
+    public record RetentionReq(Integer minutes) {
     }
 
     public record MemberRef(Long memberId) {

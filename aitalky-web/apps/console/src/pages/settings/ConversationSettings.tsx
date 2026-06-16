@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
 import { getMessengerConfig } from '../../api/messengerConfig'
 import {
-  getAssignConfig, updateAssignConfig, getAssignMemberIds, addAssignMember, removeAssignMember,
+  getAssignConfig, updateAssignConfig, updateAssignRetention, getAssignMemberIds, addAssignMember, removeAssignMember,
   listAssignGroups, createAssignGroup, updateAssignGroup, deleteAssignGroup,
 } from '../../api/assign'
 import { pageMembers } from '../../api/member'
@@ -73,6 +73,8 @@ export default function ConversationSettings() {
     getAssignConfig().then((c) => {
       setRule(MODE_TO_RULE[c.assignMode] ?? 'round')
       if (c.maxConcurrent > 0) { setLimitMode('limited'); setLimitNum(c.maxConcurrent) } else setLimitMode('unlimited')
+      // 保持期:>0=开关开且回填分钟数;0=关(下拉保留默认 60 供再次开启时用)
+      if (c.autoCloseIdleMinutes > 0) { setKeepEnabled(true); setKeepMinutes(c.autoCloseIdleMinutes) } else setKeepEnabled(false)
     }).catch(() => undefined)
     // 成员表加载一次,普通参与队友 + 专属策略队友都用它把 memberId 映射成 MemberVO
     pageMembers({ page: 1, size: 500 }).then((res) => {
@@ -102,6 +104,12 @@ export default function ConversationSettings() {
   // 基本设置:保存分配规则 + 最大会话数
   const saveBasic = async () => {
     await updateAssignConfig(RULE_TO_MODE[rule], limitMode === 'limited' ? limitNum : 0)
+    message.success(t('mse.saved'))
+  }
+
+  // 保持期:开关开→存所选分钟数(定时任务据此自动结束空闲会话);关→存 0
+  const saveKeep = async () => {
+    await updateAssignRetention(keepEnabled ? keepMinutes : 0)
     message.success(t('mse.saved'))
   }
 
@@ -364,7 +372,10 @@ export default function ConversationSettings() {
               </span>
             </>
           )}
-          {saveBtns(true)}
+          <div style={styles.actions}>
+            <Button onClick={() => setOpenKey(null)}>{t('common.cancel')}</Button>
+            <Button type="primary" disabled={!canEdit} onClick={saveKeep}>{t('common.save')}</Button>
+          </div>
         </>
       } />
 
