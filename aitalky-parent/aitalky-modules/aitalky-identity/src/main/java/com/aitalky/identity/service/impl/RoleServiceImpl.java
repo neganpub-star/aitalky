@@ -131,6 +131,13 @@ public class RoleServiceImpl implements RoleService {
     }
 
     private PermissionView parse(IdRole role) {
+        // 系统角色权限运行时按目录派生(单一真相,加权限项即对存量项目生效,免迁移)
+        if (role.getIsSystem() != null && role.getIsSystem() == 1) {
+            PermissionView sys = PermissionCatalog.forRole(role.getName());
+            if (sys != null) {
+                return sys;
+            }
+        }
         if (role.getPermissions() == null) {
             return new PermissionView(List.of(), List.of());
         }

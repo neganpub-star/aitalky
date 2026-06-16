@@ -8,10 +8,24 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * 权限目录(角色管理权限树的"单一真相")。
- * <p>按本系统**真实的 RBAC**(SystemRole 中的 pages/functions)组织成「模块 / 页面 / 功能」三列,
- * 不照搬参考系统里我们没有的模块(Wiki/智能AI/数字员工等),避免授予无法鉴权的"假权限"。
- * <p>保存角色权限时,前端勾选的 token 按 {@link PermNode#store()} 拆回 pages[] / functions[]。
+ * 权限目录(角色管理权限树的"单一真相"),按参考系统 1:1 铺开:模块 / 页面 / 功能 三列。
+ *
+ * <p><b>token 生效情况(重要)</b>:
+ * <ul>
+ *   <li><b>已生效</b>(后端 {@code @RequiresFunction} 或前端菜单真在用):inbox.viewAll/viewUnassigned/search、
+ *       conversation.*、messenger.setting、assign.setting、group.manage、blacklist.manage、quickreply.manage、
+ *       project.setting、member.manage、role.manage、billing.manage。</li>
+ *   <li><b>占位</b>(参考系统有、我们功能未做,勾选可存但暂不拦截,功能落地再接 {@code @RequiresFunction}):
+ *       客户管理/Wiki/智能AI/紧急通知/API管理/概览·套餐·订单 等各叶子,以及已有区域下更细的子动作
+ *       (如 member.invite、role.add、messenger.greeting…)。</li>
+ * </ul>
+ *
+ * <p><b>系统角色权限运行时派生</b>:负责人/管理员/普通成员的权限不取 DB 存量,改由 {@link #forRole(String)}
+ * 按本目录实时计算(见 RoleServiceImpl.parse / ProjectServiceImpl.parseFunctions)——加权限项即对全部项目生效,免迁移。
+ *
+ * <p>列归属由"放在 pages 还是 functions 列表"决定(渲染到「页面」或「功能」列);
+ * 而存入角色 JSON 的哪个数组由 {@link PermNode#store()} 决定(page→pages[]、function→functions[],
+ * 鉴权只看 functions[])。已生效的功能 token 即使展示在「页面」列,store 仍为 function 以保证鉴权。
  */
 public final class PermissionCatalog {
 
@@ -21,54 +35,167 @@ public final class PermissionCatalog {
     private static final String PAGE = "page";
     private static final String FUNC = "function";
 
+    /** 会话动作(不在权限树展示,但角色需要——gating 回复/撤回/转移/结束/拉黑) */
+    private static final List<String> CONV_ALL = List.of(
+            "conversation.send", "conversation.withdraw", "conversation.transfer",
+            "conversation.close", "conversation.blacklist");
+    private static final List<String> CONV_MEMBER = List.of(
+            "conversation.send", "conversation.withdraw", "conversation.close");
+
+    // 节点工厂:pp=页面列(存 pages[]);pf=页面列但存 functions[](已生效功能展示在页面列);ff=功能列(存 functions[])
+    private static PermNode pp(String token, String name) { return new PermNode(token, name, PAGE); }
+    private static PermNode pf(String token, String name) { return new PermNode(token, name, FUNC); }
+    private static PermNode ff(String token, String name) { return new PermNode(token, name, FUNC); }
+
     private static final List<PermModule> MODULES = List.of(
-            // 收件箱:对齐参考——页面列=全部/未分配/数字员工/会话搜索,功能列留空。
-            // 我的/提及我的为恒有(不作勾选项);全部=inbox.viewAll、未分配=inbox.viewUnassigned(前端真在用);
-            // 数字员工/会话搜索为占位项(我们暂无该功能,勾选不生效,仅与参考保持一致)。
+            // ===== 收件箱 =====
             new PermModule("inbox", "收件箱",
-                    List.of(
-                            new PermNode("inbox.viewAll", "全部", FUNC),
-                            new PermNode("inbox.viewUnassigned", "未分配", FUNC),
-                            new PermNode("inbox.digitalEmployee", "数字员工", PAGE),
-                            new PermNode("inbox.search", "会话搜索", FUNC)),
+                    List.of(pf("inbox.viewAll", "全部"), pf("inbox.viewUnassigned", "未分配"),
+                            pp("inbox.digitalEmployee", "数字员工"), pf("inbox.search", "会话搜索")),
                     List.of()),
-            new PermModule("customers", "客户",
-                    List.of(new PermNode("customers", "客户", PAGE)),
+            // ===== 客户管理(占位) =====
+            new PermModule("customers", "客户管理",
+                    List.of(pp("customer.list", "客户列表"), pp("customer.marketing", "自动营销"),
+                            pp("customer.insight", "洞察设置")),
                     List.of()),
-            new PermModule("statistics", "数据统计",
-                    List.of(new PermNode("statistics", "数据统计", PAGE)),
-                    List.of()),
-            new PermModule("settings", "设置",
-                    List.of(new PermNode("settings", "设置", PAGE)),
-                    List.of(
-                            new PermNode("member.manage", "成员管理", FUNC),
-                            new PermNode("role.manage", "角色管理", FUNC),
-                            new PermNode("messenger.setting", "信使设置", FUNC),
-                            new PermNode("assign.setting", "会话分配设置", FUNC),
-                            new PermNode("group.manage", "客服组管理", FUNC),
-                            new PermNode("quickreply.manage", "快捷回复管理", FUNC),
-                            new PermNode("blacklist.manage", "黑名单管理", FUNC),
-                            new PermNode("project.setting", "项目设置", FUNC),
-                            new PermNode("billing.manage", "订阅计费", FUNC))));
+            // ===== Wiki(占位) =====
+            new PermModule("wiki.article", "文章列表",
+                    List.of(pp("wiki.article", "文章列表")),
+                    List.of(ff("wiki.article.create", "新增文章"), ff("wiki.article.edit", "编辑"),
+                            ff("wiki.article.publish", "发布/取消发布"), ff("wiki.article.delete", "删除"),
+                            ff("wiki.article.setting", "文章设置"))),
+            new PermModule("wiki.app", "应用",
+                    List.of(pp("wiki.app", "应用")),
+                    List.of(ff("wiki.app.create", "创建自定义应用"), ff("wiki.app.site", "站点配置"),
+                            ff("wiki.app.style", "样式配置"), ff("wiki.app.content", "内容配置"),
+                            ff("wiki.app.delete", "删除应用"))),
+            // ===== 智能AI(占位) =====
+            new PermModule("ai.home", "首页",
+                    List.of(pp("ai.home", "首页")),
+                    List.of(ff("ai.home.toggle", "启用/暂停"))),
+            new PermModule("ai.train", "训练",
+                    List.of(pp("ai.train", "训练")),
+                    List.of(ff("ai.train.model", "会话自动建模"), ff("ai.train.employee", "训练数字员工"))),
+            new PermModule("ai.config", "设置",
+                    List.of(pp("ai.config", "设置")),
+                    List.of(ff("ai.config.style", "样式设置"), ff("ai.config.reply", "回复设置"))),
+            new PermModule("ai.flow", "流程列表",
+                    List.of(pp("ai.flow", "流程列表")),
+                    List.of(ff("ai.flow.manage", "流程管理"))),
+            // ===== 设置 =====
+            new PermModule("notice", "紧急通知设置",
+                    List.of(pp("notice.urgent", "紧急通知设置")),
+                    List.of(ff("notice.edit", "编辑通知"))),
+            new PermModule("messenger", "信使设置",
+                    List.of(pf("messenger.setting", "信使设置")),
+                    List.of(ff("messenger.greeting", "设置欢迎语"), ff("messenger.replyTime", "设置回复时间"),
+                            ff("messenger.bizCard", "设置业务卡片"), ff("messenger.viewTime", "信使查看时间配置"),
+                            ff("messenger.launcher", "启动器样式"), ff("messenger.sysMsg", "系统消息显示"),
+                            ff("messenger.preference", "偏好设置"), ff("messenger.customerRetract", "客户撤回消息权限"),
+                            ff("messenger.webMeta", "自定义网站标题和图标"))),
+            new PermModule("assign", "会话设置",
+                    List.of(pf("assign.setting", "会话设置")),
+                    List.of(ff("assign.basic", "基本设置"), ff("assign.domain", "域名自定义"),
+                            ff("assign.normal", "普通分配模式"), ff("group.manage", "专属分配模式"),
+                            ff("assign.keep", "保持期设置"))),
+            new PermModule("api", "API管理",
+                    List.of(pp("api.manage", "API管理")),
+                    List.of(ff("api.resetSecret", "重置Secret Key"))),
+            new PermModule("blacklist", "黑名单",
+                    List.of(pf("blacklist.manage", "黑名单")),
+                    List.of(ff("blacklist.remove", "移除黑名单"))),
+            new PermModule("quickreply", "快捷回复",
+                    List.of(pf("quickreply.manage", "快捷回复")),
+                    List.of(ff("quickreply.action", "快捷回复管理"))),
+            new PermModule("basic", "基本信息",
+                    List.of(pf("project.setting", "基本信息")),
+                    List.of(ff("project.editInfo", "编辑信息"))),
+            new PermModule("member", "成员信息",
+                    List.of(pf("member.manage", "成员信息")),
+                    List.of(ff("member.invite", "邀请成员"), ff("member.rename", "重命名"),
+                            ff("member.role", "调整角色"), ff("member.avatar", "修改头像"),
+                            ff("member.ban", "禁用/解禁"), ff("member.delete", "删除"))),
+            new PermModule("invite", "邀请记录",
+                    List.of(pp("invite.record", "邀请记录")),
+                    List.of(ff("invite.revoke", "撤销邀请"), ff("invite.resend", "再次邀请"),
+                            ff("invite.ban", "禁用/解禁"))),
+            new PermModule("role", "角色管理",
+                    List.of(pf("role.manage", "角色管理")),
+                    List.of(ff("role.add", "添加角色"), ff("role.rename", "重命名"),
+                            ff("role.delete", "删除"), ff("role.editPerm", "修改权限"))),
+            new PermModule("cancel", "注销项目",
+                    List.of(pp("project.cancel", "注销项目")),
+                    List.of(ff("project.cancelConfirm", "确认注销"))),
+            // ===== 计费(占位) =====
+            new PermModule("billing.overview", "概览",
+                    List.of(pf("billing.manage", "概览")),
+                    List.of(ff("billing.addSeat", "增加席位"), ff("billing.buyTranslate", "购买翻译包"),
+                            ff("billing.buyTokens", "购买tokens"), ff("billing.buyCustomerPack", "购买客户拓展包"))),
+            new PermModule("billing.plan", "套餐信息",
+                    List.of(pp("billing.plan", "套餐信息")),
+                    List.of(ff("billing.subscribe", "订阅"))),
+            new PermModule("billing.order", "订单记录",
+                    List.of(pp("billing.order", "订单记录")),
+                    List.of(ff("billing.pay", "支付"), ff("billing.cancelOrder", "取消订单"))));
 
     public static List<PermModule> modules() {
         return MODULES;
     }
 
-    /** 目录中所有合法 token(保存时过滤越权 token) */
-    public static Set<String> allTokens() {
-        return MODULES.stream()
-                .flatMap(m -> Stream.concat(m.pages().stream(), m.functions().stream()))
-                .map(PermNode::token)
-                .collect(java.util.stream.Collectors.toSet());
+    private static Stream<PermNode> allNodes() {
+        return MODULES.stream().flatMap(m -> Stream.concat(m.pages().stream(), m.functions().stream()));
     }
 
-    /** token → store("page"/"function"),用于把勾选拆回 pages/functions */
+    /** 目录中所有合法 token(保存自定义角色时过滤越权 token) */
+    public static Set<String> allTokens() {
+        return allNodes().map(PermNode::token).collect(java.util.stream.Collectors.toSet());
+    }
+
+    /** token → store("page"/"function"),把勾选拆回 pages/functions */
     public static String storeOf(String token) {
-        return MODULES.stream()
-                .flatMap(m -> Stream.concat(m.pages().stream(), m.functions().stream()))
-                .filter(n -> n.token().equals(token))
-                .map(PermNode::store)
-                .findFirst().orElse(null);
+        return allNodes().filter(n -> n.token().equals(token)).map(PermNode::store).findFirst().orElse(null);
+    }
+
+    private static List<String> tokensByStore(String store) {
+        return allNodes().filter(n -> store.equals(n.store())).map(PermNode::token).distinct().toList();
+    }
+
+    /**
+     * 系统角色权限(运行时派生,不取 DB):
+     * <ul>
+     *   <li>负责人:全部 pages + 全部 functions + 会话动作。</li>
+     *   <li>管理员:同负责人,去掉「基本信息→编辑信息」「注销项目/确认注销」。</li>
+     *   <li>普通成员:收件箱(全部/未分配/会话搜索)+ 会话回复/撤回/结束 + 占位的查看类(Wiki/AI首页·流程/API/邀请记录/套餐/订单);
+     *       <b>不授予</b>各管理动作(成员/角色/信使/会话/黑名单/快捷回复/计费等)——这些 token 在我们这里=完整管理权,
+     *       为安全不给普通成员(故这些区域复选框对普通成员显示为未勾,与参考"可见不可改"略有出入,但鉴权更稳妥)。</li>
+     * </ul>
+     * 非系统角色名返回 null。
+     */
+    public static PermissionView forRole(String roleName) {
+        List<String> allPages = tokensByStore(PAGE);
+        List<String> allFuncs = tokensByStore(FUNC);
+        return switch (roleName == null ? "" : roleName) {
+            case "负责人" -> new PermissionView(allPages, concat(allFuncs, CONV_ALL));
+            case "管理员" -> new PermissionView(
+                    minus(allPages, Set.of("project.cancel")),
+                    concat(minus(allFuncs, Set.of("project.editInfo", "project.cancelConfirm")), CONV_ALL));
+            case "普通成员" -> new PermissionView(
+                    List.of("wiki.article", "wiki.app", "ai.home", "ai.flow",
+                            "api.manage", "invite.record", "billing.plan", "billing.order"),
+                    concat(List.of("inbox.viewAll", "inbox.viewUnassigned", "inbox.search",
+                            "wiki.article.create", "wiki.article.edit", "wiki.article.publish",
+                            "wiki.article.delete", "wiki.article.setting",
+                            "wiki.app.create", "wiki.app.site", "wiki.app.style",
+                            "wiki.app.content", "wiki.app.delete"), CONV_MEMBER));
+            default -> null;
+        };
+    }
+
+    private static List<String> minus(List<String> src, Set<String> remove) {
+        return src.stream().filter(t -> !remove.contains(t)).toList();
+    }
+
+    private static List<String> concat(List<String> a, List<String> b) {
+        return Stream.concat(a.stream(), b.stream()).distinct().toList();
     }
 }

@@ -177,9 +177,19 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.selectById(id);
     }
 
-    /** 解析角色权限 JSON 取 functions;解析失败返回空集合(不影响进入,只是无功能权限) */
+    /** 解析角色权限取 functions;系统角色按目录运行时派生(与角色页显示一致),自定义角色读存量 JSON */
     private Set<String> parseFunctions(IdRole role) {
-        if (role == null || role.getPermissions() == null) {
+        if (role == null) {
+            return Set.of();
+        }
+        if (role.getIsSystem() != null && role.getIsSystem() == 1) {
+            com.aitalky.identity.domain.PermissionView sys =
+                    com.aitalky.identity.domain.PermissionCatalog.forRole(role.getName());
+            if (sys != null) {
+                return sys.functions() == null ? Set.of() : new LinkedHashSet<>(sys.functions());
+            }
+        }
+        if (role.getPermissions() == null) {
             return Set.of();
         }
         try {
