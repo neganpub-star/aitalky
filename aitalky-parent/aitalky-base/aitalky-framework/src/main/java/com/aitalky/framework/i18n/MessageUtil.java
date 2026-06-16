@@ -1,9 +1,12 @@
 package com.aitalky.framework.i18n;
 
 import com.aitalky.framework.tenant.TenantContext;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Locale;
 
@@ -23,7 +26,30 @@ public class MessageUtil {
 
     /** 用当前上下文语言取文案 */
     public String get(String key, Object... args) {
-        return get(resolveLocale(TenantContext.getLang()), key, args);
+        return get(resolveLocale(currentLang()), key, args);
+    }
+
+    /**
+     * 当前语种:优先 TenantContext.lang(坐席接口经 AuthInterceptor 写入);
+     * 为空再直接读请求头 lang/Accept-Language——覆盖 /api/public/**(信使端)等不走 AuthInterceptor 的路径,
+     * 否则这些路径的错误提示会恒为中文兜底。
+     */
+    private static String currentLang() {
+        String lang = TenantContext.getLang();
+        if (lang != null && !lang.isBlank()) {
+            return lang;
+        }
+        try {
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attrs != null) {
+                HttpServletRequest req = attrs.getRequest();
+                String h = req.getHeader("lang");
+                return (h == null || h.isBlank()) ? req.getHeader("Accept-Language") : h;
+            }
+        } catch (Exception ignore) {
+            // 非 web 上下文(定时任务/MQ)取不到请求,走中文兜底
+        }
+        return null;
     }
 
     /** 用指定语言取文案 */

@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { message } from 'antd'
 import { getToken, logout } from '../auth/session'
+import { useAppStore } from '../store/useAppStore'
 
 // 统一请求客户端:注入 token/语言,拆解后端统一响应 R(成功返回 data,失败弹错并 reject)
 const client = axios.create({ baseURL: '/api', timeout: 15000 })
@@ -10,7 +11,8 @@ client.interceptors.request.use((cfg) => {
   if (token) {
     cfg.headers.Authorization = `Bearer ${token}`
   }
-  cfg.headers.lang = 'zh_CN'
+  // 发当前界面语言(zh_CN/en_US),后端据此本地化错误提示;原先写死 zh_CN 导致英文环境也返回中文
+  cfg.headers.lang = useAppStore.getState().lang || 'zh_CN'
   return cfg
 })
 

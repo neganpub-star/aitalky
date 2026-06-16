@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AccessParams, MessageVO, MessengerAgent, MessengerInit } from './types'
 import { normInit, normMessage } from './normalize'
+import { currentLang } from './i18n'
 
 // 信使端请求客户端:拆解后端统一响应 R(成功取 data,失败 reject)。客户令牌存内存,不落 localStorage(安全)
 const client = axios.create({ baseURL: '/api/public/messenger', timeout: 15000 })
@@ -21,6 +22,7 @@ client.interceptors.request.use((cfg) => {
   if (customerToken) {
     cfg.headers.Authorization = `Bearer ${customerToken}`
   }
+  cfg.headers.lang = currentLang() // 带界面语言,后端据此本地化错误提示(/api/public 不走 AuthInterceptor,由 MessageUtil 读头)
   return cfg
 })
 

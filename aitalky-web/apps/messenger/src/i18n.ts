@@ -478,6 +478,11 @@ export function setLang(lang: string | null | undefined) {
   current = lang && lang.startsWith('zh') ? 'zh_CN' : 'en_US'
 }
 
+// 当前生效语种码(zh_CN/en_US),供请求头带给后端做错误本地化
+export function currentLang(): string {
+  return current
+}
+
 // 取文案。当前语种缺该 key 时回退英文,再退 key 本身(不至于显示 undefined)。
 export function t(key: I18nKey): string {
   const table = dict[current] as Record<string, string>
