@@ -46,19 +46,21 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public com.aitalky.conversation.dto.OpenConversationResult openOrCreate(OpenConversationCmd cmd) {
         return lockTemplate.execute("lock:conv:open:" + cmd.projectId() + ":" + cmd.customerId(), 3, 10, () -> {
-            // 找该客户的活跃会话(进行中/等待队列)。按渠道隔离:groupId 不同算不同会话
-            // (普通分配=null 单独一类,每个专属策略各自一类),对齐参考——同一客户从
-            // 普通渠道与专属渠道进会分别维护各自会话线,互不复用。
-            CnvConversation active = conversationMapper.selectOne(Wrappers.<CnvConversation>lambdaQuery()
+            // 找该客户该渠道最近一条会话(含已结束)。按渠道隔离:groupId 不同算不同会话
+            // (普通分配=null 单独一类,每个专属策略各自一类),对齐参考——同一客户从普通渠道
+            // 与专属渠道进会分别维护各自会话线,互不复用。
+            // 关键:不限 status——已结束(含保持期自动结束)的会话也复用同一条,客户重进/刷新
+            // 不会新开会话;状态此处不动,待客户真正发消息时由 onNewMessage 自动重开(status 2→1),
+            // 避免"只打开窗口"就把已结束会话刷回进行中。
+            CnvConversation last = conversationMapper.selectOne(Wrappers.<CnvConversation>lambdaQuery()
                     .eq(CnvConversation::getProjectId, cmd.projectId())
                     .eq(CnvConversation::getCustomerId, cmd.customerId())
                     .eq(cmd.groupId() != null, CnvConversation::getGroupId, cmd.groupId())
                     .isNull(cmd.groupId() == null, CnvConversation::getGroupId)
-                    .in(CnvConversation::getStatus, 0, 1)
                     .orderByDesc(CnvConversation::getCreateTime)
                     .last("limit 1"));
-            if (active != null) {
-                return new com.aitalky.conversation.dto.OpenConversationResult(active, null); // 复用,不重复分配
+            if (last != null) {
+                return new com.aitalky.conversation.dto.OpenConversationResult(last, null); // 复用最近一条,不重复分配
             }
             CnvConversation conv = new CnvConversation();
             conv.setId(idGenerator.nextId());
