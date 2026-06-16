@@ -38,7 +38,7 @@ export default function ConversationSettings() {
   const { token } = theme.useToken()
   const canEdit = hasFunction('assign.setting') // 普通成员只读 → 禁用各写操作
 
-  const [openKey, setOpenKey] = useState<string | null>('basic')
+  const [openKey, setOpenKey] = useState<string | null>(null) // 默认全部收起,不自动展开首卡
   const [host, setHost] = useState('https://msg.example.top')
 
   // 基本设置
@@ -171,7 +171,7 @@ export default function ConversationSettings() {
   }) => {
     const open = openKey === k
     return (
-      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 16, border: `1px solid ${token.colorBorderSecondary}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 16, border: `1px solid ${token.colorBorder}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
         <div style={styles.cardHead} onClick={() => setOpenKey(open ? null : k)}>
           <span style={{ fontSize: 22, color: token.colorText }}>{icon}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -257,7 +257,7 @@ export default function ConversationSettings() {
   )
 
   return (
-    <div style={{ maxWidth: 1180 }}>
+    <div>
       <div style={styles.h1}>{t('conv.title')}</div>
 
       {/* 基本设置 */}
