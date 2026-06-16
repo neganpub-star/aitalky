@@ -115,7 +115,7 @@ export default function ConversationSettings() {
     setNormalModal(false)
     try {
       await Promise.all([...added.map((m) => addAssignMember(m.id)), ...removed.map((m) => removeAssignMember(m.id))])
-    } catch { message.error(t('mse.saved')) }
+    } catch { /* 失败由全局拦截器统一提示,避免重复 toast */ }
   }
   const removeNormalTeammate = (m: MemberVO) => {
     setNormalTeammates((s) => s.filter((x) => x.id !== m.id))
@@ -138,7 +138,7 @@ export default function ConversationSettings() {
       setStrategyModal(false)
       message.success(t('mse.saved'))
       reloadGroups()
-    } catch { message.error(t('common.failed')) }
+    } catch { /* 失败由全局拦截器统一提示 */ }
   }
   // 表格「队友管理」:只改队友,名称/备注不动
   const applyManageTeam = async (ms: MemberVO[]) => {
@@ -148,10 +148,10 @@ export default function ConversationSettings() {
     try {
       await updateAssignGroup(r.id, { name: r.name, remark: r.remark, memberIds: ms.map((m) => m.id) })
       reloadGroups()
-    } catch { message.error(t('common.failed')) }
+    } catch { /* 失败由全局拦截器统一提示 */ }
   }
   const delStrategy = async (r: Strategy) => {
-    try { await deleteAssignGroup(r.id); reloadGroups() } catch { message.error(t('common.failed')) }
+    try { await deleteAssignGroup(r.id); reloadGroups() } catch { /* 失败由全局拦截器统一提示 */ }
   }
   // 专属接入 URL / 插件代码(带 groupId)
   const strategyUrl = (mark: string) => `${host}?groupId=${mark}&appId=${appId}`
