@@ -1,6 +1,6 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Badge, Button, Empty, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Badge, Button, ConfigProvider, Empty, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
@@ -609,7 +609,7 @@ export default function Inbox() {
         onClick={() => selectConversation(c)}
         style={{
           display: 'flex', gap: 10, padding: '12px 16px', cursor: 'pointer',
-          background: on ? (isDark ? token.colorFillSecondary : '#eef3ff') : 'transparent',
+          background: on ? (isDark ? token.colorFillSecondary : token.colorPrimaryBg) : 'transparent',
           borderLeft: `3px solid ${on ? token.colorPrimary : 'transparent'}`,
         }}
       >
@@ -792,25 +792,28 @@ export default function Inbox() {
           <span style={{ ...styles.colTitle, flex: 1, marginLeft: 10 }}>{activeLabel}</span>
         </div>
         <div style={{ padding: '12px 16px' }}>
-          <Segmented
-            block
-            value={tab}
-            onChange={(v) => { setTab(v as TabKey); setSelectedId(null) }}
-            options={[
-              {
-                value: 'open',
-                label: <span style={{ fontWeight: tab === 'open' ? 600 : 400, color: tab === 'open' ? token.colorPrimary : undefined }}>
-                  {`${t('inbox.inProgress')} ${tab === 'open' ? total : ''}`.trim()}
-                </span>,
-              },
-              {
-                value: 'closed',
-                label: <span style={{ fontWeight: tab === 'closed' ? 600 : 400, color: tab === 'closed' ? token.colorPrimary : undefined }}>
-                  {t('inbox.closed')}
-                </span>,
-              },
-            ]}
-          />
+          {/* 选中滑块上淡蓝底+主色字(走 token,不硬编码),配合下方加粗,选中更醒目 */}
+          <ConfigProvider theme={{ components: { Segmented: { itemSelectedBg: token.colorPrimaryBg, itemSelectedColor: token.colorPrimary } } }}>
+            <Segmented
+              block
+              value={tab}
+              onChange={(v) => { setTab(v as TabKey); setSelectedId(null) }}
+              options={[
+                {
+                  value: 'open',
+                  label: <span style={{ fontWeight: tab === 'open' ? 600 : 400 }}>
+                    {`${t('inbox.inProgress')} ${tab === 'open' ? total : ''}`.trim()}
+                  </span>,
+                },
+                {
+                  value: 'closed',
+                  label: <span style={{ fontWeight: tab === 'closed' ? 600 : 400 }}>
+                    {t('inbox.closed')}
+                  </span>,
+                },
+              ]}
+            />
+          </ConfigProvider>
         </div>
         <div style={{ flex: 1, overflow: 'auto' }}>
           {loadingList && list.length === 0 ? (
