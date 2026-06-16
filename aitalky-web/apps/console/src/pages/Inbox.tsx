@@ -580,7 +580,7 @@ export default function Inbox() {
     colTitle: { fontWeight: 700, fontSize: 17 },
     groupLabel: { padding: '16px 16px 6px', fontSize: 12, color: token.colorTextSecondary },
     catItem: { display: 'flex', alignItems: 'center', gap: 10, margin: '4px 8px', padding: '11px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 15 },
-    catActive: { background: token.colorBgContainer, color: token.colorPrimary, boxShadow: token.boxShadowTertiary },
+    catActive: { background: token.colorPrimaryBg, color: token.colorPrimary, fontWeight: 600 },
     count: { marginLeft: 'auto', minWidth: 22, height: 20, padding: '0 6px', borderRadius: 6, background: token.colorFillSecondary, color: token.colorTextSecondary, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   }
 
@@ -796,8 +796,18 @@ export default function Inbox() {
             value={tab}
             onChange={(v) => { setTab(v as TabKey); setSelectedId(null) }}
             options={[
-              { label: `${t('inbox.inProgress')} ${tab === 'open' ? total : ''}`.trim(), value: 'open' },
-              { label: t('inbox.closed'), value: 'closed' },
+              {
+                value: 'open',
+                label: <span style={{ fontWeight: tab === 'open' ? 600 : 400, color: tab === 'open' ? token.colorPrimary : undefined }}>
+                  {`${t('inbox.inProgress')} ${tab === 'open' ? total : ''}`.trim()}
+                </span>,
+              },
+              {
+                value: 'closed',
+                label: <span style={{ fontWeight: tab === 'closed' ? 600 : 400, color: tab === 'closed' ? token.colorPrimary : undefined }}>
+                  {t('inbox.closed')}
+                </span>,
+              },
             ]}
           />
         </div>
