@@ -34,7 +34,7 @@ public class MemberController {
 
     /** 成员分页列表 */
     @GetMapping
-    @RequiresFunction("member.manage")
+    @RequiresFunction({"member.view", "member.manage"})
     public R<PageResult<MemberVO>> page(MemberQuery query) {
         return R.ok(memberService.page(query));
     }

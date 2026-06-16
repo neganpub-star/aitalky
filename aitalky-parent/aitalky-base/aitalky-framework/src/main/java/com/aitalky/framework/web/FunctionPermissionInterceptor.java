@@ -23,7 +23,15 @@ public class FunctionPermissionInterceptor implements HandlerInterceptor {
         if (rf == null) {
             return true;
         }
-        if (!TenantContext.hasFunction(rf.value())) {
+        // 任一命中即放行(支持"查看或管理"读接口);全不命中才拦截
+        boolean allowed = false;
+        for (String code : rf.value()) {
+            if (TenantContext.hasFunction(code)) {
+                allowed = true;
+                break;
+            }
+        }
+        if (!allowed) {
             throw new BizException(ResultCode.NO_FUNCTION_PERMISSION);
         }
         return true;

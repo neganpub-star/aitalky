@@ -41,14 +41,14 @@ public class RoleController {
 
     /** 权限目录(模块/页面/功能) */
     @GetMapping("/catalog")
-    @RequiresFunction("role.manage")
+    @RequiresFunction({"role.view", "role.manage"})
     public R<List<PermModule>> catalog() {
         return R.ok(roleService.catalog());
     }
 
     /** 某角色已勾选权限 */
     @GetMapping("/{id}/permissions")
-    @RequiresFunction("role.manage")
+    @RequiresFunction({"role.view", "role.manage"})
     public R<PermissionView> permissions(@PathVariable Long id) {
         return R.ok(roleService.permissions(id));
     }

@@ -87,32 +87,32 @@ public final class PermissionCatalog {
                     List.of(pp("notice.urgent", "紧急通知设置")),
                     List.of(ff("notice.edit", "编辑通知"))),
             new PermModule("messenger", "信使设置",
-                    List.of(pf("messenger.setting", "信使设置")),
-                    List.of(ff("messenger.greeting", "设置欢迎语"), ff("messenger.replyTime", "设置回复时间"),
+                    List.of(pf("messenger.view", "信使设置")),
+                    List.of(ff("messenger.setting", "设置欢迎语"), ff("messenger.replyTime", "设置回复时间"),
                             ff("messenger.bizCard", "设置业务卡片"), ff("messenger.viewTime", "信使查看时间配置"),
                             ff("messenger.launcher", "启动器样式"), ff("messenger.sysMsg", "系统消息显示"),
                             ff("messenger.preference", "偏好设置"), ff("messenger.customerRetract", "客户撤回消息权限"),
                             ff("messenger.webMeta", "自定义网站标题和图标"))),
             new PermModule("assign", "会话设置",
-                    List.of(pf("assign.setting", "会话设置")),
-                    List.of(ff("assign.basic", "基本设置"), ff("assign.domain", "域名自定义"),
+                    List.of(pf("assign.view", "会话设置")),
+                    List.of(ff("assign.setting", "基本设置"), ff("assign.domain", "域名自定义"),
                             ff("assign.normal", "普通分配模式"), ff("group.manage", "专属分配模式"),
                             ff("assign.keep", "保持期设置"))),
             new PermModule("api", "API管理",
                     List.of(pp("api.manage", "API管理")),
                     List.of(ff("api.resetSecret", "重置Secret Key"))),
             new PermModule("blacklist", "黑名单",
-                    List.of(pf("blacklist.manage", "黑名单")),
-                    List.of(ff("blacklist.remove", "移除黑名单"))),
+                    List.of(pf("blacklist.view", "黑名单")),
+                    List.of(ff("blacklist.manage", "移除黑名单"))),
             new PermModule("quickreply", "快捷回复",
-                    List.of(pf("quickreply.manage", "快捷回复")),
-                    List.of(ff("quickreply.action", "快捷回复管理"))),
+                    List.of(pf("quickreply.view", "快捷回复")),
+                    List.of(ff("quickreply.manage", "快捷回复管理"))),
             new PermModule("basic", "基本信息",
-                    List.of(pf("project.setting", "基本信息")),
-                    List.of(ff("project.editInfo", "编辑信息"))),
+                    List.of(pf("project.view", "基本信息")),
+                    List.of(ff("project.setting", "编辑信息"))),
             new PermModule("member", "成员信息",
-                    List.of(pf("member.manage", "成员信息")),
-                    List.of(ff("member.invite", "邀请成员"), ff("member.rename", "重命名"),
+                    List.of(pf("member.view", "成员信息")),
+                    List.of(ff("member.manage", "邀请成员"), ff("member.rename", "重命名"),
                             ff("member.role", "调整角色"), ff("member.avatar", "修改头像"),
                             ff("member.ban", "禁用/解禁"), ff("member.delete", "删除"))),
             new PermModule("invite", "邀请记录",
@@ -120,16 +120,16 @@ public final class PermissionCatalog {
                     List.of(ff("invite.revoke", "撤销邀请"), ff("invite.resend", "再次邀请"),
                             ff("invite.ban", "禁用/解禁"))),
             new PermModule("role", "角色管理",
-                    List.of(pf("role.manage", "角色管理")),
-                    List.of(ff("role.add", "添加角色"), ff("role.rename", "重命名"),
+                    List.of(pf("role.view", "角色管理")),
+                    List.of(ff("role.manage", "添加角色"), ff("role.rename", "重命名"),
                             ff("role.delete", "删除"), ff("role.editPerm", "修改权限"))),
             new PermModule("cancel", "注销项目",
                     List.of(pp("project.cancel", "注销项目")),
                     List.of(ff("project.cancelConfirm", "确认注销"))),
             // ===== 计费(占位) =====
             new PermModule("billing.overview", "概览",
-                    List.of(pf("billing.manage", "概览")),
-                    List.of(ff("billing.addSeat", "增加席位"), ff("billing.buyTranslate", "购买翻译包"),
+                    List.of(pf("billing.view", "概览")),
+                    List.of(ff("billing.manage", "增加席位"), ff("billing.buyTranslate", "购买翻译包"),
                             ff("billing.buyTokens", "购买tokens"), ff("billing.buyCustomerPack", "购买客户拓展包"))),
             new PermModule("billing.plan", "套餐信息",
                     List.of(pp("billing.plan", "套餐信息")),
@@ -165,9 +165,10 @@ public final class PermissionCatalog {
      * <ul>
      *   <li>负责人:全部 pages + 全部 functions + 会话动作。</li>
      *   <li>管理员:同负责人,去掉「基本信息→编辑信息」「注销项目/确认注销」。</li>
-     *   <li>普通成员:收件箱(全部/未分配/会话搜索)+ 会话回复/撤回/结束 + 占位的查看类(Wiki/AI首页·流程/API/邀请记录/套餐/订单);
-     *       <b>不授予</b>各管理动作(成员/角色/信使/会话/黑名单/快捷回复/计费等)——这些 token 在我们这里=完整管理权,
-     *       为安全不给普通成员(故这些区域复选框对普通成员显示为未勾,与参考"可见不可改"略有出入,但鉴权更稳妥)。</li>
+     *   <li>普通成员:收件箱(全部/未分配/会话搜索)+ 会话回复/撤回/结束 + 各设置区的 <b>*.view 只读 token</b>
+     *       (messenger/assign/blacklist/quickreply/project/member/role/billing 可<b>看不能改</b>:菜单可见、读接口放行、
+     *       页面可进,但 *.manage/.setting 写权不授予)+ 占位查看类(Wiki/AI首页·流程/API/邀请记录/套餐/订单)。
+     *       即对齐参考的"可见不可改"。</li>
      * </ul>
      * 非系统角色名返回 null。
      */
@@ -183,6 +184,9 @@ public final class PermissionCatalog {
                     List.of("wiki.article", "wiki.app", "ai.home", "ai.flow",
                             "api.manage", "invite.record", "billing.plan", "billing.order"),
                     concat(List.of("inbox.viewAll", "inbox.viewUnassigned", "inbox.search",
+                            // 各设置区"只读查看"token(可进页面/菜单可见,但无 *.manage/.setting 写权)
+                            "messenger.view", "assign.view", "blacklist.view", "quickreply.view",
+                            "project.view", "member.view", "role.view", "billing.view",
                             "wiki.article.create", "wiki.article.edit", "wiki.article.publish",
                             "wiki.article.delete", "wiki.article.setting",
                             "wiki.app.create", "wiki.app.site", "wiki.app.style",

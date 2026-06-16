@@ -18,10 +18,12 @@ export function hasAnyFunction(...codes: string[]): boolean {
   return codes.some((c) => fns.includes(c))
 }
 
-/** 设置区相关功能(任一即可看到「设置」入口) */
+/** 设置区相关功能(任一即可看到「设置」入口);含 *.view 只读 token,普通成员凭查看权也能进设置(可见不可改) */
 export const SETTINGS_FUNCTIONS = [
   'messenger.setting', 'assign.setting', 'group.manage', 'quickreply.manage',
   'blacklist.manage', 'member.manage', 'role.manage', 'project.setting', 'billing.manage',
+  'messenger.view', 'assign.view', 'blacklist.view', 'quickreply.view',
+  'project.view', 'member.view', 'role.view', 'billing.view',
 ]
 
 export function canAccessSettings(): boolean {

@@ -31,7 +31,7 @@ public class AssignController {
 
     /** 分配配置 */
     @GetMapping("/config")
-    @RequiresFunction("assign.setting")
+    @RequiresFunction({"assign.view", "assign.setting"})
     public R<AssignConfigVO> getConfig() {
         return R.ok(assignService.getConfig(TenantContext.getProjectId()));
     }
@@ -46,7 +46,7 @@ public class AssignController {
 
     /** 参与队友成员ID列表(前端用成员表映射出昵称/头像/角色) */
     @GetMapping("/members")
-    @RequiresFunction("assign.setting")
+    @RequiresFunction({"assign.view", "assign.setting"})
     public R<List<Long>> members() {
         return R.ok(assignService.participantIds(TenantContext.getProjectId()));
     }
@@ -71,7 +71,7 @@ public class AssignController {
 
     /** 专属策略列表(含各自参与队友ID;昵称/头像前端用成员表映射) */
     @GetMapping("/groups")
-    @RequiresFunction("assign.setting")
+    @RequiresFunction({"assign.view", "assign.setting"})
     public R<List<AsnGroupVO>> groups() {
         return R.ok(assignService.listGroups(TenantContext.getProjectId()));
     }

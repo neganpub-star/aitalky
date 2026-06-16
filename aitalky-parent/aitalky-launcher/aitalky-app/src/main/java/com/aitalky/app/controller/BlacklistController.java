@@ -36,7 +36,7 @@ public class BlacklistController {
 
     /** 分页列表(keyword 可空,模糊匹配 UID/MID/用户名/联系方式/邮箱) */
     @GetMapping
-    @RequiresFunction("messenger.setting")
+    @RequiresFunction({"blacklist.view", "messenger.setting"})
     public R<PageResult<BlacklistVO>> page(@RequestParam(defaultValue = "1") long page,
                                            @RequestParam(defaultValue = "20") long size,
                                            @RequestParam(required = false) String keyword) {

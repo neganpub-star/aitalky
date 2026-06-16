@@ -39,7 +39,7 @@ public class ProjectController {
 
     /** 当前项目基本信息 */
     @GetMapping("/current")
-    @RequiresFunction("project.setting")
+    @RequiresFunction({"project.view", "project.setting"})
     public R<ProjectDetailVO> current() {
         return R.ok(projectService.currentDetail());
     }
