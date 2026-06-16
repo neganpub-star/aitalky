@@ -75,12 +75,17 @@ export interface PermNode {
   store: 'page' | 'function'
 }
 
-// 权限目录模块(对应后端 PermModule):模块/页面/功能 三列
+// 权限模块内一行(对应后端 PermRow):页面节点 + 该行功能节点
+export interface PermRow {
+  pages: PermNode[]
+  functions: PermNode[]
+}
+
+// 权限目录模块(对应后端 PermModule):模块名跨多行,每行=页面+功能
 export interface PermModule {
   key: string
   name: string
-  pages: PermNode[]
-  functions: PermNode[]
+  rows: PermRow[]
 }
 
 // 某角色已勾选权限(对应后端 PermissionView)

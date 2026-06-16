@@ -28,7 +28,22 @@ export default function RolePage() {
   const readonly = !current || current.isSystem === 1 || !canManage
 
   const allNodes = useMemo<PermNode[]>(
-    () => catalog.flatMap((m) => [...m.pages, ...m.functions]),
+    () => catalog.flatMap((m) => m.rows.flatMap((r) => [...r.pages, ...r.functions])),
+    [catalog],
+  )
+
+  // 拍平为表格行:每个模块的首行带 rowSpan(模块名跨该模块所有行),其余行 rowSpan=0
+  const tableRows = useMemo(
+    () => catalog.flatMap((m) =>
+      m.rows.map((r, i) => ({
+        key: `${m.key}-${i}`,
+        module: m,
+        first: i === 0,
+        span: i === 0 ? m.rows.length : 0,
+        pages: r.pages,
+        functions: r.functions,
+      })),
+    ),
     [catalog],
   )
 
@@ -130,11 +145,14 @@ export default function RolePage() {
     <Checkbox key={n.token} disabled={readonly} checked={checked.has(n.token)}
       onChange={(e) => toggle([n.token], e.target.checked)}>{n.name}</Checkbox>
   )
-  const columns: ColumnsType<PermModule> = [
+  type TableRow = typeof tableRows[number]
+  const columns: ColumnsType<TableRow> = [
     {
-      title: t('role.colModule'), dataIndex: 'name', width: 200,
-      render: (_, m) => {
-        const tokens = [...m.pages, ...m.functions].map((n) => n.token)
+      title: t('role.colModule'), width: 200,
+      onCell: (r) => ({ rowSpan: r.span }), // 模块名跨该模块所有行
+      render: (_, r) => {
+        const m = r.module
+        const tokens = m.rows.flatMap((rr) => [...rr.pages, ...rr.functions]).map((n) => n.token)
         const all = tokens.every((tk) => checked.has(tk))
         const some = tokens.some((tk) => checked.has(tk))
         return (
@@ -147,13 +165,13 @@ export default function RolePage() {
     },
     {
       title: t('role.colPage'), width: 240,
-      render: (_, m) => <div style={cellStyle}>{m.pages.map(node)}</div>,
+      render: (_, r) => <div style={cellStyle}>{r.pages.map(node)}</div>,
     },
     {
       title: t('role.colFunc'),
-      render: (_, m) => (
+      render: (_, r) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 32, rowGap: 12, padding: '4px 0' }}>
-          {m.functions.length ? m.functions.map(node) : <span style={{ color: token.colorTextQuaternary }}>—</span>}
+          {r.functions.length ? r.functions.map(node) : <span style={{ color: token.colorTextQuaternary }}>—</span>}
         </div>
       ),
     },
@@ -206,7 +224,7 @@ export default function RolePage() {
           </div>
           {current ? (
             <Spin spinning={permLoading}>
-              <Table<PermModule> rowKey="key" columns={columns} dataSource={catalog} pagination={false} size="middle" />
+              <Table<TableRow> rowKey="key" columns={columns} dataSource={tableRows} pagination={false} size="middle" />
             </Spin>
           ) : <Empty />}
         </div>
