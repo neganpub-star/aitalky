@@ -100,9 +100,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
         <div className="back" onClick={onBack}>
           ‹
         </div>
-        {/* 标题=项目名,点击展开/收起服务坐席 */}
+        {/* 标题=项目名;专属渠道接入时品牌名下展示一行渠道名。点击展开/收起服务坐席 */}
         <div className="title" style={{ cursor: 'pointer' }} onClick={() => setHeaderOpen((v) => !v)}>
           {brandName}
+          {data.channelName && <div className="chat-channel">{data.channelName}</div>}
         </div>
       </div>
 

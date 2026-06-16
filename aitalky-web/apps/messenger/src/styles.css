@@ -166,6 +166,14 @@ body {
   text-align: center;
   font-weight: 600;
   margin-right: 36px;
+  line-height: 1.25;
+}
+/* 专属渠道名:品牌名下方一行小字(灰),仅专属接入展示 */
+.chat-header .chat-channel {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary, #8a9099);
+  margin-top: 1px;
 }
 .chat-status {
   font-size: 12px;

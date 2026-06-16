@@ -562,6 +562,8 @@ export default {
       assignee: '会话分配',
       source: '来源渠道',
       channelName: '渠道名称',
+      channelExclusive: '专属分配',
+      channelNormal: '普通分配',
       unassigned: '未分配',
       bizInfo: '客户信息',
       bizUid: '业务系统UID',

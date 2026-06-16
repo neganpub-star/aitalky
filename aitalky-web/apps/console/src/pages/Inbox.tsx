@@ -1009,7 +1009,7 @@ export default function Inbox() {
             </div>
           </div>
 
-          {/* 会话信息(来源渠道/渠道名称数据待专属分配 asn 模块,先占位 --)*/}
+          {/* 会话信息:来源渠道=有 groupId 为专属分配(渠道名=专属策略名),否则普通分配 */}
           <DetailSection title={t('inbox.detail.convInfo')} token={token} rows={[
             [t('inbox.detail.convId'), detail.id],
             [t('inbox.detail.ip'), detail.ip || t('inbox.detail.empty')],
@@ -1018,8 +1018,9 @@ export default function Inbox() {
             [t('inbox.detail.assignee'), detail.assigneeName
               || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : null)
               || t('inbox.detail.unassigned')],
-            [t('inbox.detail.source'), t('inbox.detail.empty')],
-            [t('inbox.detail.channelName'), t('inbox.detail.empty')],
+            [t('inbox.detail.source'), detail.groupId
+              ? t('inbox.detail.channelExclusive') : t('inbox.detail.channelNormal')],
+            [t('inbox.detail.channelName'), detail.channelName || t('inbox.detail.empty')],
           ]} />
 
           {/* 客户信息:UID 只读;联系方式/邮箱可内联编辑(两行式,编辑铅笔在值行右侧)*/}

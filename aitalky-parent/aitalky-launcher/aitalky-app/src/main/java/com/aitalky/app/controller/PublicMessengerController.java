@@ -92,8 +92,11 @@ public class PublicMessengerController {
         // 服务坐席头部:已分配=显示该坐席(在线/离线);未分配=显示项目在线坐席(预计回复)或忙碌留言
         var agent = resolveAgent(project.getId(), conv.getAssigneeMemberId(),
                 config == null ? null : config.replyTime());
+        // 专属渠道名:会话经专属策略接入(groupId 非空)时,头部品牌名下展示渠道名;普通接入为 null
+        String channelName = assignService.groupName(conv.getGroupId());
         return R.ok(new MessengerInitVO(token, conv.getId(),
-                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config, agent));
+                customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config, agent,
+                channelName));
     }
 
     /** 刷新服务坐席头部(客户令牌):坐席上下线/会话被认领后,信使端 focus/重连时拉最新 */

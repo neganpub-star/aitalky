@@ -12,5 +12,7 @@ public record ConversationDetailVO(
         // 客户已读到的 seq(已读回执:坐席消息 seq<=此值显示"已读")
         Long customerReadSeq,
         // 该客户是否已在黑名单 + 命中记录 id(供详情面板「加入/移除黑名单」状态切换与移除)
-        Boolean blocked, Long blacklistId) {
+        Boolean blocked, Long blacklistId,
+        // 来源渠道:groupId 非空=专属分配(channelName=专属策略名);空=普通分配(channelName=null)
+        Long groupId, String channelName) {
 }

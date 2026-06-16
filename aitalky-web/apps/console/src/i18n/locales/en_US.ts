@@ -548,6 +548,8 @@ export default {
       assignee: 'Assignee',
       source: 'Source',
       channelName: 'Channel',
+      channelExclusive: 'Exclusive',
+      channelNormal: 'Normal',
       unassigned: 'Unassigned',
       bizInfo: 'Customer',
       bizUid: 'Business UID',

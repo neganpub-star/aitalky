@@ -47,6 +47,7 @@ public class ConversationController {
     private final ObjectMapper objectMapper;
     private final com.aitalky.messenger.service.BlacklistService blacklistService;
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
+    private final com.aitalky.conversation.service.AssignService assignService;
 
     /** 收件箱列表 */
     @GetMapping
@@ -89,6 +90,8 @@ public class ConversationController {
         // 黑名单状态:命中记录 id(无则 null),供详情面板「加入/移除黑名单」切换
         Long blacklistId = cu == null ? null
                 : blacklistService.findBlockedId(c.getProjectId(), cu.getExternalUserId(), cu.getVisitorId());
+        // 来源渠道:会话带 groupId=专属分配,取专属策略名作渠道名称;无 groupId=普通分配(channelName=null)
+        String channelName = assignService.groupName(c.getGroupId());
         return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
                 c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
                 cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
@@ -97,7 +100,8 @@ public class ConversationController {
                 cu == null ? null : cu.getContact(), cu == null ? null : cu.getEmail(),
                 cu == null ? null : cu.getCustomAttrs(), c.getLastSeq(), assigneeName,
                 c.getCustomerReadSeq(),
-                blacklistId != null, blacklistId));
+                blacklistId != null, blacklistId,
+                c.getGroupId(), channelName));
     }
 
     /** 更新客户联系方式/邮箱(详情面板编辑) */

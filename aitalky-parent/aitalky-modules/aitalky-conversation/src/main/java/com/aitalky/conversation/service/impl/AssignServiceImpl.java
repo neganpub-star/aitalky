@@ -220,6 +220,11 @@ public class AssignServiceImpl implements AssignService {
     }
 
     @Override
+    public String groupName(Long groupId) {
+        return groupId == null ? null : groupMapper.selectNameById(groupId);
+    }
+
+    @Override
     public Long resolveGroupId(Long projectId, String groupKey) {
         if (!StringUtils.hasText(groupKey)) {
             return null;

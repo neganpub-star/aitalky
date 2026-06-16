@@ -50,6 +50,8 @@ export interface MessengerInit {
   lastSeq: number
   config: MessengerConfig | null
   agent: MessengerAgent | null
+  // 专属渠道名(会话经专属策略接入时有值):头部品牌名下展示一行渠道名;普通接入为 null
+  channelName: string | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

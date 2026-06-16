@@ -52,6 +52,9 @@ public interface AssignService {
     /** 某专属策略的参与队友成员ID(供分配引擎按 conv.groupId 取范围) */
     List<Long> groupMembers(Long groupId);
 
+    /** 按组id取渠道名称(专属策略名);groupId 为空或不存在返回 null。策略已删仍回显历史名(供会话详情/信使头部展示) */
+    String groupName(Long groupId);
+
     /** 接入时按 groupKey 反解专属策略id(限本项目、type=2、未删);不存在返回 null(降级普通分配) */
     Long resolveGroupId(Long projectId, String groupKey);
 }
