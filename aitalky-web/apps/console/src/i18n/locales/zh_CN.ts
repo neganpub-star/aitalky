@@ -591,6 +591,7 @@ export default {
     typeAddonCustomer: '购买客户配额',
     orderDetail: '订单详情',
     orderInfo: '订单信息',
+    planType: '套餐类型',
     stPending: '待支付',
     stPaid: '已完成',
     stCancelled: '已取消',

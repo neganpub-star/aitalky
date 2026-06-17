@@ -577,6 +577,7 @@ export default {
     typeAddonCustomer: 'Buy customer quota',
     orderDetail: 'Order detail',
     orderInfo: 'Order info',
+    planType: 'Plan',
     stPending: 'Pending',
     stPaid: 'Completed',
     stCancelled: 'Cancelled',

@@ -1,4 +1,4 @@
-import { Modal, Tag, theme } from 'antd'
+import { Modal, Popover, Tag, Typography, theme } from 'antd'
 import { CheckOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { OrderVO, PlanVO } from '../../api/billing'
@@ -28,22 +28,45 @@ export default function OrderDetailModal({ open, order, plan, onClose }: Props) 
 
   const statusMap = STATUS(t)
   const st = statusMap[order.status]
-  const isAddon = order.type === 'addon_seat' || order.type === 'addon_customer'
   // 套餐名本地化:有 plan 按 code 走 i18n,否则回退订单快照 planName
   const planName = (() => {
     if (!plan) return order.planName
     const k = `bill.plan.${plan.code}`; const l = t(k); return l === k ? order.planName : l
   })()
   const seatQuota = plan?.quotas.find((q) => q.resourceType === 'seat')
-  // 订阅席位:套餐单=套餐配额+加购;席位加购单=加购数
+  // 订阅席位:套餐单=套餐配额+加购;席位加购单=加购数。
+  // 注:quota.amount 是 Long 序列化为字符串,必须 Number() 转数字,否则 "3"+3="33"(字符串拼接)
   const seatText = order.type === 'addon_seat'
     ? `${order.seats}`
-    : `${(seatQuota?.amount || 0) + (order.seats || 0)}`
+    : `${Number(seatQuota?.amount || 0) + Number(order.seats || 0)}`
   const periodText = order.type === 'addon_seat'
     ? t('bill.days', { n: order.periodDays })
     : order.type === 'addon_customer' ? '--' : t('bill.days', { n: order.months * 30 })
   const features = plan?.features || []
   const featLabel = (code: string) => { const k = `bill.feat.${code}`; const l = t(k); return l === k ? code : l }
+
+  // 套餐服务清单(Popover 内容):点击套餐类型展示(对齐现网)
+  const serviceList = features.length > 0 ? (
+    <div style={{ minWidth: 180, display: 'flex', flexDirection: 'column', gap: 11, fontSize: 13, padding: '4px 2px' }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{t('bill.planService')}</div>
+      {seatQuota && (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
+          {t('bill.res.seat')}: {seatQuota.isUnlimited ? t('bill.unlimited') : seatQuota.amount}
+        </span>
+      )}
+      {features.map((f) => (
+        <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />{featLabel(f)}
+        </span>
+      ))}
+    </div>
+  ) : null
+
+  // 套餐类型值:有服务清单则做成可点链接 + Popover 悬浮展示,否则纯文本
+  const planNameNode = serviceList
+    ? <Popover content={serviceList} placement="rightTop" trigger={['click', 'hover']}><Typography.Link>{planName}</Typography.Link></Popover>
+    : <span>{planName}</span>
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} width={720} destroyOnClose title={t('bill.orderDetail')}>
@@ -62,34 +85,17 @@ export default function OrderDetailModal({ open, order, plan, onClose }: Props) 
         <Field label={t('bill.createdAt')} token={token}>{order.createTime || '--'}</Field>
       </div>
 
-      {/* 套餐信息网格 */}
+      {/* 套餐信息网格(套餐类型可点→Popover 展示套餐服务,对齐现网) */}
       <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, marginTop: 20, overflow: 'hidden' }}>
         <GridRow token={token}
-          left={[isAddon && order.type === 'addon_customer' ? t('bill.res.customer') : t('bill.subResource'),
-            isAddon && order.type === 'addon_customer' ? String(order.quantity) : planName]}
+          left={order.type === 'addon_customer'
+            ? [t('bill.res.customer'), String(order.quantity)]
+            : [t('bill.planType'), planNameNode]}
           right={[t('bill.subSeats'), seatText]} />
-        <GridRow token={token} left={[t('bill.subPeriod'), periodText]} right={[t('bill.subResource'), planName]} divider />
+        <GridRow token={token}
+          left={[t('bill.subPeriod'), periodText]}
+          right={[t('bill.payMethod'), order.payCurrency || order.currency]} divider />
       </div>
-
-      {/* 套餐服务 */}
-      {features.length > 0 && (
-        <>
-          <div style={{ fontSize: 15, fontWeight: 600, margin: '20px 0 12px' }}>{t('bill.planService')}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', rowGap: 11, fontSize: 13 }}>
-            {seatQuota && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
-                {t('bill.res.seat')}: {seatQuota.isUnlimited ? t('bill.unlimited') : seatQuota.amount}
-              </span>
-            )}
-            {features.map((f) => (
-              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />{featLabel(f)}
-              </span>
-            ))}
-          </div>
-        </>
-      )}
     </Modal>
   )
 }
