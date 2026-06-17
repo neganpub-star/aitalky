@@ -103,6 +103,19 @@ aitalky:
   job:
     close-idle:
       cron: "0 * * * * ?"
+  # 订阅计费支付渠道(本地明文,上线改环境变量/配置中心)
+  billing:
+    # 行级防篡改 HMAC 密钥(订单/余额/流水签名);与数据库分离存放,勿入库
+    sign-key: "aitalky-billing-hmac-key-change-on-prod"
+    # 地址 AES-256-GCM 加密密钥(32字节 base64 或原文取32字节)
+    address-key: "aitalky-addr-aes-256-gcm-key-32b!"
+    channel: coinly                # 当前启用渠道
+    coinly:
+      base-url: "https://gateway.hhnumilala.xyz/api/"
+      pid: "2067074671589957634"
+      api-key: "ExDW1GnTccSWzCYOtMBS7TPZMwvF6dlw"
+      # 回调地址(Coinly 收到充值后回调);本机开发用内网穿透/占位
+      callback-url: "https://aitalky.example.top/api/public/billing/coinly/callback"
 
 logging:
   level:

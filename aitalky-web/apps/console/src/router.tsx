@@ -25,6 +25,8 @@ import ApiManage from './pages/settings/ApiManage'
 import TeamBasic from './pages/settings/TeamBasic'
 import DeactivateProject from './pages/settings/DeactivateProject'
 import RolePage from './pages/settings/RolePage'
+import BillingOverview from './pages/settings/BillingOverview'
+import BillingPlans from './pages/settings/BillingPlans'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -85,7 +87,10 @@ export const router = createHashRouter([
           { path: 'deactivate', element: <DeactivateProject /> },
           { path: 'roles', element: <RolePage /> },
           { path: 'data', element: <Placeholder title="数据管理" /> },
-          { path: 'billing', element: <Placeholder title="服务订阅" /> },
+          { path: 'billing', element: <Navigate to="/settings/billing/overview" replace /> },
+          { path: 'billing/overview', element: <BillingOverview /> },
+          { path: 'billing/plans', element: <BillingPlans /> },
+          { path: 'billing/orders', element: <Placeholder title="订单记录" /> },
         ],
       },
     ],

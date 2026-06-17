@@ -47,7 +47,11 @@ export default function SettingsLayout() {
     },
     {
       key: 'sub', icon: <WalletOutlined />, label: t('settings.subscription'),
-      children: [{ key: '/settings/billing', label: t('settings.subscription'), funcs: ['billing.view', 'billing.manage'] }],
+      children: [
+        { key: '/settings/billing/overview', label: t('bill.overview'), funcs: ['billing.view', 'billing.manage'] },
+        { key: '/settings/billing/plans', label: t('bill.plans'), funcs: ['billing.view', 'billing.manage'] },
+        { key: '/settings/billing/orders', label: t('bill.orders'), funcs: ['billing.view', 'billing.manage'] },
+      ],
     },
   ]
 
