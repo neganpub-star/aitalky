@@ -7,7 +7,7 @@ import type { ColumnsType } from 'antd/es/table'
 import {
   ReadOutlined, GlobalOutlined, TeamOutlined, CustomerServiceOutlined, ClockCircleOutlined,
   RightOutlined, DownOutlined, LikeFilled, RetweetOutlined, DashboardOutlined,
-  InfoCircleFilled, PlusOutlined, LinkOutlined, CodeOutlined, CopyOutlined, ExportOutlined, CloseCircleFilled,
+  InfoCircleFilled, PlusOutlined, LinkOutlined, CopyOutlined, ExportOutlined, CloseCircleFilled,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
@@ -28,7 +28,7 @@ const RULE_TO_MODE: Record<AssignRule, number> = { manual: 0, round: 1, load: 2 
 const MODE_TO_RULE: AssignRule[] = ['manual', 'round', 'load']
 interface Strategy { id: string; name: string; mark: string; teammates: MemberVO[]; remark: string }
 
-// 会话设置(对齐 ByteTrack live-现网截图 img_10~img_17):手风琴 5 块
+// 会话设置(对齐现网截图 img_10~img_17):手风琴 5 块
 // 纯前端 UI;保存暂未接后端(TODO:后端阶段补会话分配/域名/队友/专属策略/保持期接口)
 export default function ConversationSettings() {
   const { t } = useTranslation()
@@ -244,7 +244,8 @@ export default function ConversationSettings() {
     { title: t('conv.colMembers'), render: (_, r) => r.teammates.length ? <a onClick={() => setManageStrategy(r)}>{t('conv.viewAll')}</a> : <span style={{ color: '#cf1322', fontSize: 12 }}>{t('conv.needTeammate')}</span>, width: 150 },
     { title: t('conv.colRemark'), dataIndex: 'remark', render: (v) => v || '--', width: 80 },
     { title: t('conv.colUrl'), render: (_, r) => copyCell(strategyUrl(r.mark)), width: 200 },
-    { title: t('conv.colPlugin'), render: (_, r) => <a onClick={() => setCodeStrategy(r)}>{t('conv.viewCode')}</a>, width: 100 },
+    // 网页插件接入暂未开放,先注释列(查看代码入口)
+    // { title: t('conv.colPlugin'), render: (_, r) => <a onClick={() => setCodeStrategy(r)}>{t('conv.viewCode')}</a>, width: 100 },
     {
       title: t('conv.colAction'), fixed: 'right', width: 180,
       render: (_, r) => (
@@ -326,23 +327,22 @@ export default function ConversationSettings() {
           )}
           <div style={{ display: 'flex', gap: 20, marginTop: 20, maxWidth: 640 }}>
             {accessTabCard('url', <LinkOutlined />, t('conv.accessUrl'))}
-            {accessTabCard('plugin', <CodeOutlined />, t('conv.accessPlugin'))}
+            {/* 网页插件接入暂未开放,先注释入口 Tab */}
+            {/* {accessTabCard('plugin', <CodeOutlined />, t('conv.accessPlugin'))} */}
           </div>
-          {accessTab === 'url' ? (
-            <>
-              <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessUrl')}</div>
-              <div style={{ background: token.colorFillTertiary, borderRadius: 8, padding: '12px 16px', fontSize: 13, color: token.colorTextSecondary }}>{normalUrl}</div>
-              <Button type="primary" style={{ marginTop: 16 }} onClick={() => copy(normalUrl)}>{t('conv.copyLink')}</Button>
-            </>
-          ) : (
+          {/* 仅保留 URL 方式接入;网页插件接入暂时注释 */}
+          <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessUrl')}</div>
+          <div style={{ background: token.colorFillTertiary, borderRadius: 8, padding: '12px 16px', fontSize: 13, color: token.colorTextSecondary }}>{normalUrl}</div>
+          <Button type="primary" style={{ marginTop: 16 }} onClick={() => copy(normalUrl)}>{t('conv.copyLink')}</Button>
+          {/* {accessTab === 'plugin' && (
             <>
               <div style={{ fontSize: 12, color: token.colorTextTertiary, margin: '20px 0 10px' }}>{t('conv.pluginCodeTip')}</div>
               <pre style={{ background: '#0b1f33', color: '#7ee787', borderRadius: 8, padding: 16, fontSize: 12, overflowX: 'auto' }}>
-{`<script src="${host}/bytetrack.js"></script>
-<script>new bytetrack({ appId: "${appId}" })</script>`}
+{`<script src="${host}/aitalky.js"></script>
+<script>new aitalky({ appId: "${appId}" })</script>`}
               </pre>
             </>
-          )}
+          )} */}
         </>
       } />
 
@@ -425,12 +425,13 @@ export default function ConversationSettings() {
             <div style={{ fontSize: 14, fontWeight: 600, margin: '8px 0 10px' }}>{t('conv.accessUrl')}</div>
             <div style={{ background: token.colorFillTertiary, borderRadius: 8, padding: '12px 16px', fontSize: 13, color: token.colorTextSecondary, wordBreak: 'break-all' }}>{strategyUrl(codeStrategy.mark)}</div>
             <Button type="primary" style={{ marginTop: 12 }} onClick={() => copy(strategyUrl(codeStrategy.mark))}>{t('conv.copyLink')}</Button>
-            <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessPlugin')}</div>
+            {/* 网页插件接入暂未开放,先注释代码块 */}
+            {/* <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 10px' }}>{t('conv.accessPlugin')}</div>
             <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 8 }}>{t('conv.pluginCodeTip')}</div>
             <pre style={{ background: '#0b1f33', color: '#7ee787', borderRadius: 8, padding: 16, fontSize: 12, overflowX: 'auto' }}>
-{`<script src="${host}/bytetrack.js"></script>
-<script>new bytetrack({ appId: "${appId}", groupId: "${codeStrategy.mark}" })</script>`}
-            </pre>
+{`<script src="${host}/aitalky.js"></script>
+<script>new aitalky({ appId: "${appId}", groupId: "${codeStrategy.mark}" })</script>`}
+            </pre> */}
           </>
         )}
       </Modal>
