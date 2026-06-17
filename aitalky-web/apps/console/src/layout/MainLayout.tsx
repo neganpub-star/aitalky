@@ -196,7 +196,7 @@ export default function MainLayout() {
 
       {/* 工作状态 */}
       <div className="at-row" style={{ ...styles.userRow, justifyContent: 'space-between' }}>
-        <span>工作状态</span>
+        <span>{t('nav.workStatus')}</span>
         <Switch checked={workOnline} onChange={changeWork} />
       </div>
       <Divider style={{ margin: 0 }} />

@@ -280,6 +280,7 @@ export default {
     lang: '切换语言',
     profile: '个人中心',
     invite: '邀请成员',
+    workStatus: '工作状态',
     darkMode: '夜间模式',
     lightMode: '日间模式',
   },

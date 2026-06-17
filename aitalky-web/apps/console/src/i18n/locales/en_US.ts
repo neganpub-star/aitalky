@@ -275,6 +275,7 @@ export default {
     lang: 'Language',
     profile: 'Profile',
     invite: 'Invite members',
+    workStatus: 'Work status',
     darkMode: 'Dark mode',
     lightMode: 'Light mode',
   },

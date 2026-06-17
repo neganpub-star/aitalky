@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, DatePicker, Input, Popconfirm, Select, Space, Table, Tag, message, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
-import { pageOrders, cancelOrder, type OrderVO, type OrderQuery } from '../../api/billing'
+import { pageOrders, cancelOrder, listPlans, type OrderVO, type OrderQuery } from '../../api/billing'
 import PendingPayModal from './PendingPayModal'
 
 // 数据管理 → 服务订阅 → 订单记录(对齐现网 img_4):筛选(类型/状态/日期/订单号) + 编号/类型/订阅资源/周期/金额/状态/说明/时间/操作。倒序分页。
@@ -29,6 +29,8 @@ export default function OrderRecords() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)
+  // 套餐 id→code 映射:订单只存中文 planName 快照,按 code 走 i18n(英文界面不残留中文),缺失回退 planName
+  const [planCodeById, setPlanCodeById] = useState<Record<string, string>>({})
   // 筛选项
   const [type, setType] = useState<string>()
   const [status, setStatus] = useState<number>()
@@ -54,6 +56,19 @@ export default function OrderRecords() {
   }
   // 筛选变化即查(订单号走回车/失焦);首次加载
   useEffect(() => { load(1) }, [type, status, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
+  // 套餐 id→code 映射(一次性)
+  useEffect(() => {
+    listPlans().then((ps) => setPlanCodeById(Object.fromEntries(ps.map((p) => [p.id, p.code])))).catch(() => undefined)
+  }, [])
+
+  // 套餐名本地化:按 code 走 i18n,无 key/无 code 回退订单快照 planName
+  const planLabel = (r: OrderVO) => {
+    const code = planCodeById[r.planId]
+    if (!code) return r.planName
+    const k = `bill.plan.${code}`
+    const l = t(k)
+    return l === k ? r.planName : l
+  }
 
   // 取消待支付订单(对齐 img_4 操作列),成功后刷新当前页
   const doCancel = async (o: OrderVO) => {
@@ -70,7 +85,7 @@ export default function OrderRecords() {
     if (r.type === 'addon_customer') return `${t('bill.res.customer')}: ${r.quantity}`
     return (
       <span>
-        {r.planName}
+        {planLabel(r)}
         {r.seats > 0 && <span style={{ color: token.colorTextTertiary }}> · {t('bill.subSeats')}: {r.seats}</span>}
       </span>
     )
@@ -84,7 +99,7 @@ export default function OrderRecords() {
 
   const statusMap = STATUS(t)
   const columns: ColumnsType<OrderVO> = [
-    { title: t('bill.orderNo'), dataIndex: 'orderNo', width: 190 },
+    { title: t('bill.orderNo'), dataIndex: 'orderNo', width: 230, onCell: () => ({ style: { whiteSpace: 'nowrap' } }) },
     { title: t('bill.orderType'), dataIndex: 'type', width: 110, render: (v: string) => t(TYPE_KEY[v] || v) },
     { title: t('bill.subResource'), width: 180, render: (_, r) => resourceText(r) },
     { title: t('bill.subPeriod'), width: 100, render: (_, r) => periodText(r) },
@@ -102,7 +117,7 @@ export default function OrderRecords() {
     { title: t('bill.createdAt'), dataIndex: 'createTime', width: 170, render: (v) => v || '--' },
     { title: t('bill.activatedAt'), dataIndex: 'paidTime', width: 170, render: (v) => v || '--' },
     {
-      title: t('bill.action'), width: 150, fixed: 'right',
+      title: t('bill.action'), width: 190, fixed: 'right',
       render: (_, r) => (r.status === 0 ? (
         <Space size={4} split={<span style={{ color: token.colorSplit }}>|</span>}>
           <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setPayOrder(r)}>{t('bill.goPay')}</Button>
@@ -141,7 +156,7 @@ export default function OrderRecords() {
         loading={loading}
         columns={columns}
         dataSource={data}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1500 }}
         pagination={{ current: page, total, pageSize: PAGE_SIZE, onChange: (p) => load(p) }}
       />
       <PendingPayModal
