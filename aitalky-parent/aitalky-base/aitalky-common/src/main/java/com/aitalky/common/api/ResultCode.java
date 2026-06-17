@@ -92,6 +92,8 @@ public enum ResultCode {
     BILLING_SUBSCRIPTION_REQUIRED(1058, "billing.subscription.required"),
     /** 加购项不可用(对应加量包未配置/已下架) */
     BILLING_ADDON_UNAVAILABLE(1059, "billing.addon.unavailable"),
+    /** 已有待支付订单,需先处理完(支付/取消)再下新单 */
+    BILLING_HAS_PENDING_ORDER(1060, "billing.has.pending.order"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");

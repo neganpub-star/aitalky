@@ -25,6 +25,7 @@ public record OrderVO(
         Integer periodDays,
         BigDecimal amount,
         String currency,
+        String payCurrency,
         Integer status,
         LocalDateTime expireTime,
         LocalDateTime paidTime,

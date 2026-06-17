@@ -35,7 +35,10 @@ public class BilOrder extends BaseEntity {
     /** 席位加购计价周期=下单时剩余天数(套餐/客户单为0) */
     private Integer periodDays;
     private BigDecimal amount;
+    /** 金额币种(稳定币,USDT) */
     private String currency;
+    /** 下单选定收款网络(如 USDT-TRC20),决定收款地址所在链;旧单为空 */
+    private String payCurrency;
     /** 0待支付 1已完成 2已作废 */
     private Integer status;
     /** 待支付订单过期时间(下单 + 24h);超时未付由定时任务/查询时作废 */

@@ -103,11 +103,12 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         BigDecimal monthly = plan.monthlyPrice().add(seatUnit.multiply(BigDecimal.valueOf(seats)));
         BigDecimal amount = monthly.multiply(BigDecimal.valueOf(months));
 
+        String payCurrency = requireCurrency(cmd.currency());
         String type = decideType(projectId, plan.id());
 
-        // 唯一待支付:作废旧待支付单后建新单
+        // 唯一待支付:已有待支付单则拒绝(需先支付/取消),不再自动作废
         return lockTemplate.execute("lock:bil:order:" + projectId, 5, 10, () -> {
-            orderMapper.voidPendingOrders(projectId);
+            ensureNoPending(projectId);
             BilOrder order = new BilOrder();
             order.setOrderNo(genOrderNo());
             order.setProjectId(projectId);
@@ -120,6 +121,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setPeriodDays(0);
             order.setAmount(amount);
             order.setCurrency("USDT");
+            order.setPayCurrency(payCurrency);
             order.setStatus(0);
             order.setExpireTime(LocalDateTime.now().plusHours(24)); // 24h 支付有效期
             order.setSign(orderSign(order));
@@ -136,6 +138,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         if (qty <= 0 || (!"seat".equals(resourceType) && !"customer".equals(resourceType))) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
+        String payCurrency = requireCurrency(cmd.currency());
         // 加购前提:必须有有效订阅(否则无周期可折算/无套餐可挂)
         BilSubscription sub = activeSubscription(projectId);
         if (sub == null) {
@@ -145,6 +148,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         BilOrder order = new BilOrder();
         order.setProjectId(projectId);
         order.setResourceType(resourceType);
+        order.setPayCurrency(payCurrency);
         order.setPlanId(sub.getPlanId());
         order.setPlanName(sub.getPlanName());
         order.setMonths(0);
@@ -176,9 +180,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setAmount(pack.price().multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP));
         }
 
-        // 唯一待支付:作废旧待支付单后建新单
+        // 唯一待支付:已有待支付单则拒绝(需先支付/取消)
         return lockTemplate.execute("lock:bil:order:" + projectId, 5, 10, () -> {
-            orderMapper.voidPendingOrders(projectId);
+            ensureNoPending(projectId);
             order.setOrderNo(genOrderNo());
             order.setStatus(0);
             order.setExpireTime(LocalDateTime.now().plusHours(24));
@@ -430,6 +434,24 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 .divide(BigDecimal.valueOf(DAYS_PER_MONTH), 2, RoundingMode.HALF_UP);
     }
 
+    /** 收款网络必填校验(具体币种合法性在取地址时由 BillingAddressService 校验) */
+    private static String requireCurrency(String currency) {
+        if (currency == null || currency.isBlank()) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        return currency.trim();
+    }
+
+    /** 已有待支付订单则拒绝(同项目同时仅允许一个待支付;在 lock:bil:order 内调用) */
+    private void ensureNoPending(Long projectId) {
+        Long count = orderMapper.selectCount(Wrappers.<BilOrder>lambdaQuery()
+                .eq(BilOrder::getProjectId, projectId)
+                .eq(BilOrder::getStatus, 0));
+        if (count != null && count > 0) {
+            throw new BizException(ResultCode.BILLING_HAS_PENDING_ORDER);
+        }
+    }
+
     /** 判定订单类型:无有效订阅=new;同套餐=renew;异套餐=upgrade */
     private String decideType(Long projectId, Long planId) {
         BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
@@ -452,7 +474,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 o.getAmount().stripTrailingZeros().toPlainString(), String.valueOf(o.getMonths()),
                 String.valueOf(o.getSeats()), String.valueOf(o.getPlanId()),
                 String.valueOf(o.getType()), String.valueOf(o.getResourceType()),
-                String.valueOf(o.getQuantity()), String.valueOf(o.getPeriodDays()));
+                String.valueOf(o.getQuantity()), String.valueOf(o.getPeriodDays()),
+                String.valueOf(o.getPayCurrency()));
         return HmacUtil.hmacSha256Hex(properties.signKey(), data);
     }
 
@@ -463,7 +486,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     private OrderVO toVO(BilOrder o) {
         return new OrderVO(o.getId(), o.getOrderNo(), o.getType(), o.getResourceType(), o.getPlanId(), o.getPlanName(),
-                o.getMonths(), o.getSeats(), o.getQuantity(), o.getPeriodDays(), o.getAmount(), o.getCurrency(), o.getStatus(),
+                o.getMonths(), o.getSeats(), o.getQuantity(), o.getPeriodDays(), o.getAmount(), o.getCurrency(), o.getPayCurrency(), o.getStatus(),
                 o.getExpireTime(), o.getPaidTime(), o.getCreateTime());
     }
 }

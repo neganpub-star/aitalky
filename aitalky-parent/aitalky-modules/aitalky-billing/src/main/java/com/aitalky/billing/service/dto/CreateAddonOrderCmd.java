@@ -5,6 +5,7 @@ package com.aitalky.billing.service.dto;
  *
  * @param resourceType 加购资源类型:seat 席位 / customer 客户配额
  * @param quantity     加购数量:席位=新增席位数;客户配额=客户拓展包数(每包配额见 AddonQuoteVO.packAmount)
+ * @param currency     下单选定收款网络(如 USDT-TRC20);决定收款地址所在链,下单后不可改
  */
-public record CreateAddonOrderCmd(String resourceType, Integer quantity) {
+public record CreateAddonOrderCmd(String resourceType, Integer quantity, String currency) {
 }
