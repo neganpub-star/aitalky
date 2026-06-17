@@ -8,6 +8,8 @@ import Users from './pages/Users'
 import Projects from './pages/Projects'
 import Plans from './pages/Plans'
 import Addons from './pages/Addons'
+import Orders from './pages/Orders'
+import Coins from './pages/Coins'
 import Agreements from './pages/Agreements'
 import Languages from './pages/Languages'
 import Admins from './pages/Admins'
@@ -34,6 +36,8 @@ export const router = createHashRouter([
       { path: 'projects', element: <Projects /> },
       { path: 'plans', element: <Plans /> },
       { path: 'addons', element: <Addons /> },
+      { path: 'orders', element: <Orders /> },
+      { path: 'coins', element: <Coins /> },
       { path: 'agreements', element: <Agreements /> },
       { path: 'languages', element: <Languages /> },
       { path: 'admins', element: <Admins /> },

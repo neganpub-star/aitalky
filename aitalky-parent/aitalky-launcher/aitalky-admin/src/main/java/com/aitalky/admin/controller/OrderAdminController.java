@@ -35,19 +35,19 @@ public class OrderAdminController {
     public R<PageResult<AdminOrderVO>> page(@RequestParam(required = false) Long projectId,
                                             @RequestParam(required = false) Integer status,
                                             @RequestParam(required = false) String type,
-                                            @RequestParam(defaultValue = "1") Long current,
+                                            @RequestParam(defaultValue = "1") Long page,
                                             @RequestParam(defaultValue = "10") Long size) {
-        PageResult<AdminOrderVO> page = orderAdminService.page(
-                new AdminOrderQuery(projectId, status, type, current, size));
+        PageResult<AdminOrderVO> result = orderAdminService.page(
+                new AdminOrderQuery(projectId, status, type, page, size));
         // 批量补项目名(去重查询,避免 N+1 内重复)
         Map<Long, String> nameCache = new HashMap<>();
-        List<AdminOrderVO> records = page.records().stream().map(o -> {
+        List<AdminOrderVO> records = result.records().stream().map(o -> {
             String name = nameCache.computeIfAbsent(o.projectId(), pid -> {
                 IdProject p = projectService.getById(pid);
                 return p == null ? null : p.getName();
             });
             return o.withProjectName(name);
         }).toList();
-        return R.ok(PageResult.of(records, page.total(), page.current(), page.size()));
+        return R.ok(PageResult.of(records, result.total(), result.current(), result.size()));
     }
 }

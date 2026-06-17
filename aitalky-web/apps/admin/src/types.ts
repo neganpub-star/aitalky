@@ -143,3 +143,35 @@ export interface FunctionDef {
   zhName: string
   enName: string
 }
+
+// ===== 订单 / 币种(计费) =====
+export interface AdminOrderVO {
+  id: string
+  orderNo: string
+  projectId: string
+  projectName?: string
+  type: string          // new / renew / upgrade
+  planId: string
+  planName: string
+  months: number
+  seats: number
+  amount: number
+  currency: string
+  status: number        // 0待支付 1已完成 2已作废
+  paidTime?: string
+  createTime?: string
+}
+
+export interface CoinVO {
+  id: string
+  channel: string
+  symbol: string
+  currency: string
+  network: string
+  chainId: string
+  chainName: string
+  tokenId?: string
+  decimals: number
+  sort: number
+  status: number        // 1启用 0停用
+}

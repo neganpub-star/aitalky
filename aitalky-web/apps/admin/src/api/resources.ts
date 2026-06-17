@@ -1,8 +1,8 @@
 import client from './client'
 import { encryptPassword } from './crypto'
 import type {
-  AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminProjectVO,
-  AdminVO, AgreementVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
+  AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminOrderVO, AdminProjectVO,
+  AdminVO, AgreementVO, CoinVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
 } from '../types'
 
 // ===== 用户 =====
@@ -108,6 +108,26 @@ export async function resetAdminPassword(id: string, password: string) {
 }
 export function deleteAdmin(id: string) {
   return client.delete<unknown, void>(`/admin/admins/${id}`)
+}
+
+// ===== 订单(跨项目,倒序) =====
+export interface OrderQuery { projectId?: string; status?: number; type?: string; page?: number; size?: number }
+export function pageOrders(q: OrderQuery) {
+  return client.get<unknown, PageResult<AdminOrderVO>>('/admin/orders', { params: q })
+}
+
+// ===== 币种配置 =====
+export function listCoins() {
+  return client.get<unknown, CoinVO[]>('/admin/coins')
+}
+export function saveCoin(body: Partial<CoinVO>) {
+  return client.post<unknown, string>('/admin/coins', body)
+}
+export function setCoinStatus(id: string, status: number) {
+  return client.put<unknown, void>(`/admin/coins/${id}/status`, null, { params: { status } })
+}
+export function deleteCoin(id: string) {
+  return client.delete<unknown, void>(`/admin/coins/${id}`)
 }
 
 // ===== 后管角色 =====

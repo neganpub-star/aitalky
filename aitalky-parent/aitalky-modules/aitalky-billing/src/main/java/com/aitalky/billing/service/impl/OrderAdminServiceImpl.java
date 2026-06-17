@@ -23,7 +23,7 @@ public class OrderAdminServiceImpl implements OrderAdminService {
 
     @Override
     public PageResult<AdminOrderVO> page(AdminOrderQuery query) {
-        long current = query.current() == null || query.current() < 1 ? 1 : query.current();
+        long current = query.page() == null || query.page() < 1 ? 1 : query.page();
         long size = query.size() == null || query.size() < 1 ? 10 : query.size();
         Page<BilOrder> page = orderMapper.selectPage(Page.of(current, size),
                 Wrappers.<BilOrder>lambdaQuery()
