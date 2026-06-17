@@ -700,14 +700,11 @@ body {
 .media-bubble.mine .media-file {
   color: #fff;
 }
-/* 客户自己发的「纯文件」气泡:补蓝底去边框,否则白字落在透明卡上看不清(对齐其它自己气泡) */
+/* 客户自己发的「纯文件」气泡:白底卡 + 描边 + 黑字(蓝底白字显突兀);与灰色聊天背景区分、文件名清晰可读 */
 .media-bubble.mine:not(.has-cap) .media-file {
-  background: var(--bubble-customer);
-  border: none;
-}
-/* 蓝底上文件大小用半透明白,灰色 --text-secondary 在蓝底对比度不足 */
-.media-bubble.mine .bubble-file-size {
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--bubble-agent);
+  border: 1px solid var(--line);
+  color: var(--text);
 }
 .bubble-file-ico {
   font-size: 22px;
