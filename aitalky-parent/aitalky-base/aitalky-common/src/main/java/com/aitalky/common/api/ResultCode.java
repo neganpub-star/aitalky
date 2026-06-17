@@ -71,6 +71,18 @@ public enum ResultCode {
     /** 无权撤回该消息(非本人发送 / 客户撤回权限未开启) */
     RETRACT_FORBIDDEN(1027, "retract.forbidden"),
 
+    // ===== 订阅计费 105x =====
+    /** 不支持的币种/链(bil_coin 未配置或已停用) */
+    BILLING_COIN_NOT_SUPPORTED(1050, "billing.coin.not.supported"),
+    /** 支付渠道异常(建址失败/渠道未配置/网络错误) */
+    BILLING_CHANNEL_ERROR(1051, "billing.channel.error"),
+    /** 回调验签失败 */
+    BILLING_CALLBACK_SIGN_INVALID(1052, "billing.callback.sign.invalid"),
+    /** 回调地址无法反查到项目(地址不属于本系统) */
+    BILLING_CALLBACK_ADDRESS_UNKNOWN(1053, "billing.callback.address.unknown"),
+    /** 余额入账并发冲突(乐观锁重试耗尽) */
+    BILLING_WALLET_CREDIT_CONFLICT(1054, "billing.wallet.credit.conflict"),
+
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
 
