@@ -93,6 +93,22 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
     setMenuFor(msgId)
   }
   const endRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  // 是否"粘底":用户停在底部(没有主动上滑翻历史)时才自动拽到底
+  const stickRef = useRef(true)
+  // 是否已完成首屏定位:首次进入用即时跳底(避免 smooth 被图片异步撑高打断),之后才用平滑
+  const settledRef = useRef(false)
+  const scrollToBottom = (smooth: boolean) =>
+    endRef.current?.scrollIntoView(smooth ? { behavior: 'smooth' } : undefined)
+  // 列表滚动:据距底距离更新粘底标记(阈值 80px,容忍抖动)
+  const onListScroll = () => {
+    const el = listRef.current
+    if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+  // 图片/视频异步加载完成会撑高内容:粘底时重新跳到底,修复"进会话不在最底部"
+  const onMediaLoad = () => {
+    if (stickRef.current) scrollToBottom(settledRef.current)
+  }
 
   // 客户撤回权限(信使设置开关下发);关则不显示撤回入口
   const canCustomerRetract = data.config?.customerRetractEnabled ?? true
@@ -114,8 +130,12 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
   const agentName = assigned ? agent?.agents?.[0]?.name ?? null : null
   const showOnlineDot = agent?.mode === 'ASSIGNED_ONLINE' // 已分配·在线:头像带绿点
 
+  // 新消息/输入态变化:仅在粘底时跟随到底;首屏即时跳底,之后平滑
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!stickRef.current) return
+    scrollToBottom(settledRef.current)
+    // 首屏标记延后置位:本次先即时跳底,下一次变化起才用平滑
+    if (messages.length > 0) settledRef.current = true
   }, [messages, pending, peerTyping])
 
   const submit = () => {
@@ -196,7 +216,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
         </div>
       )}
 
-      <div className="msg-list" onClick={() => menuFor && setMenuFor(null)}>
+      <div className="msg-list" ref={listRef} onScroll={onListScroll} onClick={() => menuFor && setMenuFor(null)}>
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
           const initial = (m.senderName || 'S').charAt(0).toUpperCase()
@@ -234,15 +254,15 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                     <div className={`bubble ${mine ? 'mine' : 'agent'} rich-bubble`}>
                       {(m.payload?.segments || []).map((seg, i) => (seg.type === 'text'
                         ? <div key={i} className="rich-text">{mine ? (seg.text || '') : renderRichText(seg.text || '', setWebview)}</div>
-                        : <img key={i} className="rich-img" src={seg.url} alt="" onClick={() => seg.url && setPreview(seg.url)} />))}
+                        : <img key={i} className="rich-img" src={seg.url} alt="" onLoad={onMediaLoad} onClick={() => seg.url && setPreview(seg.url)} />))}
                     </div>
                   ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
                     // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
                     <div className={`media-bubble ${mine ? 'mine' : 'agent'} ${m.payload?.caption ? 'has-cap' : ''}`}>
                       {m.type === 'image' ? (
-                        <img className="media-img" src={m.content} alt="" onClick={() => setPreview(m.content)} />
+                        <img className="media-img" src={m.content} alt="" onLoad={onMediaLoad} onClick={() => setPreview(m.content)} />
                       ) : m.type === 'video' ? (
-                        <video className="media-video" src={m.content} controls preload="metadata" />
+                        <video className="media-video" src={m.content} controls preload="metadata" onLoadedMetadata={onMediaLoad} />
                       ) : (
                         <a className="media-file" href={m.content} target="_blank" rel="noreferrer" download>
                           <span className="bubble-file-ico">📎</span>
