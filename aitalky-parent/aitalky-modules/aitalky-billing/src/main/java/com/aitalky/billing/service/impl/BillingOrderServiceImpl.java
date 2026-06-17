@@ -114,6 +114,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setAmount(amount);
             order.setCurrency("USDT");
             order.setStatus(0);
+            order.setExpireTime(LocalDateTime.now().plusHours(24)); // 24h 支付有效期
             order.setSign(orderSign(order));
             orderMapper.insert(order);
             log.info("创建订单, projectId={}, orderNo={}, type={}, amount={}", projectId, order.getOrderNo(), type, amount);
@@ -129,6 +130,18 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 .orderByDesc(BilOrder::getCreateTime)
                 .last("limit 1"));
         return order == null ? null : toVO(order);
+    }
+
+    @Override
+    public void cancelOrder(Long projectId, Long orderId) {
+        lockTemplate.execute("lock:bil:order:" + projectId, 5, 10, () -> {
+            int rows = orderMapper.cancelOne(orderId, projectId);
+            if (rows == 0) {
+                throw new BizException(ResultCode.BILLING_ORDER_NOT_PAYABLE);
+            }
+            log.info("取消订单, projectId={}, orderId={}", projectId, orderId);
+            return null;
+        });
     }
 
     @Override
@@ -229,6 +242,37 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 page.getTotal(), current, size);
     }
 
+    @Override
+    public void autoSettlePendingOrder(Long projectId) {
+        // 取最早的待支付订单(一项目同时仅一个待支付)
+        BilOrder order = orderMapper.selectOne(Wrappers.<BilOrder>lambdaQuery()
+                .eq(BilOrder::getProjectId, projectId)
+                .eq(BilOrder::getStatus, 0)
+                .orderByAsc(BilOrder::getCreateTime)
+                .last("limit 1"));
+        if (order == null) {
+            return;
+        }
+        BilWallet wallet = walletMapper.selectOne(Wrappers.<BilWallet>lambdaQuery()
+                .eq(BilWallet::getProjectId, projectId).last("limit 1"));
+        // 余额不足(分批到账/金额对不上):不核销,钱留余额兜底,等后续到账凑够
+        if (wallet == null || wallet.getBalance().compareTo(order.getAmount()) < 0) {
+            log.info("到账后余额不足以核销待支付订单,留余额兜底, projectId={}, orderNo={}", projectId, order.getOrderNo());
+            return;
+        }
+        try {
+            payOrder(projectId, order.getId()); // 复用核销逻辑(自带锁,回调线程重入同锁)
+        } catch (BizException e) {
+            // 并发/状态变更等,记录不抛(回调入账已成功,核销失败可由下次到账或查询时重试)
+            log.warn("到账自动核销订单失败, projectId={}, orderNo={}, code={}", projectId, order.getOrderNo(), e.getCode());
+        }
+    }
+
+    @Override
+    public BigDecimal seatMonthlyPrice() {
+        return seatUnitMonthlyPrice();
+    }
+
     /** 单席位月价 = 席位加量包 price / specAmount;无配置返回 0 */
     private BigDecimal seatUnitMonthlyPrice() {
         return addonService.list().stream()
@@ -271,6 +315,6 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private OrderVO toVO(BilOrder o) {
         return new OrderVO(o.getId(), o.getOrderNo(), o.getType(), o.getPlanId(), o.getPlanName(),
                 o.getMonths(), o.getSeats(), o.getAmount(), o.getCurrency(), o.getStatus(),
-                o.getPaidTime(), o.getCreateTime());
+                o.getExpireTime(), o.getPaidTime(), o.getCreateTime());
     }
 }

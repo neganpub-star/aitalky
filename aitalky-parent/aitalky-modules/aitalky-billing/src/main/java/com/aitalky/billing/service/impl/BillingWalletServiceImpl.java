@@ -8,6 +8,7 @@ import com.aitalky.billing.entity.BilWallet;
 import com.aitalky.billing.mapper.BilAddressMapper;
 import com.aitalky.billing.mapper.BilRechargeMapper;
 import com.aitalky.billing.mapper.BilWalletMapper;
+import com.aitalky.billing.service.BillingOrderService;
 import com.aitalky.billing.service.BillingWalletService;
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
@@ -38,6 +39,7 @@ public class BillingWalletServiceImpl implements BillingWalletService {
     private final BilAddressMapper addressMapper;
     private final BillingProperties properties;
     private final DistributedLockTemplate lockTemplate;
+    private final BillingOrderService orderService;
     private final TransactionTemplate txTemplate;
 
     public BillingWalletServiceImpl(BilWalletMapper walletMapper,
@@ -45,12 +47,14 @@ public class BillingWalletServiceImpl implements BillingWalletService {
                                     BilAddressMapper addressMapper,
                                     BillingProperties properties,
                                     DistributedLockTemplate lockTemplate,
+                                    BillingOrderService orderService,
                                     PlatformTransactionManager txManager) {
         this.walletMapper = walletMapper;
         this.rechargeMapper = rechargeMapper;
         this.addressMapper = addressMapper;
         this.properties = properties;
         this.lockTemplate = lockTemplate;
+        this.orderService = orderService;
         // 锁内用编程式事务:余额自增 + 流水写入原子提交(避免 self-invocation 导致 @Transactional 失效)
         this.txTemplate = new TransactionTemplate(txManager);
     }
@@ -93,10 +97,13 @@ public class BillingWalletServiceImpl implements BillingWalletService {
         }
         Long projectId = addr.getProjectId();
 
-        // 4) 项目锁内事务入账(同项目回调串行;txid 幂等)
+        // 4) 项目锁内事务入账(同项目回调串行;txid 幂等),入账后自动核销待支付订单(闭环关键)
         String lockKey = "lock:bil:wallet:" + projectId;
         lockTemplate.execute(lockKey, 5, 10, () -> {
             txTemplate.executeWithoutResult(s -> creditInTx(projectId, amount, txid, address, params));
+            // 入账事务已提交,余额已更新 → 尝试用余额核销当前待支付订单(余额够则开通,多余留兜底)
+            // payOrder 重入同一 wallet 锁(Redisson 可重入),不会死锁
+            orderService.autoSettlePendingOrder(projectId);
             return null;
         });
     }

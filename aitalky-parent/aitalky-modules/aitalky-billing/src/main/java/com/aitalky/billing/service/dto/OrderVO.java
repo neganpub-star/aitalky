@@ -20,6 +20,7 @@ public record OrderVO(
         BigDecimal amount,
         String currency,
         Integer status,
+        LocalDateTime expireTime,
         LocalDateTime paidTime,
         LocalDateTime createTime
 ) {

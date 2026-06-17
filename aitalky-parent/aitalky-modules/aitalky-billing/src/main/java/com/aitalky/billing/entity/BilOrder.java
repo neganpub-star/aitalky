@@ -32,6 +32,8 @@ public class BilOrder extends BaseEntity {
     private String currency;
     /** 0待支付 1已完成 2已作废 */
     private Integer status;
+    /** 待支付订单过期时间(下单 + 24h);超时未付由定时任务/查询时作废 */
+    private LocalDateTime expireTime;
     private LocalDateTime paidTime;
     private String sign;
 }

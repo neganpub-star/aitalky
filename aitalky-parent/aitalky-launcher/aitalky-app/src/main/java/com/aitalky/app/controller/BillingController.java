@@ -9,6 +9,7 @@ import com.aitalky.billing.service.BillingWalletService;
 import com.aitalky.billing.service.dto.CoinVO;
 import com.aitalky.billing.service.dto.CreateOrderCmd;
 import com.aitalky.billing.service.dto.OrderVO;
+import com.aitalky.billing.service.dto.PricingVO;
 import com.aitalky.billing.service.dto.RechargeAddressVO;
 import com.aitalky.billing.service.dto.UsageVO;
 import com.aitalky.billing.service.dto.WalletVO;
@@ -81,6 +82,12 @@ public class BillingController {
         return R.ok(addressService.listCoins());
     }
 
+    /** 计费单价(下单弹窗实时算合计:席位月单价等) */
+    @GetMapping("/pricing")
+    public R<PricingVO> pricing() {
+        return R.ok(new PricingVO(orderService.seatMonthlyPrice()));
+    }
+
     /** 当前项目钱包余额 */
     @GetMapping("/wallet")
     public R<WalletVO> wallet() {
@@ -114,6 +121,14 @@ public class BillingController {
     public R<OrderVO> payOrder(@RequestParam Long orderId) {
         Long projectId = TenantContext.getProjectId();
         return R.ok(orderService.payOrder(projectId, orderId));
+    }
+
+    /** 取消待支付订单 */
+    @PostMapping("/order/cancel")
+    public R<Void> cancelOrder(@RequestParam Long orderId) {
+        Long projectId = TenantContext.getProjectId();
+        orderService.cancelOrder(projectId, orderId);
+        return R.ok();
     }
 
     /** 订单记录(分页,倒序) */

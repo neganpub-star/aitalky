@@ -22,4 +22,9 @@ public interface BilOrderMapper extends BaseMapper<BilOrder> {
     @Update("UPDATE bil_order SET status = 1, paid_time = NOW(), update_time = NOW() " +
             "WHERE id = #{orderId} AND project_id = #{projectId} AND status = 0 AND del_flag = 0")
     int markPaid(@Param("orderId") Long orderId, @Param("projectId") Long projectId);
+
+    /** 取消单个待支付订单(status 0→2,状态条件更新);返回受影响行数 */
+    @Update("UPDATE bil_order SET status = 2, update_time = NOW() " +
+            "WHERE id = #{orderId} AND project_id = #{projectId} AND status = 0 AND del_flag = 0")
+    int cancelOne(@Param("orderId") Long orderId, @Param("projectId") Long projectId);
 }
