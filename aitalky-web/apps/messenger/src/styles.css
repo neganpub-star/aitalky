@@ -477,38 +477,23 @@ body {
   color: rgba(0, 0, 0, 0.55);
 }
 /* 复制/撤回 菜单:深色圆角浮层,冒泡在 ··· 正上方 + 朝下小三角(对齐现网) */
+/* 菜单:深色圆角药丸,右对齐 ···(右边缘对齐、向左展开),杜绝贴右边缘时溢出被裁。
+   基态在 ··· 上方(贴底翻转用);.down=在 ··· 下方(默认,对齐 aitalky 参考) */
 .msg-menu {
   position: absolute;
-  bottom: calc(100% + 9px);
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: calc(100% + 6px);
+  right: 0;
   z-index: 20;
   background: #4b4f56;
   color: #fff;
   border-radius: 8px;
   padding: 3px 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
-/* 小三角:菜单底部居中,指向 ··· */
-.msg-menu::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #4b4f56;
-}
-/* 顶部消息上方空间不足时向下弹:菜单移到 ··· 下方,小三角翻转指向上 */
 .msg-menu.down {
   bottom: auto;
-  top: calc(100% + 9px);
-}
-.msg-menu.down::after {
-  top: auto;
-  bottom: 100%;
-  border-top-color: transparent;
-  border-bottom-color: #4b4f56;
+  top: calc(100% + 6px);
 }
 .msg-menu-item {
   display: flex;

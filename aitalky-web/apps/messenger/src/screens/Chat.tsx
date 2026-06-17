@@ -81,16 +81,16 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
   const [headerOpen, setHeaderOpen] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
   const [menuFor, setMenuFor] = useState<string | null>(null)
-  // 菜单弹出方向:顶部消息上方空间不足(会被公告/头部遮挡)时翻转向下弹
-  const [menuDown, setMenuDown] = useState(false)
-  // 点 ··· 切换菜单:测量上方剩余空间决定向上/向下弹
+  // 菜单弹出方向:默认在 ··· 下方(对齐 aitalky 参考);下方空间不足时翻转向上
+  const [menuDown, setMenuDown] = useState(true)
+  // 点 ··· 切换菜单:测量下方剩余空间决定向下/向上弹
   const toggleMenu = (e: ReactMouseEvent<HTMLElement>, msgId: string) => {
     e.stopPropagation()
     if (menuFor === msgId) { setMenuFor(null); return }
     const more = e.currentTarget
-    const listTop = more.closest('.msg-list')?.getBoundingClientRect().top ?? 0
-    // 上方可用空间 < 菜单高度(约96px)→ 向下弹,避免顶出滚动区被遮
-    setMenuDown(more.getBoundingClientRect().top - listTop < 96)
+    const listBottom = more.closest('.msg-list')?.getBoundingClientRect().bottom ?? window.innerHeight
+    // 下方可用空间 ≥ 菜单高度(约96px)→ 向下弹;否则(贴底)向上弹
+    setMenuDown(listBottom - more.getBoundingClientRect().bottom >= 96)
     setMenuFor(msgId)
   }
   const endRef = useRef<HTMLDivElement>(null)
