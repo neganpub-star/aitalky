@@ -92,6 +92,14 @@ export default function App() {
   const brandRef = useRef('')
   // 失焦期间累计未读(标签页标题 "(N)" 提醒;聚焦清零)
   const hiddenUnreadRef = useRef(0)
+  // 轻量 toast:文件超限/类型不支持/上传失败等即时提示(信使端原无 toast 体系,补一个最小实现);2.6s 自动消失
+  const [toast, setToast] = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const showToast = useCallback((msg: string) => {
+    setToast(msg)
+    clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2600)
+  }, [])
 
   const applyIncoming = useCallback((incoming: MessageVO[]) => {
     if (incoming.length === 0) return
@@ -282,17 +290,18 @@ export default function App() {
       : ['mp4', 'webm', 'mov'].includes(ext) ? 'video'
         : ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar', '7z'].includes(ext) ? 'file'
           : ''
-    if (!kind) return // 不支持的类型,静默忽略(信使端无 toast)
+    if (!kind) { showToast(t('fileUnsupported')); return } // 不支持的类型
     const max = kind === 'image' ? 10 * 1024 * 1024 : 20 * 1024 * 1024
-    if (file.size > max) return
+    // 超限提示带上限值(MB),与后端 MinioService 分类上限一致;t() 无插值,大小在外拼接
+    if (file.size > max) { showToast(`${t('fileTooLarge')}(≤${Math.round(max / 1024 / 1024)}MB)`); return }
     try {
       const url = await uploadFile(file)
       const payload = kind === 'file' ? { name: file.name, size: file.size } : undefined
       applyIncoming([await sendMessage(cid, url, kind, payload)])
     } catch {
-      // 失败静默(信使端无 toast 体系)
+      showToast(t('sendFileFailed'))
     }
-  }, [applyIncoming])
+  }, [applyIncoming, showToast])
 
   // 点击失败消息的感叹号重发(对齐参考系统:重发用同一本地项,成功后并入正常消息流)
   const onResend = useCallback(
@@ -360,6 +369,7 @@ export default function App() {
       messages={messages}
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
+      toast={toast}
       onSend={onSend}
       onSendFile={onSendFile}
       onResend={onResend}

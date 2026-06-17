@@ -9,6 +9,7 @@ interface Props {
   messages: MessageVO[]
   pending: PendingMsg[]
   unreadAfterSeq: number | null
+  toast: string | null
   onSend: (text: string) => void
   onSendFile: (file: File) => void
   onResend: (localId: string) => void
@@ -70,7 +71,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, toast, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
@@ -157,6 +158,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
 
   return (
     <>
+      {toast && <div className="msg-toast">{toast}</div>}
       <div className="chat-header">
         <div className="back" onClick={onBack}>
           ‹

@@ -31,6 +31,9 @@ const dict = {
     retractedByAgent: '客服撤回了一条消息',
     peerTyping: '对方正在输入中…',
     unreadDivider: '以下为未读消息',
+    fileTooLarge: '文件过大,无法发送',
+    fileUnsupported: '不支持的文件类型',
+    sendFileFailed: '发送失败,请重试',
   },
   en_US: {
     greetingTitle: 'Hi there!',
@@ -61,6 +64,9 @@ const dict = {
     retractedByAgent: 'An agent recalled a message',
     peerTyping: 'Typing…',
     unreadDivider: 'Unread messages below',
+    fileTooLarge: 'File too large to send',
+    fileUnsupported: 'Unsupported file type',
+    sendFileFailed: 'Failed to send, please try again',
   },
   zh_TW: {
     greetingTitle: '您好!',
@@ -86,6 +92,9 @@ const dict = {
     retractedByAgent: '客服撤回了一則訊息',
     peerTyping: '對方正在輸入中…',
     unreadDivider: '以下為未讀訊息',
+    fileTooLarge: '檔案過大,無法傳送',
+    fileUnsupported: '不支援的檔案類型',
+    sendFileFailed: '傳送失敗,請重試',
   },
   vi_VN: {
     greetingTitle: 'Xin chào!',
@@ -111,6 +120,9 @@ const dict = {
     retractedByAgent: 'Nhân viên đã thu hồi một tin nhắn',
     peerTyping: 'Đang nhập…',
     unreadDivider: 'Tin nhắn chưa đọc bên dưới',
+    fileTooLarge: 'Tệp quá lớn để gửi',
+    fileUnsupported: 'Loại tệp không được hỗ trợ',
+    sendFileFailed: 'Gửi thất bại, vui lòng thử lại',
   },
   my_MM: {
     greetingTitle: 'မင်္ဂလာပါ!',
@@ -136,6 +148,9 @@ const dict = {
     retractedByAgent: 'ဝန်ထမ်းက မက်ဆေ့ချ်တစ်ခုကို ပြန်ရုပ်သိမ်းခဲ့သည်',
     peerTyping: 'စာရိုက်နေသည်…',
     unreadDivider: 'အောက်တွင် မဖတ်ရသေးသော မက်ဆေ့ချ်များ',
+    fileTooLarge: 'ဖိုင်ကြီးလွန်းသဖြင့် မပို့နိုင်ပါ',
+    fileUnsupported: 'ပံ့ပိုးမထားသော ဖိုင်အမျိုးအစား',
+    sendFileFailed: 'ပို့၍မရပါ၊ ထပ်စမ်းကြည့်ပါ',
   },
   de_DE: {
     greetingTitle: 'Hallo!',
@@ -161,6 +176,9 @@ const dict = {
     retractedByAgent: 'Ein Mitarbeiter hat eine Nachricht zurückgezogen',
     peerTyping: 'Schreibt…',
     unreadDivider: 'Ungelesene Nachrichten unten',
+    fileTooLarge: 'Datei zu groß zum Senden',
+    fileUnsupported: 'Nicht unterstützter Dateityp',
+    sendFileFailed: 'Senden fehlgeschlagen, bitte erneut versuchen',
   },
   it_IT: {
     greetingTitle: 'Ciao!',
@@ -186,6 +204,9 @@ const dict = {
     retractedByAgent: 'Un operatore ha richiamato un messaggio',
     peerTyping: 'Sta scrivendo…',
     unreadDivider: 'Messaggi non letti qui sotto',
+    fileTooLarge: 'File troppo grande per essere inviato',
+    fileUnsupported: 'Tipo di file non supportato',
+    sendFileFailed: 'Invio non riuscito, riprova',
   },
   pt_PT: {
     greetingTitle: 'Olá!',
@@ -211,6 +232,9 @@ const dict = {
     retractedByAgent: 'Um agente apagou uma mensagem',
     peerTyping: 'A escrever…',
     unreadDivider: 'Mensagens não lidas abaixo',
+    fileTooLarge: 'Ficheiro demasiado grande para enviar',
+    fileUnsupported: 'Tipo de ficheiro não suportado',
+    sendFileFailed: 'Falha ao enviar, tente novamente',
   },
   ja_JP: {
     greetingTitle: 'こんにちは！',
@@ -236,6 +260,9 @@ const dict = {
     retractedByAgent: '担当者がメッセージを取り消しました',
     peerTyping: '入力中…',
     unreadDivider: 'ここから未読メッセージ',
+    fileTooLarge: 'ファイルが大きすぎて送信できません',
+    fileUnsupported: 'サポートされていないファイル形式です',
+    sendFileFailed: '送信に失敗しました。もう一度お試しください',
   },
   ko_KR: {
     greetingTitle: '안녕하세요!',
@@ -261,6 +288,9 @@ const dict = {
     retractedByAgent: '상담원이 메시지를 회수했습니다',
     peerTyping: '입력 중…',
     unreadDivider: '여기부터 읽지 않은 메시지',
+    fileTooLarge: '파일이 너무 커서 보낼 수 없습니다',
+    fileUnsupported: '지원하지 않는 파일 형식입니다',
+    sendFileFailed: '전송에 실패했습니다. 다시 시도하세요',
   },
   id_ID: {
     greetingTitle: 'Halo!',
@@ -286,6 +316,9 @@ const dict = {
     retractedByAgent: 'Agen menarik sebuah pesan',
     peerTyping: 'Sedang mengetik…',
     unreadDivider: 'Pesan belum dibaca di bawah',
+    fileTooLarge: 'File terlalu besar untuk dikirim',
+    fileUnsupported: 'Jenis file tidak didukung',
+    sendFileFailed: 'Gagal mengirim, silakan coba lagi',
   },
   ru_RU: {
     greetingTitle: 'Здравствуйте!',
@@ -311,6 +344,9 @@ const dict = {
     retractedByAgent: 'Оператор отозвал сообщение',
     peerTyping: 'Печатает…',
     unreadDivider: 'Непрочитанные сообщения ниже',
+    fileTooLarge: 'Файл слишком большой для отправки',
+    fileUnsupported: 'Неподдерживаемый тип файла',
+    sendFileFailed: 'Не удалось отправить, попробуйте ещё раз',
   },
   th_TH: {
     greetingTitle: 'สวัสดี!',
@@ -336,6 +372,9 @@ const dict = {
     retractedByAgent: 'เจ้าหน้าที่เรียกคืนข้อความแล้ว',
     peerTyping: 'กำลังพิมพ์…',
     unreadDivider: 'ข้อความที่ยังไม่ได้อ่านด้านล่าง',
+    fileTooLarge: 'ไฟล์ใหญ่เกินไป ไม่สามารถส่งได้',
+    fileUnsupported: 'ไม่รองรับไฟล์ประเภทนี้',
+    sendFileFailed: 'ส่งไม่สำเร็จ โปรดลองอีกครั้ง',
   },
   lo_LA: {
     greetingTitle: 'ສະບາຍດີ!',
@@ -361,6 +400,9 @@ const dict = {
     retractedByAgent: 'ພະນັກງານໄດ້ເອີ້ນຄືນຂໍ້ຄວາມ',
     peerTyping: 'ກຳລັງພິມ…',
     unreadDivider: 'ຂໍ້ຄວາມທີ່ຍັງບໍ່ໄດ້ອ່ານຢູ່ດ້ານລຸ່ມ',
+    fileTooLarge: 'ໄຟລ໌ໃຫຍ່ເກີນໄປ, ບໍ່ສາມາດສົ່ງໄດ້',
+    fileUnsupported: 'ບໍ່ຮອງຮັບໄຟລ໌ປະເພດນີ້',
+    sendFileFailed: 'ສົ່ງບໍ່ສຳເລັດ, ກະລຸນາລອງໃໝ່',
   },
   fr_FR: {
     greetingTitle: 'Bonjour !',
@@ -386,6 +428,9 @@ const dict = {
     retractedByAgent: 'Un agent a rappelé un message',
     peerTyping: 'En train d\'écrire…',
     unreadDivider: 'Messages non lus ci-dessous',
+    fileTooLarge: 'Fichier trop volumineux pour être envoyé',
+    fileUnsupported: 'Type de fichier non pris en charge',
+    sendFileFailed: "Échec de l'envoi, veuillez réessayer",
   },
   ms_MY: {
     greetingTitle: 'Helo!',
@@ -411,6 +456,9 @@ const dict = {
     retractedByAgent: 'Ejen menarik balik satu mesej',
     peerTyping: 'Sedang menaip…',
     unreadDivider: 'Mesej belum dibaca di bawah',
+    fileTooLarge: 'Fail terlalu besar untuk dihantar',
+    fileUnsupported: 'Jenis fail tidak disokong',
+    sendFileFailed: 'Gagal menghantar, sila cuba lagi',
   },
   es_ES: {
     greetingTitle: '¡Hola!',
@@ -436,6 +484,9 @@ const dict = {
     retractedByAgent: 'Un agente retiró un mensaje',
     peerTyping: 'Escribiendo…',
     unreadDivider: 'Mensajes no leídos abajo',
+    fileTooLarge: 'Archivo demasiado grande para enviar',
+    fileUnsupported: 'Tipo de archivo no compatible',
+    sendFileFailed: 'Error al enviar, inténtalo de nuevo',
   },
   tr_TR: {
     greetingTitle: 'Merhaba!',
@@ -461,6 +512,9 @@ const dict = {
     retractedByAgent: 'Bir temsilci bir mesajı geri aldı',
     peerTyping: 'Yazıyor…',
     unreadDivider: 'Aşağıda okunmamış mesajlar',
+    fileTooLarge: 'Dosya gönderilemeyecek kadar büyük',
+    fileUnsupported: 'Desteklenmeyen dosya türü',
+    sendFileFailed: 'Gönderilemedi, lütfen tekrar deneyin',
   },
 } as const
 

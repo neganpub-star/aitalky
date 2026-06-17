@@ -396,6 +396,24 @@ body {
   text-align: center;
 }
 
+/* 轻量 toast:屏幕中部居中浮层,文件超限/类型不支持/上传失败等即时提示;2.6s 自动消失 */
+.msg-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1100;
+  max-width: 78%;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+}
+
 /* 未读分割线:居中细线 + 文字(左右贯穿) */
 .msg-unread-divider {
   display: flex;
@@ -681,6 +699,15 @@ body {
 }
 .media-bubble.mine .media-file {
   color: #fff;
+}
+/* 客户自己发的「纯文件」气泡:补蓝底去边框,否则白字落在透明卡上看不清(对齐其它自己气泡) */
+.media-bubble.mine:not(.has-cap) .media-file {
+  background: var(--bubble-customer);
+  border: none;
+}
+/* 蓝底上文件大小用半透明白,灰色 --text-secondary 在蓝底对比度不足 */
+.media-bubble.mine .bubble-file-size {
+  color: rgba(255, 255, 255, 0.75);
 }
 .bubble-file-ico {
   font-size: 22px;
