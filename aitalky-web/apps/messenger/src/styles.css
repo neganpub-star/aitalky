@@ -485,6 +485,22 @@ body {
   bottom: auto;
   top: calc(100% + 6px);
 }
+/* 小三角:靠右对准 ···(菜单右对齐,··· 在右上角)。基态(菜单在上)三角在底部朝下 */
+.msg-menu::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 10px;
+  border: 6px solid transparent;
+  border-top-color: #4b4f56;
+}
+/* 菜单在下时:三角移到顶部朝上 */
+.msg-menu.down::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #4b4f56;
+}
 .msg-menu-item {
   display: flex;
   align-items: center;
