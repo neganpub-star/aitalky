@@ -112,7 +112,7 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
               {coins.map((c) => <Radio.Button key={c.currency} value={c.currency}>{c.currency}</Radio.Button>)}
             </Radio.Group>
           </div>
-          <div style={{ marginBottom: 16 }}>{addr?.address ? <QRCode value={addr.address} size={172} /> : <Spin />}</div>
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{addr?.address ? <QRCode value={addr.address} size={180} bordered={false} /> : <Spin />}</div>
 
           <div style={{ textAlign: 'left', maxWidth: 460, margin: '0 auto', fontSize: 13 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0' }}>

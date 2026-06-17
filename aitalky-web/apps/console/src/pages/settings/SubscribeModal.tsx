@@ -211,8 +211,8 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
             {t('bill.remainTime')}: <span style={{ color: token.colorError, fontWeight: 600 }}>{fmtCountdown(remain)}</span>
           </div>
 
-          <div style={{ margin: '20px 0' }}>
-            {addr?.address ? <QRCode value={addr.address} size={172} /> : <Spin />}
+          <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>
+            {addr?.address ? <QRCode value={addr.address} size={180} bordered={false} /> : <Spin />}
           </div>
 
           <div style={{ textAlign: 'left', maxWidth: 460, margin: '0 auto' }}>

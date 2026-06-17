@@ -608,7 +608,7 @@ export default {
     // 待支付/收款
     payPending: '待支付',
     paySuccess: '开通成功',
-    payAmount: '支付全额',
+    payAmount: '支付金额',
     remainTime: '剩余支付时间',
     receiveAddr: '收款地址',
     payDelayTip: '如充值过程有延迟到账,请等待约1小时;如仍未到账可联系客服处理。',
