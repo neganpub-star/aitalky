@@ -280,12 +280,12 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                     /* 链接仅对客服消息解析:客户自己没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.content, setWebview)}</div>
                   )}
-                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 aitalky:菜单冒泡在 ··· 正上方,带小三角) */}
-                  {mine && (
-                    <span
-                      className="msg-more"
-                      onClick={(e) => toggleMenu(e, m.msgId)}
-                    >
+                </div>
+                {/* 自己消息:··· 放在时间后面触发复制/撤回菜单(菜单冒泡在 ··· 上方,带小三角) */}
+                {mine ? (
+                  <div className="msg-time-row">
+                    <span className="msg-time">{fmtTime(m.timestamp)}</span>
+                    <span className="msg-more" onClick={(e) => toggleMenu(e, m.msgId)}>
                       ···
                       {menuFor === m.msgId && (
                         <div className={`msg-menu ${menuDown ? 'down' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -302,9 +302,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                         </div>
                       )}
                     </span>
-                  )}
-                </div>
-                <div className="msg-time">{fmtTime(m.timestamp)}</div>
+                  </div>
+                ) : (
+                  <div className="msg-time">{fmtTime(m.timestamp)}</div>
+                )}
               </div>
             </div>
             </Fragment>
