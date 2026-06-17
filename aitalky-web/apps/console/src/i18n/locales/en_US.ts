@@ -461,6 +461,7 @@ export default {
     permission: 'Access',
     unlimited: 'Unlimited',
     days: '{{n}} days',
+    plan: { trial: 'Trial', basic: 'Basic', standard: 'Standard', pro: 'Pro', flagship: 'Flagship', custom: 'Custom' },
     res: { seat: 'Team seats', customer: 'Customer quota', translate_char: 'Translation chars' },
     feat: { inbox: 'Inbox', messenger: 'Messenger', translate: 'Auto-translate', quickreply: 'Quick replies', group: 'Routing groups', blacklist: 'Blacklist' },
     orderNo: 'Order No.',

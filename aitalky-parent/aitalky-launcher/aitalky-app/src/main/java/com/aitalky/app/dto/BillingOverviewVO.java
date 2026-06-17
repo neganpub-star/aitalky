@@ -14,6 +14,7 @@ import java.util.List;
 public record BillingOverviewVO(
         boolean subscribed,
         Long planId,
+        String planCode,
         String planName,
         Integer planLevel,
         LocalDateTime expireTime,

@@ -26,6 +26,7 @@ export interface PlanVO {
 export interface BillingOverviewVO {
   subscribed: boolean
   planId: string | null
+  planCode: string | null
   planName: string | null
   planLevel: number | null
   expireTime: string | null

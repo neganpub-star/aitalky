@@ -42,12 +42,12 @@ public class BillingController {
         Long projectId = TenantContext.getProjectId();
         BilSubscription sub = billingService.getSubscription(projectId);
         if (sub == null) {
-            return R.ok(new BillingOverviewVO(false, null, null, null, null, false, List.of(), List.of()));
+            return R.ok(new BillingOverviewVO(false, null, null, null, null, null, false, List.of(), List.of()));
         }
         PlanVO plan = planService.get(sub.getPlanId());
         boolean expired = sub.getExpireTime() != null && sub.getExpireTime().isBefore(LocalDateTime.now());
         return R.ok(new BillingOverviewVO(
-                true, sub.getPlanId(), sub.getPlanName(), plan == null ? null : plan.level(),
+                true, sub.getPlanId(), sub.getPlanCode(), sub.getPlanName(), plan == null ? null : plan.level(),
                 sub.getExpireTime(), expired,
                 plan == null ? List.of() : plan.quotas(),
                 plan == null ? List.of() : plan.features()));

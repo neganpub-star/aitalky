@@ -63,7 +63,9 @@ export default function BillingOverview() {
       <div style={{ width: 300, flexShrink: 0 }}>
         <div style={{ borderRadius: 12, padding: 20, background: token.colorPrimaryBg, border: `1px solid ${token.colorPrimaryBorder}` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: token.colorPrimary }}>{data.planName}</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: token.colorPrimary }}>
+              {data.planCode && t(`bill.plan.${data.planCode}`) !== `bill.plan.${data.planCode}` ? t(`bill.plan.${data.planCode}`) : data.planName}
+            </span>
             {data.expired
               ? <Tag color="error">{t('bill.expired')}</Tag>
               : <Tag color="processing">{t('bill.subscribe')}中</Tag>}

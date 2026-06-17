@@ -475,6 +475,7 @@ export default {
     permission: '权限',
     unlimited: '无限制',
     days: '{{n}}天',
+    plan: { trial: '体验版', basic: '基础版', standard: '标准版', pro: '专业版', flagship: '旗舰版', custom: '定制版' },
     res: { seat: '团队席位', customer: '客户配额', translate_char: '翻译字符' },
     feat: { inbox: '收件箱', messenger: '信使', translate: '自动翻译', quickreply: '快捷回复', group: '客服分组', blacklist: '黑名单' },
     orderNo: '订单编号',

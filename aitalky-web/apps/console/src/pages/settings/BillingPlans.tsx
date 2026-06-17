@@ -19,6 +19,8 @@ export default function BillingPlans() {
     getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
   }, [])
 
+  // 套餐名按 code 走 i18n(后端 name 为中文,英文环境需本地化);无对应 key 回退后端 name
+  const planName = (p: PlanVO) => { const k = `bill.plan.${p.code}`; const l = t(k); return l === k ? p.name : l }
   // 席位数(套餐配额 seat);功能码→标签走 i18n(bill.feat.*),未知码原样
   const seatOf = (p: PlanVO) => p.quotas.find((q) => q.resourceType === 'seat')
   const featLabel = (code: string) => {
@@ -50,7 +52,7 @@ export default function BillingPlans() {
                 </div>
               )}
               <div style={{ padding: '20px 18px' }}>
-                <div style={{ fontSize: 18, fontWeight: 700 }}>{p.name}</div>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>{planName(p)}</div>
                 <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 4 }}>
                   {p.isCustom ? t('bill.customDeploy') : t('bill.minStart', { n: p.minMonths })}
                 </div>
