@@ -5,7 +5,8 @@
   --text: #1f2329;
   --text-2: #8a9099;
   --bubble-agent: #ffffff;
-  --bubble-customer: var(--brand);
+  /* 客户气泡用柔和蓝(比品牌色 #2f54eb 降饱和),不那么扎眼;与 --brand 解耦,头部渐变仍用品牌色 */
+  --bubble-customer: #4f7cff;
   --line: rgba(0, 0, 0, 0.06);
 }
 
