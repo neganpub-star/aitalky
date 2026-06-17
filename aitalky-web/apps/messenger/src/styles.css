@@ -471,7 +471,7 @@ body {
    基态在 ··· 上方(贴底翻转用);.down=在 ··· 下方(默认,对齐 aitalky 参考) */
 .msg-menu {
   position: absolute;
-  bottom: calc(100% + 6px);
+  bottom: calc(100% + 4px);
   right: 0;
   z-index: 20;
   background: #4b4f56;
@@ -483,14 +483,14 @@ body {
 }
 .msg-menu.down {
   bottom: auto;
-  top: calc(100% + 6px);
+  top: calc(100% + 4px);
 }
-/* 小三角:靠右对准 ···(菜单右对齐,··· 在右上角)。基态(菜单在上)三角在底部朝下 */
+/* 小三角:靠右对准三点视觉中心(菜单右对齐,··· 在右上角)。基态(菜单在上)三角在底部朝下 */
 .msg-menu::after {
   content: '';
   position: absolute;
   top: 100%;
-  right: 10px;
+  right: 4px;
   border: 6px solid transparent;
   border-top-color: #4b4f56;
 }
