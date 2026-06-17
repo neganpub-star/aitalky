@@ -32,7 +32,7 @@ export default function BillingPlans() {
   return (
     <div>
       <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.plans')}</div>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginTop: 48 }}>
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id
           const color = LEVEL_COLORS[p.level] || token.colorPrimary
