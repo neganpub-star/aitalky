@@ -61,17 +61,47 @@ export interface WalletVO {
 export interface OrderVO {
   id: string
   orderNo: string
-  type: string       // new / renew / upgrade
+  type: string       // new / renew / upgrade / addon_seat / addon_customer
+  resourceType: string | null // 加购资源类型 seat/customer;套餐单为 null
   planId: string
   planName: string
   months: number
   seats: number
+  quantity: number   // 客户配额加购:新增配额总数
+  periodDays: number // 席位加购计价周期=下单时剩余天数
   amount: number
   currency: string
   status: number     // 0待支付 1已完成 2已作废
   expireTime: string | null  // 待支付订单过期时间(下单+24h)
   paidTime: string | null
   createTime: string | null
+}
+
+// 加购报价(加购弹窗实时算合计)
+export interface AddonQuoteVO {
+  resourceType: string        // seat / customer
+  subscribed: boolean         // 是否有有效订阅(加购前提)
+  unitPrice: number           // 席位=单席位月价;客户配额=每包价
+  packAmount: number          // 每包配额数(客户配额);席位=1
+  remainingDays: number | null // 席位按剩余天数折算
+  expireTime: string | null   // 当前订阅到期时间(席位加购展示)
+}
+
+// 加购下单命令
+export interface CreateAddonOrderCmd {
+  resourceType: string  // seat / customer
+  quantity: number      // 席位=新增席位数;客户配额=拓展包数
+}
+
+// 订单记录筛选
+export interface OrderQuery {
+  current?: number
+  size?: number
+  type?: string
+  status?: number
+  orderNo?: string
+  dateFrom?: string  // yyyy-MM-dd
+  dateTo?: string    // yyyy-MM-dd
 }
 
 // 资源用量(席位/客户 已用 vs 配额)
@@ -140,6 +170,16 @@ export function createOrder(cmd: CreateOrderCmd) {
   return client.post<unknown, OrderVO>('/billing/order', cmd)
 }
 
+/** 加购报价(席位单价/剩余天数/到期时间;客户配额每包价/每包数) */
+export function getAddonQuote(resourceType: string) {
+  return client.get<unknown, AddonQuoteVO>('/billing/addon/quote', { params: { resourceType } })
+}
+
+/** 加购下单(独立购买席位/客户配额,不换套餐;唯一待支付) */
+export function createAddonOrder(cmd: CreateAddonOrderCmd) {
+  return client.post<unknown, OrderVO>('/billing/order/addon', cmd)
+}
+
 /** 当前待支付订单(无则 null;用于轮询到账状态/回显) */
 export function getPendingOrder() {
   return client.get<unknown, OrderVO | null>('/billing/order/pending')
@@ -155,7 +195,8 @@ export function cancelOrder(orderId: string) {
   return client.post<unknown, void>('/billing/order/cancel', null, { params: { orderId } })
 }
 
-/** 订单记录(分页,倒序) */
-export function pageOrders(current = 1, size = 10) {
-  return client.get<unknown, PageResult<OrderVO>>('/billing/orders', { params: { current, size } })
+/** 订单记录(分页,倒序;支持类型/状态/日期范围/订单号筛选) */
+export function pageOrders(query: OrderQuery = {}) {
+  const { current = 1, size = 10, ...rest } = query
+  return client.get<unknown, PageResult<OrderVO>>('/billing/orders', { params: { current, size, ...rest } })
 }
