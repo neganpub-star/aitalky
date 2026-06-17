@@ -169,8 +169,16 @@ export default function OrderRecords() {
         scroll={{ x: 1500 }}
         pagination={{ current: page, total, pageSize: PAGE_SIZE, onChange: (p) => load(p) }}
       />
-      {/* 默认字号(全局 15,与现网协调);单元格不换行(时间一行展示),订阅资源列允许两行 */}
-      <style>{`.order-table .ant-table-cell { white-space: nowrap; }`}</style>
+      {/* 默认字号(全局 15,与现网协调);单元格不换行(时间一行展示);表头加深字色+字重(更清晰协调) */}
+      <style>{`
+        .order-table .ant-table-cell { white-space: nowrap; }
+        .order-table .ant-table-thead > tr > th {
+          color: ${token.colorText};
+          font-weight: 600;
+          font-size: 14px;
+          background: ${token.colorBgContainer};
+        }
+      `}</style>
       <PendingPayModal
         open={!!payOrder}
         order={payOrder}
