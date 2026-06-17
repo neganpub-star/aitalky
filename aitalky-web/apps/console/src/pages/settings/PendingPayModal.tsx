@@ -67,14 +67,18 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, order?.id])
 
+  // 首次有币种时自动取地址。必须放在早返回之前,否则 order null→有值会改变 hooks 数量(Rendered more hooks 报错)
+  useEffect(() => {
+    if (open && order && currency && !addr) getAddress(currency).then(setAddr).catch(() => undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currency, order?.id])
+
   if (!order) return null
 
   const loadAddr = (cur: string) => {
     setCurrency(cur)
     getAddress(cur).then(setAddr).catch(() => undefined)
   }
-  // 首次有币种时自动取地址
-  useEffect(() => { if (open && currency && !addr) loadAddr(currency) }, [open, currency]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text).then(() => message.success(t('bill.copied'))).catch(() => undefined)
