@@ -30,7 +30,9 @@ public class MyBatisPlusConfig {
     /** 不参与多租户过滤的表（本身无 project_id 列 / 跨租户/平台级） */
     private static final Set<String> IGNORE_TABLES = Set.of(
             "pf_admin", "pf_admin_role", "pf_plan", "pf_plan_quota", "pf_addon_pack", "pf_agreement",
-            "id_account", "id_project", "id_invite_link"
+            "id_account", "id_project", "id_invite_link",
+            // bil_coin 是全局币种配置(后管维护),无 project_id 列;其余 bil_ 表(subscription/order/wallet/address/recharge)均按租户过滤
+            "bil_coin"
     );
 
     @Bean
