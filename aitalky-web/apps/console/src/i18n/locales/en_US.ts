@@ -575,6 +575,8 @@ export default {
     typeUpgrade: 'Upgrade',
     typeAddonSeat: 'Buy seats',
     typeAddonCustomer: 'Buy customer quota',
+    orderDetail: 'Order detail',
+    orderInfo: 'Order info',
     stPending: 'Pending',
     stPaid: 'Completed',
     stCancelled: 'Cancelled',

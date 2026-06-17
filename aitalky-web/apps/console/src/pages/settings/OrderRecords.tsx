@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Button, DatePicker, Input, Popconfirm, Select, Space, Table, Tag, message, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
-import { pageOrders, cancelOrder, listPlans, type OrderVO, type OrderQuery } from '../../api/billing'
+import { pageOrders, cancelOrder, listPlans, type OrderVO, type OrderQuery, type PlanVO } from '../../api/billing'
 import PendingPayModal from './PendingPayModal'
+import OrderDetailModal from './OrderDetailModal'
 
 // 数据管理 → 服务订阅 → 订单记录(对齐现网 img_4):筛选(类型/状态/日期/订单号) + 编号/类型/订阅资源/周期/金额/状态/说明/时间/操作。倒序分页。
 // 待支付订单可"去支付"(选网络取地址二维码)或"取消订单";已完成=实际开通。
@@ -29,8 +30,9 @@ export default function OrderRecords() {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)
-  // 套餐 id→code 映射:订单只存中文 planName 快照,按 code 走 i18n(英文界面不残留中文),缺失回退 planName
-  const [planCodeById, setPlanCodeById] = useState<Record<string, string>>({})
+  const [detailOrder, setDetailOrder] = useState<OrderVO | null>(null)  // 订单详情弹窗
+  // 套餐 id→PlanVO 映射:订单只存中文 planName 快照,按 code 走 i18n;详情弹窗取 features/席位配额
+  const [planById, setPlanById] = useState<Record<string, PlanVO>>({})
   // 筛选项
   const [type, setType] = useState<string>()
   const [status, setStatus] = useState<number>()
@@ -56,14 +58,14 @@ export default function OrderRecords() {
   }
   // 筛选变化即查(订单号走回车/失焦);首次加载
   useEffect(() => { load(1) }, [type, status, dateFrom, dateTo]) // eslint-disable-line react-hooks/exhaustive-deps
-  // 套餐 id→code 映射(一次性)
+  // 套餐 id→PlanVO 映射(一次性)
   useEffect(() => {
-    listPlans().then((ps) => setPlanCodeById(Object.fromEntries(ps.map((p) => [p.id, p.code])))).catch(() => undefined)
+    listPlans().then((ps) => setPlanById(Object.fromEntries(ps.map((p) => [p.id, p])))).catch(() => undefined)
   }, [])
 
   // 套餐名本地化:按 code 走 i18n,无 key/无 code 回退订单快照 planName
   const planLabel = (r: OrderVO) => {
-    const code = planCodeById[r.planId]
+    const code = planById[r.planId]?.code
     if (!code) return r.planName
     const k = `bill.plan.${code}`
     const l = t(k)
@@ -99,7 +101,12 @@ export default function OrderRecords() {
 
   const statusMap = STATUS(t)
   const columns: ColumnsType<OrderVO> = [
-    { title: t('bill.orderNo'), dataIndex: 'orderNo', width: 230, onCell: () => ({ style: { whiteSpace: 'nowrap' } }) },
+    {
+      title: t('bill.orderNo'), dataIndex: 'orderNo', width: 200,
+      render: (v: string, r) => (
+        <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => setDetailOrder(r)}>{v}</Button>
+      ),
+    },
     { title: t('bill.orderType'), dataIndex: 'type', width: 110, render: (v: string) => t(TYPE_KEY[v] || v) },
     { title: t('bill.subResource'), width: 180, render: (_, r) => resourceText(r) },
     { title: t('bill.subPeriod'), width: 100, render: (_, r) => periodText(r) },
@@ -114,8 +121,8 @@ export default function OrderRecords() {
         ? <span style={{ color: token.colorTextTertiary, fontSize: 12 }}>{t('bill.pendingRemark')}</span>
         : '--'),
     },
-    { title: t('bill.createdAt'), dataIndex: 'createTime', width: 170, render: (v) => v || '--' },
-    { title: t('bill.activatedAt'), dataIndex: 'paidTime', width: 170, render: (v) => v || '--' },
+    { title: t('bill.createdAt'), dataIndex: 'createTime', width: 160, render: (v) => v || '--' },
+    { title: t('bill.activatedAt'), dataIndex: 'paidTime', width: 160, render: (v) => v || '--' },
     {
       title: t('bill.action'), width: 190, fixed: 'right',
       render: (_, r) => (r.status === 0 ? (
@@ -153,17 +160,27 @@ export default function OrderRecords() {
 
       <Table
         rowKey="id"
+        size="small"
+        className="order-table"
         loading={loading}
         columns={columns}
         dataSource={data}
         scroll={{ x: 1500 }}
         pagination={{ current: page, total, pageSize: PAGE_SIZE, onChange: (p) => load(p) }}
       />
+      {/* 字号小一点 + 单元格内容不换行(创建时间一行展示) */}
+      <style>{`.order-table .ant-table { font-size: 13px; } .order-table .ant-table-cell { white-space: nowrap; }`}</style>
       <PendingPayModal
         open={!!payOrder}
         order={payOrder}
         onClose={() => setPayOrder(null)}
         onDone={() => { setPayOrder(null); load(page) }}
+      />
+      <OrderDetailModal
+        open={!!detailOrder}
+        order={detailOrder}
+        plan={detailOrder ? planById[detailOrder.planId] || null : null}
+        onClose={() => setDetailOrder(null)}
       />
     </div>
   )
