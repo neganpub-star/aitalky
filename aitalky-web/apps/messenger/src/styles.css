@@ -369,16 +369,6 @@ body {
   color: var(--text-2);
   margin-top: 4px;
 }
-/* 自己消息:时间 + ··· 同一行,··· 在时间后面 */
-.msg-time-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 4px;
-}
-.msg-time-row .msg-time {
-  margin-top: 0;
-}
 /* 发送失败:气泡左侧红色感叹号(点击重发) */
 .msg-fail {
   width: 18px;

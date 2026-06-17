@@ -81,16 +81,16 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
   const [headerOpen, setHeaderOpen] = useState(false)
   // 点开"撤回"操作的目标消息(点自己气泡展开,再点撤回执行;点别处收起)
   const [menuFor, setMenuFor] = useState<string | null>(null)
-  // 菜单弹出方向:默认在 ··· 下方(对齐 aitalky 参考);下方空间不足时翻转向上
-  const [menuDown, setMenuDown] = useState(true)
-  // 点 ··· 切换菜单:测量下方剩余空间决定向下/向上弹
+  // 菜单弹出方向:默认在 ··· 上方;顶部消息上方空间不足(会被公告/头部遮挡)时翻转向下弹
+  const [menuDown, setMenuDown] = useState(false)
+  // 点 ··· 切换菜单:测量上方剩余空间决定向上/向下弹
   const toggleMenu = (e: ReactMouseEvent<HTMLElement>, msgId: string) => {
     e.stopPropagation()
     if (menuFor === msgId) { setMenuFor(null); return }
     const more = e.currentTarget
-    const listBottom = more.closest('.msg-list')?.getBoundingClientRect().bottom ?? window.innerHeight
-    // 下方可用空间 ≥ 菜单高度(约96px)→ 向下弹;否则(贴底)向上弹
-    setMenuDown(listBottom - more.getBoundingClientRect().bottom >= 96)
+    const listTop = more.closest('.msg-list')?.getBoundingClientRect().top ?? 0
+    // 上方可用空间 < 菜单高度(约96px)→ 向下弹,避免顶出滚动区被遮
+    setMenuDown(more.getBoundingClientRect().top - listTop < 96)
     setMenuFor(msgId)
   }
   const endRef = useRef<HTMLDivElement>(null)
@@ -280,11 +280,8 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                     /* 链接仅对客服消息解析:客户自己没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.content, setWebview)}</div>
                   )}
-                </div>
-                {/* 自己消息:··· 放在时间后面触发复制/撤回菜单(菜单冒泡在 ··· 上方,带小三角) */}
-                {mine ? (
-                  <div className="msg-time-row">
-                    <span className="msg-time">{fmtTime(m.timestamp)}</span>
+                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(菜单右对齐 ··· 浮出,不带三角) */}
+                  {mine && (
                     <span className="msg-more" onClick={(e) => toggleMenu(e, m.msgId)}>
                       ···
                       {menuFor === m.msgId && (
@@ -302,10 +299,9 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                         </div>
                       )}
                     </span>
-                  </div>
-                ) : (
-                  <div className="msg-time">{fmtTime(m.timestamp)}</div>
-                )}
+                  )}
+                </div>
+                <div className="msg-time">{fmtTime(m.timestamp)}</div>
               </div>
             </div>
             </Fragment>
