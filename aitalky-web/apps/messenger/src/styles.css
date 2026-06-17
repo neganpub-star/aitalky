@@ -9,6 +9,8 @@
   /* 客户气泡用 iMessage 标准蓝;与 --brand 解耦,头部渐变仍用品牌色 */
   --bubble-customer: #0b93f6;
   --line: rgba(0, 0, 0, 0.06);
+  /* 统一的深色浮层底色(iOS 近黑):菜单/系统提示气泡/toast 共用,整体成套 */
+  --overlay: rgba(28, 28, 30, 0.92);
 }
 
 * {
@@ -392,7 +394,7 @@ body {
   max-width: 80%;
   margin: 2px auto 14px;
   padding: 5px 12px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay);
   color: #fff;
   font-size: 12px;
   line-height: 1.4;
@@ -409,7 +411,9 @@ body {
   z-index: 1100;
   max-width: 78%;
   padding: 10px 16px;
-  background: rgba(0, 0, 0, 0.78);
+  background: var(--overlay);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   color: #fff;
   font-size: 14px;
   line-height: 1.45;
@@ -474,7 +478,10 @@ body {
   bottom: calc(100% + 4px);
   right: 0;
   z-index: 20;
-  background: #4b4f56;
+  background: var(--overlay);
+  /* iOS 风轻微毛玻璃:浮层透出底下内容的虚化 */
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   color: #fff;
   border-radius: 8px;
   padding: 3px 0;
@@ -492,14 +499,14 @@ body {
   top: 100%;
   right: 4px;
   border: 6px solid transparent;
-  border-top-color: #4b4f56;
+  border-top-color: var(--overlay);
 }
 /* 菜单在下时:三角移到顶部朝上 */
 .msg-menu.down::after {
   top: auto;
   bottom: 100%;
   border-top-color: transparent;
-  border-bottom-color: #4b4f56;
+  border-bottom-color: var(--overlay);
 }
 .msg-menu-item {
   display: flex;
