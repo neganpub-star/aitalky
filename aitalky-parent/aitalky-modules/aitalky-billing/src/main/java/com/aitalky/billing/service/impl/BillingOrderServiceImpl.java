@@ -8,7 +8,10 @@ import com.aitalky.billing.mapper.BilOrderMapper;
 import com.aitalky.billing.mapper.BilSubscriptionMapper;
 import com.aitalky.billing.mapper.BilWalletMapper;
 import com.aitalky.billing.service.BillingOrderService;
+import com.aitalky.billing.service.dto.AddonQuoteVO;
+import com.aitalky.billing.service.dto.CreateAddonOrderCmd;
 import com.aitalky.billing.service.dto.CreateOrderCmd;
+import com.aitalky.billing.service.dto.OrderQuery;
 import com.aitalky.billing.service.dto.OrderVO;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.ResultCode;
@@ -27,9 +30,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -111,6 +116,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setPlanName(plan.name());
             order.setMonths(months);
             order.setSeats(seats);
+            order.setQuantity(0);
+            order.setPeriodDays(0);
             order.setAmount(amount);
             order.setCurrency("USDT");
             order.setStatus(0);
@@ -120,6 +127,83 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             log.info("创建订单, projectId={}, orderNo={}, type={}, amount={}", projectId, order.getOrderNo(), type, amount);
             return toVO(order);
         });
+    }
+
+    @Override
+    public OrderVO createAddonOrder(Long projectId, CreateAddonOrderCmd cmd) {
+        String resourceType = cmd.resourceType();
+        int qty = cmd.quantity() == null ? 0 : cmd.quantity();
+        if (qty <= 0 || (!"seat".equals(resourceType) && !"customer".equals(resourceType))) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        // 加购前提:必须有有效订阅(否则无周期可折算/无套餐可挂)
+        BilSubscription sub = activeSubscription(projectId);
+        if (sub == null) {
+            throw new BizException(ResultCode.BILLING_SUBSCRIPTION_REQUIRED);
+        }
+
+        BilOrder order = new BilOrder();
+        order.setProjectId(projectId);
+        order.setResourceType(resourceType);
+        order.setPlanId(sub.getPlanId());
+        order.setPlanName(sub.getPlanName());
+        order.setMonths(0);
+        order.setSeats(0);
+        order.setQuantity(0);
+        order.setPeriodDays(0);
+        order.setCurrency("USDT");
+
+        if ("seat".equals(resourceType)) {
+            // 席位加购:按剩余天数折算 = 单席位月价 × 数量 × 剩余天/30
+            BigDecimal unit = seatUnitMonthlyPrice();
+            if (unit.signum() <= 0) {
+                throw new BizException(ResultCode.BILLING_ADDON_UNAVAILABLE);
+            }
+            int remainingDays = remainingDays(sub);
+            order.setType("addon_seat");
+            order.setSeats(qty);
+            order.setPeriodDays(remainingDays);
+            order.setAmount(proratedSeatAmount(unit, qty, remainingDays));
+        } else {
+            // 客户配额加购:永久配额包 = 每包价 × 包数;新增配额 = 每包配额 × 包数
+            AddonVO pack = customerPack();
+            if (pack == null) {
+                throw new BizException(ResultCode.BILLING_ADDON_UNAVAILABLE);
+            }
+            long quota = pack.specAmount() * (long) qty;
+            order.setType("addon_customer");
+            order.setQuantity((int) quota);
+            order.setAmount(pack.price().multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP));
+        }
+
+        // 唯一待支付:作废旧待支付单后建新单
+        return lockTemplate.execute("lock:bil:order:" + projectId, 5, 10, () -> {
+            orderMapper.voidPendingOrders(projectId);
+            order.setOrderNo(genOrderNo());
+            order.setStatus(0);
+            order.setExpireTime(LocalDateTime.now().plusHours(24));
+            order.setSign(orderSign(order));
+            orderMapper.insert(order);
+            log.info("创建加购订单, projectId={}, orderNo={}, type={}, amount={}",
+                    projectId, order.getOrderNo(), order.getType(), order.getAmount());
+            return toVO(order);
+        });
+    }
+
+    @Override
+    public AddonQuoteVO addonQuote(Long projectId, String resourceType) {
+        BilSubscription sub = activeSubscription(projectId);
+        boolean subscribed = sub != null;
+        if ("customer".equals(resourceType)) {
+            AddonVO pack = customerPack();
+            BigDecimal price = pack == null ? BigDecimal.ZERO : pack.price();
+            Long packAmount = pack == null ? 0L : pack.specAmount();
+            return new AddonQuoteVO("customer", subscribed, price, packAmount, null, null);
+        }
+        // 默认席位
+        Integer remainingDays = subscribed ? remainingDays(sub) : null;
+        LocalDateTime expire = subscribed ? sub.getExpireTime() : null;
+        return new AddonQuoteVO("seat", subscribed, seatUnitMonthlyPrice(), 1L, remainingDays, expire);
     }
 
     @Override
@@ -186,9 +270,28 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         return toVO(orderMapper.selectById(orderId));
     }
 
-    /** 开通/续费/升级订阅(在核销事务内)。 */
+    /** 开通/续费/升级/加购订阅(在核销事务内)。 */
     private void activateSubscription(BilOrder order) {
         Long projectId = order.getProjectId();
+        String type = order.getType();
+        // 加购:只加配额、不改套餐/到期日(剩余周期内即时生效)
+        if ("addon_seat".equals(type) || "addon_customer".equals(type)) {
+            BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
+                    .eq(BilSubscription::getProjectId, projectId).last("limit 1"));
+            if (sub == null) {
+                // 加购下单时校验过有订阅;理论不达,保险起见忽略(钱已扣留余额可联系客服)
+                log.warn("加购核销时订阅不存在, projectId={}, orderNo={}", projectId, order.getOrderNo());
+                return;
+            }
+            if ("addon_seat".equals(type)) {
+                sub.setSeats((sub.getSeats() == null ? 0 : sub.getSeats()) + order.getSeats());
+            } else {
+                sub.setExtraCustomers((sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers()) + order.getQuantity());
+            }
+            subscriptionMapper.updateById(sub);
+            return;
+        }
+
         PlanVO plan = planService.get(order.getPlanId());
         long days = DAYS_PER_MONTH * order.getMonths();
         LocalDateTime now = LocalDateTime.now();
@@ -230,16 +333,23 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         sub.setPlanCode(plan.code());
         sub.setPlanName(plan.name());
         sub.setSeats(seats == null ? 0 : seats);
+        // 换套餐(新购/升级/过期重购):加购客户配额不跨套餐保留,重置为0(续费走另一分支,不重置)
+        sub.setExtraCustomers(0);
     }
 
     @Override
-    public PageResult<OrderVO> pageOrders(Long projectId, long current, long size) {
-        Page<BilOrder> page = orderMapper.selectPage(Page.of(current, size),
-                Wrappers.<BilOrder>lambdaQuery()
-                        .eq(BilOrder::getProjectId, projectId)
-                        .orderByDesc(BilOrder::getCreateTime));
+    public PageResult<OrderVO> pageOrders(Long projectId, OrderQuery query) {
+        var wrapper = Wrappers.<BilOrder>lambdaQuery()
+                .eq(BilOrder::getProjectId, projectId)
+                .eq(query.type() != null && !query.type().isBlank(), BilOrder::getType, query.type())
+                .eq(query.status() != null, BilOrder::getStatus, query.status())
+                .likeRight(query.orderNo() != null && !query.orderNo().isBlank(), BilOrder::getOrderNo, query.orderNo() == null ? "" : query.orderNo().trim())
+                .ge(query.dateFrom() != null, BilOrder::getCreateTime, query.dateFrom() == null ? null : query.dateFrom().atStartOfDay())
+                .lt(query.dateTo() != null, BilOrder::getCreateTime, query.dateTo() == null ? null : query.dateTo().plusDays(1).atStartOfDay())
+                .orderByDesc(BilOrder::getCreateTime);
+        Page<BilOrder> page = orderMapper.selectPage(Page.of(query.current(), query.size()), wrapper);
         return PageResult.of(page.getRecords().stream().map(this::toVO).toList(),
-                page.getTotal(), current, size);
+                page.getTotal(), query.current(), query.size());
     }
 
     @Override
@@ -283,6 +393,43 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 .orElse(BigDecimal.ZERO);
     }
 
+    /** 客户拓展包(上架的 customer 加量包;取第一条);无返回 null */
+    private AddonVO customerPack() {
+        return addonService.list().stream()
+                .filter(a -> "customer".equals(a.resourceType()) && a.status() != null && a.status() == 1)
+                .filter(a -> a.specAmount() != null && a.specAmount() > 0 && a.price() != null)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /** 当前有效订阅(status=1 且未到期);无返回 null */
+    private BilSubscription activeSubscription(Long projectId) {
+        BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
+                .eq(BilSubscription::getProjectId, projectId).last("limit 1"));
+        boolean active = sub != null && sub.getStatus() != null && sub.getStatus() == 1
+                && sub.getExpireTime() != null && sub.getExpireTime().isAfter(LocalDateTime.now());
+        return active ? sub : null;
+    }
+
+    /** 订阅剩余天数(向上取整,至少1天;到期后为0) */
+    private int remainingDays(BilSubscription sub) {
+        if (sub.getExpireTime() == null) {
+            return 0;
+        }
+        long minutes = ChronoUnit.MINUTES.between(LocalDateTime.now(), sub.getExpireTime());
+        if (minutes <= 0) {
+            return 0;
+        }
+        return (int) Math.max(1, Math.ceil(minutes / (60.0 * 24)));
+    }
+
+    /** 席位加购金额 = 单席位月价 × 数量 × 剩余天/30(2位小数,四舍五入) */
+    private BigDecimal proratedSeatAmount(BigDecimal seatUnit, int qty, int remainingDays) {
+        return seatUnit.multiply(BigDecimal.valueOf(qty))
+                .multiply(BigDecimal.valueOf(remainingDays))
+                .divide(BigDecimal.valueOf(DAYS_PER_MONTH), 2, RoundingMode.HALF_UP);
+    }
+
     /** 判定订单类型:无有效订阅=new;同套餐=renew;异套餐=upgrade */
     private String decideType(Long projectId, Long planId) {
         BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
@@ -303,7 +450,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private String orderSign(BilOrder o) {
         String data = String.join("|", o.getOrderNo(), String.valueOf(o.getProjectId()),
                 o.getAmount().stripTrailingZeros().toPlainString(), String.valueOf(o.getMonths()),
-                String.valueOf(o.getSeats()), String.valueOf(o.getPlanId()));
+                String.valueOf(o.getSeats()), String.valueOf(o.getPlanId()),
+                String.valueOf(o.getType()), String.valueOf(o.getResourceType()),
+                String.valueOf(o.getQuantity()), String.valueOf(o.getPeriodDays()));
         return HmacUtil.hmacSha256Hex(properties.signKey(), data);
     }
 
@@ -313,8 +462,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     }
 
     private OrderVO toVO(BilOrder o) {
-        return new OrderVO(o.getId(), o.getOrderNo(), o.getType(), o.getPlanId(), o.getPlanName(),
-                o.getMonths(), o.getSeats(), o.getAmount(), o.getCurrency(), o.getStatus(),
+        return new OrderVO(o.getId(), o.getOrderNo(), o.getType(), o.getResourceType(), o.getPlanId(), o.getPlanName(),
+                o.getMonths(), o.getSeats(), o.getQuantity(), o.getPeriodDays(), o.getAmount(), o.getCurrency(), o.getStatus(),
                 o.getExpireTime(), o.getPaidTime(), o.getCreateTime());
     }
 }

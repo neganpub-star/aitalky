@@ -20,14 +20,20 @@ public class BilOrder extends BaseEntity {
 
     private String orderNo;
     private Long projectId;
-    /** new/renew/upgrade */
+    /** new/renew/upgrade/addon_seat/addon_customer */
     private String type;
+    /** 加购资源类型 seat/customer;套餐单为空 */
+    private String resourceType;
     private Long planId;
     private String planName;
-    /** 订阅月数(30天/月) */
+    /** 订阅月数(30天/月);加购单为0 */
     private Integer months;
     /** 加购席位数(套餐配额之外) */
     private Integer seats;
+    /** 客户配额加购:新增配额总数(套餐/席位单为0) */
+    private Integer quantity;
+    /** 席位加购计价周期=下单时剩余天数(套餐/客户单为0) */
+    private Integer periodDays;
     private BigDecimal amount;
     private String currency;
     /** 0待支付 1已完成 2已作废 */

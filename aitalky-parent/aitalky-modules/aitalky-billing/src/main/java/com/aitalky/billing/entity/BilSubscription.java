@@ -20,6 +20,8 @@ public class BilSubscription extends BaseEntity {
     private String planName;
     /** 加购席位数(套餐配额之外);有效席位=套餐 seat 配额 + 本字段 */
     private Integer seats;
+    /** 加购客户配额(套餐配额之外);有效客户配额=套餐 customer 配额 + 本字段 */
+    private Integer extraCustomers;
     private Integer status;
     private LocalDateTime startTime;
     private LocalDateTime expireTime;

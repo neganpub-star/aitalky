@@ -6,13 +6,17 @@ import com.aitalky.billing.service.BillingAddressService;
 import com.aitalky.billing.service.BillingOrderService;
 import com.aitalky.billing.service.BillingService;
 import com.aitalky.billing.service.BillingWalletService;
+import com.aitalky.billing.service.dto.AddonQuoteVO;
 import com.aitalky.billing.service.dto.CoinVO;
+import com.aitalky.billing.service.dto.CreateAddonOrderCmd;
 import com.aitalky.billing.service.dto.CreateOrderCmd;
+import com.aitalky.billing.service.dto.OrderQuery;
 import com.aitalky.billing.service.dto.OrderVO;
 import com.aitalky.billing.service.dto.PricingVO;
 import com.aitalky.billing.service.dto.RechargeAddressVO;
 import com.aitalky.billing.service.dto.UsageVO;
 import com.aitalky.billing.service.dto.WalletVO;
+import org.springframework.format.annotation.DateTimeFormat;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.R;
 import com.aitalky.customer.service.CustomerService;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,6 +114,20 @@ public class BillingController {
         return R.ok(orderService.createOrder(projectId, cmd));
     }
 
+    /** 加购报价(席位单价/剩余天数/到期时间;客户配额每包价/每包数) */
+    @GetMapping("/addon/quote")
+    public R<AddonQuoteVO> addonQuote(@RequestParam String resourceType) {
+        Long projectId = TenantContext.getProjectId();
+        return R.ok(orderService.addonQuote(projectId, resourceType));
+    }
+
+    /** 加购下单(独立购买席位/客户配额,不换套餐;唯一待支付) */
+    @PostMapping("/order/addon")
+    public R<OrderVO> createAddonOrder(@RequestBody CreateAddonOrderCmd cmd) {
+        Long projectId = TenantContext.getProjectId();
+        return R.ok(orderService.createAddonOrder(projectId, cmd));
+    }
+
     /** 当前待支付订单(下单弹窗回显;无则 data 为 null) */
     @GetMapping("/order/pending")
     public R<OrderVO> pendingOrder() {
@@ -131,12 +150,18 @@ public class BillingController {
         return R.ok();
     }
 
-    /** 订单记录(分页,倒序) */
+    /** 订单记录(分页,倒序;支持类型/状态/日期范围/订单号筛选) */
     @GetMapping("/orders")
     public R<PageResult<OrderVO>> orders(@RequestParam(defaultValue = "1") long current,
-                                         @RequestParam(defaultValue = "10") long size) {
+                                         @RequestParam(defaultValue = "10") long size,
+                                         @RequestParam(required = false) String type,
+                                         @RequestParam(required = false) Integer status,
+                                         @RequestParam(required = false) String orderNo,
+                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+                                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
         Long projectId = TenantContext.getProjectId();
-        return R.ok(orderService.pageOrders(projectId, current, size));
+        OrderQuery query = new OrderQuery(current, size, type, status, orderNo, dateFrom, dateTo);
+        return R.ok(orderService.pageOrders(projectId, query));
     }
 
     /**
@@ -157,6 +182,7 @@ public class BillingController {
         if (sub != null) {
             PlanVO plan = planService.get(sub.getPlanId());
             int extraSeats = sub.getSeats() == null ? 0 : sub.getSeats();
+            int extraCustomers = sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers();
             for (PlanQuotaVO q : (plan == null ? List.<PlanQuotaVO>of() : plan.quotas())) {
                 boolean unlimited = q.isUnlimited() != null && q.isUnlimited() == 1;
                 long amount = q.amount() == null ? 0 : q.amount();
@@ -165,7 +191,7 @@ public class BillingController {
                     seatLimit = amount + extraSeats; // 套餐席位 + 加购席位
                 } else if ("customer".equals(q.resourceType())) {
                     customerUnlimited = unlimited;
-                    customerLimit = amount;
+                    customerLimit = amount + extraCustomers; // 套餐客户配额 + 加购客户配额
                 }
             }
         }

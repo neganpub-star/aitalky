@@ -88,6 +88,10 @@ public enum ResultCode {
     BILLING_BALANCE_INSUFFICIENT(1056, "billing.balance.insufficient"),
     /** 订单不可支付(不存在/已支付/已作废) */
     BILLING_ORDER_NOT_PAYABLE(1057, "billing.order.not.payable"),
+    /** 加购需先有有效订阅(未订阅/已过期不能加购席位/客户配额) */
+    BILLING_SUBSCRIPTION_REQUIRED(1058, "billing.subscription.required"),
+    /** 加购项不可用(对应加量包未配置/已下架) */
+    BILLING_ADDON_UNAVAILABLE(1059, "billing.addon.unavailable"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
