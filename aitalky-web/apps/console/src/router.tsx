@@ -27,6 +27,7 @@ import DeactivateProject from './pages/settings/DeactivateProject'
 import RolePage from './pages/settings/RolePage'
 import BillingOverview from './pages/settings/BillingOverview'
 import BillingPlans from './pages/settings/BillingPlans'
+import OrderRecords from './pages/settings/OrderRecords'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings } from './auth/perm'
 
@@ -90,7 +91,7 @@ export const router = createHashRouter([
           { path: 'billing', element: <Navigate to="/settings/billing/overview" replace /> },
           { path: 'billing/overview', element: <BillingOverview /> },
           { path: 'billing/plans', element: <BillingPlans /> },
-          { path: 'billing/orders', element: <Placeholder title="订单记录" /> },
+          { path: 'billing/orders', element: <OrderRecords /> },
         ],
       },
     ],

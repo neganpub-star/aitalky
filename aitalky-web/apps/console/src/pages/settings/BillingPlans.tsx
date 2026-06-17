@@ -3,6 +3,7 @@ import { Button, message, theme } from 'antd'
 import { CheckOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { listPlans, getOverview, type PlanVO } from '../../api/billing'
+import SubscribeModal from './SubscribeModal'
 
 // 套餐档位顶部彩色条(对齐 aitalky:档位越高色越突出)
 const LEVEL_COLORS = ['#9aa0a6', '#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#8c6e4a']
@@ -13,11 +14,20 @@ export default function BillingPlans() {
   const { token } = theme.useToken()
   const [plans, setPlans] = useState<PlanVO[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
+  const [subPlan, setSubPlan] = useState<PlanVO | null>(null)  // 下单弹窗当前套餐
 
+  const loadCurrent = () =>
+    getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
   useEffect(() => {
     listPlans().then(setPlans).catch(() => undefined)
-    getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
+    loadCurrent()
   }, [])
+
+  // 订阅/续费/升级:定制版走联系客服(暂提示),其余打开下单弹窗
+  const onSubscribe = (p: PlanVO) => {
+    if (p.isCustom) { message.info(t('settings.wip')); return }
+    setSubPlan(p)
+  }
 
   // 套餐名按 code 走 i18n(后端 name 为中文,英文环境需本地化);无对应 key 回退后端 name
   const planName = (p: PlanVO) => { const k = `bill.plan.${p.code}`; const l = t(k); return l === k ? p.name : l }
@@ -69,7 +79,7 @@ export default function BillingPlans() {
                   </div>
                   {/* 订阅/续费按钮(下单弹窗第③期;本期占位提示) */}
                   <Button size="large" type={isCurrent ? 'primary' : 'default'} block
-                    onClick={() => message.info(t('settings.wip'))}>
+                    onClick={() => onSubscribe(p)}>
                     {p.isCustom ? t('bill.customPrice') : isCurrent ? t('bill.renewUpgrade') : t('bill.subscribe')}
                   </Button>
                 </div>
@@ -94,6 +104,13 @@ export default function BillingPlans() {
           )
         })}
       </div>
+
+      <SubscribeModal
+        open={!!subPlan}
+        plan={subPlan}
+        onClose={() => setSubPlan(null)}
+        onSuccess={() => { setSubPlan(null); loadCurrent() }}
+      />
     </div>
   )
 }

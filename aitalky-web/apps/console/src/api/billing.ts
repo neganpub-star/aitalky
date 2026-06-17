@@ -35,6 +35,71 @@ export interface BillingOverviewVO {
   features: string[]
 }
 
+// 可充值/支付币种(选链)
+export interface CoinVO {
+  symbol: string
+  currency: string   // USDT-TRC20
+  network: string    // TRC20
+  chainName: string  // Tron
+}
+
+// 项目收款地址(下单后展示,用户转账到此)
+export interface RechargeAddressVO {
+  currency: string
+  network: string
+  chainName: string
+  address: string
+}
+
+// 钱包余额(兜底)
+export interface WalletVO {
+  balance: number
+  currency: string
+}
+
+// 订单(下单返回/订单记录)
+export interface OrderVO {
+  id: string
+  orderNo: string
+  type: string       // new / renew / upgrade
+  planId: string
+  planName: string
+  months: number
+  seats: number
+  amount: number
+  currency: string
+  status: number     // 0待支付 1已完成 2已作废
+  expireTime: string | null  // 待支付订单过期时间(下单+24h)
+  paidTime: string | null
+  createTime: string | null
+}
+
+// 资源用量(席位/客户 已用 vs 配额)
+export interface UsageVO {
+  resourceType: string
+  used: number
+  limit: number
+  unlimited: boolean
+}
+
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  current: number
+  size: number
+}
+
+export interface CreateOrderCmd {
+  planId: string
+  months: number
+  seats: number
+}
+
+// 计费单价(下单实时算合计)
+export interface PricingVO {
+  seatMonthlyPrice: number  // 单席位月价
+}
+
 /** 上架套餐列表 */
 export function listPlans() {
   return client.get<unknown, PlanVO[]>('/billing/plans')
@@ -43,4 +108,54 @@ export function listPlans() {
 /** 当前项目订阅概览 */
 export function getOverview() {
   return client.get<unknown, BillingOverviewVO>('/billing/overview')
+}
+
+/** 可支付币种(选链) */
+export function listCoins() {
+  return client.get<unknown, CoinVO[]>('/billing/coins')
+}
+
+/** 计费单价(席位月价等) */
+export function getPricing() {
+  return client.get<unknown, PricingVO>('/billing/pricing')
+}
+
+/** 钱包余额(兜底) */
+export function getWallet() {
+  return client.get<unknown, WalletVO>('/billing/wallet')
+}
+
+/** 资源用量(席位/客户) */
+export function getUsage() {
+  return client.get<unknown, UsageVO[]>('/billing/usage')
+}
+
+/** 取/建项目在该币种所属链上的固定收款地址(下单后展示) */
+export function getAddress(currency: string) {
+  return client.post<unknown, RechargeAddressVO>('/billing/address', null, { params: { currency } })
+}
+
+/** 下单(新购/续费/升级;作废旧待支付单后建新单,唯一待支付) */
+export function createOrder(cmd: CreateOrderCmd) {
+  return client.post<unknown, OrderVO>('/billing/order', cmd)
+}
+
+/** 当前待支付订单(无则 null;用于轮询到账状态/回显) */
+export function getPendingOrder() {
+  return client.get<unknown, OrderVO | null>('/billing/order/pending')
+}
+
+/** 余额核销开通(余额足时手动触发;转账到账由回调自动核销) */
+export function payOrder(orderId: string) {
+  return client.post<unknown, OrderVO>('/billing/order/pay', null, { params: { orderId } })
+}
+
+/** 取消待支付订单 */
+export function cancelOrder(orderId: string) {
+  return client.post<unknown, void>('/billing/order/cancel', null, { params: { orderId } })
+}
+
+/** 订单记录(分页,倒序) */
+export function pageOrders(current = 1, size = 10) {
+  return client.get<unknown, PageResult<OrderVO>>('/billing/orders', { params: { current, size } })
 }
