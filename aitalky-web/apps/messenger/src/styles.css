@@ -4,7 +4,8 @@
   --bg: #f2f4f8;
   --text: #1f2329;
   --text-2: #8a9099;
-  --bubble-agent: #ffffff;
+  /* 坐席(收到)气泡用 iMessage 浅灰;聊天区改白底才能衬出灰泡 */
+  --bubble-agent: #e9e9eb;
   /* 客户气泡用柔和蓝(比品牌色 #2f54eb 降饱和),不那么扎眼;与 --brand 解耦,头部渐变仍用品牌色 */
   --bubble-customer: #4f7cff;
   --line: rgba(0, 0, 0, 0.06);
@@ -255,7 +256,8 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 16px 14px;
-  background: var(--bg);
+  /* iMessage 风:聊天区白底,衬出浅灰坐席气泡 + 蓝色客户气泡 */
+  background: #fff;
 }
 .msg-row {
   display: flex;
@@ -286,9 +288,8 @@ body {
 .bubble.agent {
   background: var(--bubble-agent);
   color: var(--text);
-  /* 小尖角指向头像(头像在左上),而非左下;阴影极淡只做微微浮起 */
+  /* 小尖角指向头像(头像在左上);iMessage 灰泡不带阴影 */
   border-top-left-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 .bubble.mine {
   background: var(--bubble-customer);
