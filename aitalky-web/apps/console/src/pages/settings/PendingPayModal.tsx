@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Modal, Radio, Button, QRCode, Spin, message, theme } from 'antd'
+import { Modal, Button, QRCode, Spin, message, theme } from 'antd'
 import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
   listCoins, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
-  type CoinVO, type OrderVO, type RechargeAddressVO,
+  type OrderVO, type RechargeAddressVO,
 } from '../../api/billing'
 
 interface Props {
@@ -28,8 +28,7 @@ function fmtCountdown(sec: number): string {
 export default function PendingPayModal({ open, order, onClose, onDone }: Props) {
   const { t } = useTranslation()
   const { token } = theme.useToken()
-  const [coins, setCoins] = useState<CoinVO[]>([])
-  const [currency, setCurrency] = useState('')
+  const [currency, setCurrency] = useState('')  // 收款网络:固定为下单所选(order.payCurrency)
   const [addr, setAddr] = useState<RechargeAddressVO | null>(null)
   const [balance, setBalance] = useState(0)
   const [paid, setPaid] = useState(false)
@@ -47,7 +46,9 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
   useEffect(() => {
     if (!open || !order) return
     setAddr(null); setPaid(false)
-    listCoins().then((cs) => { setCoins(cs); setCurrency(cs[0]?.currency || '') }).catch(() => undefined)
+    // 收款网络固定为下单所选;旧单无 payCurrency 时回退首个可用币种
+    if (order.payCurrency) setCurrency(order.payCurrency)
+    else listCoins().then((cs) => setCurrency(cs[0]?.currency || '')).catch(() => undefined)
     getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
     // 倒计时 + 轮询到账
     const calc = () => {
@@ -74,11 +75,6 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
   }, [open, currency, order?.id])
 
   if (!order) return null
-
-  const loadAddr = (cur: string) => {
-    setCurrency(cur)
-    getAddress(cur).then(setAddr).catch(() => undefined)
-  }
 
   const copy = (text: string) => {
     navigator.clipboard?.writeText(text).then(() => message.success(t('bill.copied'))).catch(() => undefined)
@@ -111,12 +107,7 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
             {t('bill.remainTime')}: <span style={{ color: token.colorError, fontWeight: 600 }}>{fmtCountdown(remain)}</span>
           </div>
 
-          <div style={{ margin: '16px 0' }}>
-            <Radio.Group value={currency} onChange={(e) => loadAddr(e.target.value)}>
-              {coins.map((c) => <Radio.Button key={c.currency} value={c.currency}>{c.currency}</Radio.Button>)}
-            </Radio.Group>
-          </div>
-          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{addr?.address ? <QRCode value={addr.address} size={180} bordered={false} /> : <Spin />}</div>
+          <div style={{ margin: '20px 0', display: 'flex', justifyContent: 'center' }}>{addr?.address ? <QRCode value={addr.address} size={180} bordered={false} /> : <Spin />}</div>
 
           <div style={{ textAlign: 'left', maxWidth: 460, margin: '0 auto', fontSize: 13 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0' }}>
@@ -125,6 +116,10 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
                 <span style={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>{addr?.address || '...'}</span>
                 {addr && <CopyOutlined style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => copy(addr.address)} />}
               </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0' }}>
+              <span style={{ color: token.colorTextSecondary }}>{t('bill.payMethod')}</span>
+              <span>{currency}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0' }}>
               <span style={{ color: token.colorTextSecondary }}>{t('bill.orderNo')}</span>

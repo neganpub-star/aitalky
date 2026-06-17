@@ -71,6 +71,7 @@ export interface OrderVO {
   periodDays: number // 席位加购计价周期=下单时剩余天数
   amount: number
   currency: string
+  payCurrency: string | null // 下单选定收款网络(USDT-TRC20/ERC20);决定收款地址所在链
   status: number     // 0待支付 1已完成 2已作废
   expireTime: string | null  // 待支付订单过期时间(下单+24h)
   paidTime: string | null
@@ -91,6 +92,7 @@ export interface AddonQuoteVO {
 export interface CreateAddonOrderCmd {
   resourceType: string  // seat / customer
   quantity: number      // 席位=新增席位数;客户配额=拓展包数
+  currency: string      // 选定收款网络(USDT-TRC20/ERC20)
 }
 
 // 订单记录筛选
@@ -123,6 +125,7 @@ export interface CreateOrderCmd {
   planId: string
   months: number
   seats: number
+  currency: string  // 选定收款网络(USDT-TRC20/ERC20)
 }
 
 // 计费单价(下单实时算合计)

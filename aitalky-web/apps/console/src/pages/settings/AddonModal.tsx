@@ -109,7 +109,7 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
     if (!currency) { message.warning(t('bill.selectNetwork')); return }
     setSubmitting(true)
     try {
-      const o = await createAddonOrder({ resourceType, quantity: qty })
+      const o = await createAddonOrder({ resourceType, quantity: qty, currency })
       const a = await getAddress(currency)
       setOrder(o); setAddr(a); startWatch(o)
       getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)

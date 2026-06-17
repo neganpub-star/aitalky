@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Button, message, theme } from 'antd'
-import { CheckOutlined } from '@ant-design/icons'
+import { Button, Modal, message, theme } from 'antd'
+import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { listPlans, getOverview, type PlanVO } from '../../api/billing'
+import { listPlans, getOverview, getPendingOrder, type PlanVO, type OrderVO } from '../../api/billing'
 import SubscribeModal from './SubscribeModal'
+import PendingPayModal from './PendingPayModal'
 
 // 套餐档位顶部彩色条(对齐 aitalky:档位越高色越突出)
 const LEVEL_COLORS = ['#9aa0a6', '#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#8c6e4a']
@@ -12,9 +13,11 @@ const LEVEL_COLORS = ['#9aa0a6', '#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#8
 export default function BillingPlans() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
+  const [modal, modalCtx] = Modal.useModal()
   const [plans, setPlans] = useState<PlanVO[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
   const [subPlan, setSubPlan] = useState<PlanVO | null>(null)  // 下单弹窗当前套餐
+  const [payOrder, setPayOrder] = useState<OrderVO | null>(null)  // 待处理的已有待支付订单
 
   const loadCurrent = () =>
     getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
@@ -23,9 +26,23 @@ export default function BillingPlans() {
     loadCurrent()
   }, [])
 
-  // 订阅/续费/升级:定制版走联系客服(暂提示),其余打开下单弹窗
-  const onSubscribe = (p: PlanVO) => {
+  // 订阅/续费/升级:定制版走联系客服(暂提示);已有待支付订单则提示去处理(对齐现网);否则打开下单弹窗
+  const onSubscribe = async (p: PlanVO) => {
     if (p.isCustom) { message.info(t('settings.wip')); return }
+    try {
+      const pending = await getPendingOrder()
+      if (pending) {
+        modal.confirm({
+          icon: <ExclamationCircleFilled style={{ color: token.colorWarning }} />,
+          title: t('bill.warnTitle'),
+          content: t('bill.hasPendingOrder'),
+          okText: t('bill.goHandle'),
+          cancelText: t('common.cancel'),
+          onOk: () => setPayOrder(pending),
+        })
+        return
+      }
+    } catch { /* 查询失败按无待支付处理 */ }
     setSubPlan(p)
   }
 
@@ -41,6 +58,7 @@ export default function BillingPlans() {
 
   return (
     <div>
+      {modalCtx}
       <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.plans')}</div>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginTop: 80 }}>
         {plans.map((p) => {
@@ -110,6 +128,13 @@ export default function BillingPlans() {
         plan={subPlan}
         onClose={() => setSubPlan(null)}
         onSuccess={() => { setSubPlan(null); loadCurrent() }}
+      />
+      {/* 去处理已有待支付订单 */}
+      <PendingPayModal
+        open={!!payOrder}
+        order={payOrder}
+        onClose={() => setPayOrder(null)}
+        onDone={() => { setPayOrder(null); loadCurrent() }}
       />
     </div>
   )

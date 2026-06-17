@@ -109,7 +109,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     if (!currency) { message.warning(t('bill.selectNetwork')); return }
     setSubmitting(true)
     try {
-      const o = await createOrder({ planId: plan.id, months, seats: addonSeats })
+      const o = await createOrder({ planId: plan.id, months, seats: addonSeats, currency })
       const a = await getAddress(currency)
       setOrder(o); setAddr(a); startWatch(o)
       getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
