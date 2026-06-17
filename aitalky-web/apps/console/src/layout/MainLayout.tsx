@@ -21,7 +21,7 @@ import { setLanguageDict } from '../constants/languages'
 import { setTitleUnread, playBeep } from '../notify'
 import type { ProjectBrief } from '../types'
 
-// 参照 ByteTrack:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
+// 参照 aitalky:最左窄图标导航栏;左上角项目 LOGO 点击弹出「项目切换」;左下角主题切换 + 头像
 export default function MainLayout() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
@@ -117,7 +117,7 @@ export default function MainLayout() {
   const isDark = themeMode === 'dark'
   const styles: Record<string, CSSProperties> = {
     root: { display: 'flex', height: '100vh', overflow: 'hidden' },
-    // 第1栏(图标栏):宽 44、淡蓝底(暗色用容器色)—— 对齐 ByteTrack
+    // 第1栏(图标栏):宽 44、淡蓝底(暗色用容器色)—— 对齐 aitalky
     rail: {
       width: 44, flexShrink: 0, background: isDark ? token.colorBgContainer : '#e9eef8',
       borderRight: `1px solid ${token.colorSplit}`,
@@ -169,7 +169,7 @@ export default function MainLayout() {
     </div>
   )
 
-  // 头像弹出菜单(1:1 参照 ByteTrack):资料 + 工作状态 + 个人中心/邀请成员/切换语言/切换主题/退出 + 版本
+  // 头像弹出菜单(1:1 参照 aitalky):资料 + 工作状态 + 个人中心/邀请成员/切换语言/切换主题/退出 + 版本
   const displayName = nickname || (ctx.email || 'user').split('@')[0]
   const rowIcon = { fontSize: 17, color: token.colorTextSecondary }
   const userPanel = (

@@ -33,7 +33,7 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
   )
 
   if (mode === 'home') {
-    // 首页问候卡(1:1 对齐 ByteTrack img_1):整卡渐变上深下浅、白色子卡浮于其上
+    // 首页问候卡(1:1 对齐 aitalky img_1):整卡渐变上深下浅、白色子卡浮于其上
     // 顶部 LOGO+关闭 → 大号品牌/欢迎语 → 联系我们卡(团队头像组+消息预览+品牌·时间) → 消息卡(右箭头)
     return (
       <div style={{

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { hasAnyFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
 
-// 设置区左侧分组导航(参照 ByteTrack);按功能权限过滤,空分组自动隐藏(菜单隔离)
+// 设置区左侧分组导航(参照 aitalky);按功能权限过滤,空分组自动隐藏(菜单隔离)
 export default function SettingsLayout() {
   const { t } = useTranslation()
   const { token } = theme.useToken()

@@ -4,10 +4,10 @@ import { CheckOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { listPlans, getOverview, type PlanVO } from '../../api/billing'
 
-// 套餐档位顶部彩色条(对齐 ByteTrack:档位越高色越突出)
+// 套餐档位顶部彩色条(对齐 aitalky:档位越高色越突出)
 const LEVEL_COLORS = ['#9aa0a6', '#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#8c6e4a']
 
-// 数据管理 → 服务订阅 → 套餐订阅:套餐卡片(对齐 ByteTrack img-64);只展示现有功能,下单弹窗见第③期
+// 数据管理 → 服务订阅 → 套餐订阅:套餐卡片(对齐 aitalky img-64);只展示现有功能,下单弹窗见第③期
 export default function BillingPlans() {
   const { t } = useTranslation()
   const { token } = theme.useToken()

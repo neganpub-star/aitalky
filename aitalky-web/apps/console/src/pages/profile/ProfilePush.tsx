@@ -4,7 +4,7 @@ import { Spin, Switch, message, theme } from 'antd'
 import { useTranslation } from 'react-i18next'
 import { getPushSettings, updatePushSettings, type PushSettingsVO } from '../../api/account'
 
-// 个人中心 - 系统推送(对齐 ByteTrack):4 类消息 x APP/Web 共 8 个开关
+// 个人中心 - 系统推送(对齐 aitalky):4 类消息 x APP/Web 共 8 个开关
 export default function ProfilePush() {
   const { t } = useTranslation()
   const { token } = theme.useToken()

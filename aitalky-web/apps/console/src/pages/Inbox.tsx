@@ -95,7 +95,7 @@ function renderRichText(text: string, linkColor = '#1677ff', mention = false): R
   return nodes
 }
 
-// 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
+// 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 aitalky)
 function fmtMsgTime(ms: number): string {
   const d = new Date(ms)
   if (Number.isNaN(d.getTime())) return ''
@@ -109,7 +109,7 @@ function fmtMsgTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
-// 客户源语言代码 → 展示名(对齐 ByteTrack)
+// 客户源语言代码 → 展示名(对齐 aitalky)
 function langLabel(code: string | null): string {
   if (!code) return '-'
   const map: Record<string, string> = { zh_CN: '简体中文', zh_TW: '繁體中文', en_US: 'English', en: 'English', ja_JP: '日本語', ko_KR: '한국어' }
@@ -139,7 +139,7 @@ function fmtListTime(iso: string | null): string {
   return sameDay ? `${p(d.getHours())}:${p(d.getMinutes())}` : `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-// 收件箱(对齐 ByteTrack 四栏:分类视图 / 会话列表 / 聊天 / 详情面板)。
+// 收件箱(对齐 aitalky 四栏:分类视图 / 会话列表 / 聊天 / 详情面板)。
 export default function Inbox() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
@@ -1198,7 +1198,7 @@ export default function Inbox() {
               </div>
             </div>
 
-            {/* 输入区:对齐 ByteTrack(tab+翻译开关 / 加高输入框 / 工具栏 + 翻译·发送)*/}
+            {/* 输入区:对齐 aitalky(tab+翻译开关 / 加高输入框 / 工具栏 + 翻译·发送)*/}
             <div style={{ flexShrink: 0, background: token.colorBgContainer, borderTop: splitBorder, padding: '8px 16px 12px' }}>
               {/* 第一行:回复/内部消息 tab(左) + 自动翻译开关 + 客户源语言(右) */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
@@ -1372,7 +1372,7 @@ export default function Inbox() {
         )}
       </div>
 
-      {/* 第四栏:详情面板(客户资料)—— 对齐 ByteTrack:标题 + 横排头像 + 分组折叠 + 底部加黑 */}
+      {/* 第四栏:详情面板(客户资料)—— 对齐 aitalky:标题 + 横排头像 + 分组折叠 + 底部加黑 */}
       {selectedId && detail && (
         <div style={styles.col4}>
           {/* 面板标题 */}
@@ -1599,7 +1599,7 @@ export default function Inbox() {
   )
 }
 
-// 详情分组标题(可折叠,带 ∨ 箭头,对齐 ByteTrack)
+// 详情分组标题(可折叠,带 ∨ 箭头,对齐 aitalky)
 function SectionHeader({ title, collapsed, onToggle, token }: { title: string; collapsed: boolean; onToggle: () => void; token: ReturnType<typeof theme.useToken>['token'] }) {
   return (
     <div

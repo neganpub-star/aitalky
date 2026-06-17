@@ -13,7 +13,7 @@ function fmtTime(s: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
-// 数据管理 → 服务订阅 → 概览(对齐 ByteTrack img-66):资源用量 + 套餐卡。
+// 数据管理 → 服务订阅 → 概览(对齐 aitalky img-66):资源用量 + 套餐卡。
 // 已用量(used)第⑤期接真实数据,本期展示套餐配额总量。
 export default function BillingOverview() {
   const { t } = useTranslation()

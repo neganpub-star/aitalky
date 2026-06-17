@@ -23,7 +23,7 @@ import { useAppStore } from '../../store/useAppStore'
 
 type ModalKind = null | 'email' | 'password' | 'reset'
 
-// 个人中心 - 基本资料(对齐 ByteTrack):账户信息(用户名/邮箱/密码/邀请码) + 项目成员信息 + 退出项目
+// 个人中心 - 基本资料(对齐 aitalky):账户信息(用户名/邮箱/密码/邀请码) + 项目成员信息 + 退出项目
 export default function ProfileBasic() {
   const { t } = useTranslation()
   const { token } = theme.useToken()

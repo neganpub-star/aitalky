@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useAppStore } from '../../store/useAppStore'
 import { getMessengerConfig } from '../../api/messengerConfig'
 
-// API管理(对齐 ByteTrack live-现网截图 img_18):手风琴 Web端/IOS端/Android端;Web端展示 AppID/Host + 接入说明
+// API管理(对齐 aitalky live-现网截图 img_18):手风琴 Web端/IOS端/Android端;Web端展示 AppID/Host + 接入说明
 // 只读展示页;AppID 取自当前项目,Host 取自信使配置的自定义域名
 export default function ApiManage() {
   const { t } = useTranslation()
@@ -107,7 +107,7 @@ export default function ApiManage() {
             <div>{t('api.accessStep1')}</div>
             <div>
               {t('api.accessStep2Pre')}
-              <code style={{ background: token.colorWarningBg, color: token.colorWarning, padding: '2px 8px', borderRadius: 4, margin: '0 6px' }}>{`new bytetrack({ appId: ${appId} })`}</code>
+              <code style={{ background: token.colorWarningBg, color: token.colorWarning, padding: '2px 8px', borderRadius: 4, margin: '0 6px' }}>{`new aitalky({ appId: ${appId} })`}</code>
               {t('api.accessStep2Suf')}
             </div>
             <div>{t('api.accessStep3')}</div>

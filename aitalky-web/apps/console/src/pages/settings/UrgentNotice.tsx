@@ -7,7 +7,7 @@ import { langLabel } from '../../constants/languages'
 import MessengerPreview from './MessengerPreview'
 import { hasFunction } from '../../auth/perm'
 
-// 会话服务 - 紧急通知设置(对齐 ByteTrack):左=头部总开关+各启用语种内容平铺(/500);右=信使端聊天窗预览(红条随语种变)
+// 会话服务 - 紧急通知设置(对齐 aitalky):左=头部总开关+各启用语种内容平铺(/500);右=信使端聊天窗预览(红条随语种变)
 export default function UrgentNotice() {
   const { t, i18n } = useTranslation()
   const { token } = theme.useToken()

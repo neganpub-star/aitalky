@@ -9,7 +9,7 @@ import { saveLogin } from '../auth/session'
 
 const { Title, Text } = Typography
 
-// 登录:第一步 邮箱+密码,第二步 邮箱验证码(参照 ByteTrack 两步式;开发期验证码用 888888)
+// 登录:第一步 邮箱+密码,第二步 邮箱验证码(参照 aitalky 两步式;开发期验证码用 888888)
 export default function Login() {
   const { t } = useTranslation()
   const nav = useNavigate()

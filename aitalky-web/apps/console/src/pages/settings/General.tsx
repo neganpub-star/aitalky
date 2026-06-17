@@ -9,7 +9,7 @@ import {
 import { allLanguages, langLabel } from '../../constants/languages'
 import MessengerPreview from './MessengerPreview'
 
-// 会话服务 - 常规设置:选择支持的语言(默认语言 + 其他语言),对齐 ByteTrack img_24。
+// 会话服务 - 常规设置:选择支持的语言(默认语言 + 其他语言),对齐 aitalky img_24。
 // 语种以后端 mse_messenger_language 表为准;可选语种全集来自后端语种字典 /api/languages(MainLayout 启动拉取)
 export default function General() {
   const { t, i18n } = useTranslation()

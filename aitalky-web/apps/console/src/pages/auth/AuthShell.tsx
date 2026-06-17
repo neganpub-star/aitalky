@@ -6,7 +6,7 @@ import logo from '../../assets/logo.png'
 import { changeLang } from '../../i18n'
 import { useAppStore } from '../../store/useAppStore'
 
-// 登录/注册共用外壳:纯色全屏 + 左上角品牌 LOGO + 右上角主题/语言 + 居中表单块(参照 ByteTrack)
+// 登录/注册共用外壳:纯色全屏 + 左上角品牌 LOGO + 右上角主题/语言 + 居中表单块(参照 aitalky)
 export default function AuthShell({ children }: { children: ReactNode }) {
   const { token } = theme.useToken()
   const { t } = useTranslation()

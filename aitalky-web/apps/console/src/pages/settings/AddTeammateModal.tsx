@@ -6,7 +6,7 @@ import { pageMembers } from '../../api/member'
 import { roleLabel } from '../../auth/roleLabel'
 import type { MemberVO } from '../../types'
 
-// 添加成员弹窗(对齐 ByteTrack img_13/img_16):左=可搜索成员列表(可勾选),右=已选成员;确定回传已选
+// 添加成员弹窗(对齐 aitalky img_13/img_16):左=可搜索成员列表(可勾选),右=已选成员;确定回传已选
 // 普通分配模式 / 专属分配模式 共用
 interface Props {
   open: boolean

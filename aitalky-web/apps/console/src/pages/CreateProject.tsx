@@ -13,7 +13,7 @@ interface CreateVals {
   code: string
 }
 
-// 创建项目(对齐 ByteTrack「创建项目.」整页;去掉我们没有的站点选择/私有化,保留邮箱验证码)
+// 创建项目(对齐 aitalky「创建项目.」整页;去掉我们没有的站点选择/私有化,保留邮箱验证码)
 export default function CreateProject() {
   const { t } = useTranslation()
   const nav = useNavigate()

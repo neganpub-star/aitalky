@@ -29,7 +29,7 @@ function emptyConfig(): MessengerConfigVO {
   }
 }
 
-// 会话服务 - 信使设置(对齐 ByteTrack img_1):中间卡片 accordion + 右侧 widget 实时预览
+// 会话服务 - 信使设置(对齐 aitalky img_1):中间卡片 accordion + 右侧 widget 实时预览
 // 卡片顺序:欢迎信息 → Wiki → 回复时间 → 消息查看时间 → 启动器样式 → 系统消息显示 → 偏好设置 → 客户撤回权限 → 网站标题图标
 export default function Messenger() {
   const { t, i18n } = useTranslation()
@@ -110,7 +110,7 @@ export default function Messenger() {
     actions: { marginTop: 18, display: 'flex', gap: 10 },
   }
 
-  // 单张卡片(自绘贴合 ByteTrack:白底圆角、朴素线条图标、标题副标题、展开箭头)
+  // 单张卡片(自绘贴合 aitalky:白底圆角、朴素线条图标、标题副标题、展开箭头)
   const Card = ({ k, icon, title, desc, body, onlyComingSoon }: {
     k: string; icon: ReactNode; title: string; desc: string; body?: ReactNode; onlyComingSoon?: boolean
   }) => {
@@ -289,7 +289,7 @@ export default function Messenger() {
       {/* 右:信使端预览 —— 按当前展开卡片切换形态(对齐现网):
           系统消息显示/客户撤回→会话演示;偏好设置→浏览器弹窗;其余→首页问候卡 */}
       <div style={styles.right}>
-        {/* 预览头部:标题 + 语言下拉,下方贯穿分隔线(对齐 ByteTrack) */}
+        {/* 预览头部:标题 + 语言下拉,下方贯穿分隔线(对齐 aitalky) */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: `1px solid ${token.colorBorderSecondary}` }}>
           <span style={styles.previewLabel}>{previewMode === 'home' ? t('mse.preview') : t('mse.previewSide')}</span>
           {previewMode === 'home' && (

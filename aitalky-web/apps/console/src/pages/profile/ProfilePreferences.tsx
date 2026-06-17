@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { getProfile, updatePreferences } from '../../api/account'
 import { changeLang } from '../../i18n'
 
-// 个人中心 - 偏好设置(对齐 ByteTrack):系统语言 + 保存按钮(点保存才落库并切换前端)
+// 个人中心 - 偏好设置(对齐 aitalky):系统语言 + 保存按钮(点保存才落库并切换前端)
 export default function ProfilePreferences() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
