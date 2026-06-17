@@ -40,8 +40,8 @@ export default function BillingPlans() {
           return (
             <div key={p.id} className="plan-card" style={{
               position: 'relative', width: 300, minHeight: 560, borderRadius: 12, overflow: 'hidden',
-              border: `1px solid ${isCurrent ? token.colorPrimary : token.colorBorderSecondary}`,
-              boxShadow: isCurrent ? `0 0 0 1px ${token.colorPrimary}` : token.boxShadowTertiary,
+              border: `1.5px solid ${isCurrent ? token.colorPrimary : token.colorBorder}`,
+              boxShadow: isCurrent ? `0 0 0 1px ${token.colorPrimary}` : token.boxShadow,
             }}>
               {/* 顶部彩色条 */}
               <div style={{ height: 6, background: color }} />
