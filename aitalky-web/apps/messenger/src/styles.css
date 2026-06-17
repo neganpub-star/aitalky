@@ -6,8 +6,8 @@
   --text-2: #8a9099;
   /* 坐席(收到)气泡用 iMessage 浅灰;聊天区改白底才能衬出灰泡 */
   --bubble-agent: #e9e9eb;
-  /* 客户气泡用柔和蓝(比品牌色 #2f54eb 降饱和),不那么扎眼;与 --brand 解耦,头部渐变仍用品牌色 */
-  --bubble-customer: #4f7cff;
+  /* 客户气泡用 iMessage 标准蓝;与 --brand 解耦,头部渐变仍用品牌色 */
+  --bubble-customer: #0b93f6;
   --line: rgba(0, 0, 0, 0.06);
 }
 
@@ -288,14 +288,14 @@ body {
 .bubble.agent {
   background: var(--bubble-agent);
   color: var(--text);
-  /* 小尖角指向头像(头像在左上);iMessage 灰泡不带阴影 */
-  border-top-left-radius: 4px;
+  /* iMessage 小尾巴在底部:坐席气泡左下尖角;灰泡不带阴影 */
+  border-bottom-left-radius: 4px;
 }
 .bubble.mine {
   background: var(--bubble-customer);
   color: #fff;
-  /* 与坐席侧对称:客户气泡尖角在右上 */
-  border-top-right-radius: 4px;
+  /* 对称:客户气泡尖角在右下(贴 iMessage) */
+  border-bottom-right-radius: 4px;
 }
 /* 消息内超链接:蓝色下划线;在自己(蓝底)气泡里用白色下划线保证对比 */
 .msg-link {
