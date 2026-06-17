@@ -27,6 +27,10 @@ export default function RolePage() {
   const canManage = hasFunction('role.manage')
   const readonly = !current || current.isSystem === 1 || !canManage
 
+  // 后端目录的中文 name 按 token/key 走 i18n;无对应 key 回退后端 name(参考 BillingPlans.featLabel)
+  const moduleLabel = (m: PermModule) => { const k = `perm.module.${m.key}`; const l = t(k); return l === k ? m.name : l }
+  const nodeLabel = (n: PermNode) => { const k = `perm.node.${n.token}`; const l = t(k); return l === k ? n.name : l }
+
   const allNodes = useMemo<PermNode[]>(
     () => catalog.flatMap((m) => m.rows.flatMap((r) => [...r.pages, ...r.functions])),
     [catalog],
@@ -143,7 +147,7 @@ export default function RolePage() {
   const cellStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0' }
   const node = (n: PermNode) => (
     <Checkbox key={n.token} disabled={readonly} checked={checked.has(n.token)}
-      onChange={(e) => toggle([n.token], e.target.checked)}>{n.name}</Checkbox>
+      onChange={(e) => toggle([n.token], e.target.checked)}>{nodeLabel(n)}</Checkbox>
   )
   type TableRow = typeof tableRows[number]
   const columns: ColumnsType<TableRow> = [
@@ -158,7 +162,7 @@ export default function RolePage() {
         return (
           <Checkbox disabled={readonly} checked={all} indeterminate={!all && some}
             onChange={(e) => toggle(tokens, e.target.checked)}>
-            <span style={{ fontWeight: 500 }}>{m.name}</span>
+            <span style={{ fontWeight: 500 }}>{moduleLabel(m)}</span>
           </Checkbox>
         )
       },
