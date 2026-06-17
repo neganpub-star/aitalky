@@ -18,6 +18,8 @@ public class BilSubscription extends BaseEntity {
     /** 套餐编码/名称快照(套餐改名/调价不回溯已订) */
     private String planCode;
     private String planName;
+    /** 加购席位数(套餐配额之外);有效席位=套餐 seat 配额 + 本字段 */
+    private Integer seats;
     private Integer status;
     private LocalDateTime startTime;
     private LocalDateTime expireTime;

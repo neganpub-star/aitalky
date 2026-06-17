@@ -66,4 +66,7 @@ public interface MemberService {
 
     /** 更新系统推送设置(整体覆盖 8 个开关) */
     void updatePushSettings(Long memberId, PushSettingsVO settings);
+
+    /** 统计项目启用成员数(席位占用计量;启用=status 1) */
+    long countActiveMembers(Long projectId);
 }

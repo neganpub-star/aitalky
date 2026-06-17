@@ -82,6 +82,12 @@ public enum ResultCode {
     BILLING_CALLBACK_ADDRESS_UNKNOWN(1053, "billing.callback.address.unknown"),
     /** 余额入账并发冲突(乐观锁重试耗尽) */
     BILLING_WALLET_CREDIT_CONFLICT(1054, "billing.wallet.credit.conflict"),
+    /** 套餐不可订阅(未上架/定制版需联系商务) */
+    BILLING_PLAN_UNAVAILABLE(1055, "billing.plan.unavailable"),
+    /** 余额不足，请先充值 */
+    BILLING_BALANCE_INSUFFICIENT(1056, "billing.balance.insufficient"),
+    /** 订单不可支付(不存在/已支付/已作废) */
+    BILLING_ORDER_NOT_PAYABLE(1057, "billing.order.not.payable"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");

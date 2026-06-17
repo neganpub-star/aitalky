@@ -101,6 +101,12 @@ public class CustomerServiceImpl implements CustomerService {
         customerMapper.updateById(c);
     }
 
+    @Override
+    public long countByProject(Long projectId) {
+        return customerMapper.selectCount(Wrappers.<CusCustomer>lambdaQuery()
+                .eq(CusCustomer::getProjectId, projectId));
+    }
+
     private CusCustomer findOne(Long projectId, String externalUserId, String visitorId, boolean isUser) {
         return customerMapper.selectOne(Wrappers.<CusCustomer>lambdaQuery()
                 .eq(CusCustomer::getProjectId, projectId)

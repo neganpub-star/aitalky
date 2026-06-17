@@ -18,6 +18,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-framework</artifactId>
         </dependency>
+        <!-- 套餐/加量包定义:下单定价与配额校验依赖平台模块的 PlanService/AddonService -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-platform</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

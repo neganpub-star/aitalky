@@ -19,4 +19,9 @@ public class BillingServiceImpl implements BillingService {
         return subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
                 .eq(BilSubscription::getProjectId, projectId).last("limit 1"));
     }
+
+    @Override
+    public int expireOverdueSubscriptions() {
+        return subscriptionMapper.expireOverdue();
+    }
 }

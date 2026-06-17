@@ -28,4 +28,7 @@ public interface CustomerService {
      * @param email      邮箱(可空=清空)
      */
     void updateContact(Long customerId, Long projectId, String contact, String email);
+
+    /** 统计项目客户数(计费配额计量用) */
+    long countByProject(Long projectId);
 }

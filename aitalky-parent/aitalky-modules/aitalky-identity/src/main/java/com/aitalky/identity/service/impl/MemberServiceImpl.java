@@ -201,6 +201,14 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    public long countActiveMembers(Long projectId) {
+        // 席位占用=启用成员数(含负责人);计费配额计量用
+        return memberMapper.selectCount(Wrappers.<IdMember>lambdaQuery()
+                .eq(IdMember::getProjectId, projectId)
+                .eq(IdMember::getStatus, 1));
+    }
+
+    @Override
     public ProfileVO profile(Long memberId) {
         IdMember m = requireMember(memberId);
         IdAccount account = accountMapper.selectById(m.getAccountId());
