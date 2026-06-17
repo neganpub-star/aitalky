@@ -45,11 +45,15 @@ function parseAccess(): AccessParams | null {
 }
 
 // 合并消息:按 seq 去重 + 升序插入(补漏拉回的旧 seq 落到正确位置,而非追加到底)
+// 兜底过滤内部消息(internal=true,如"分配给X"/"会话超时结束"等坐席专属系统消息):
+// 后端 REST/WS 本就不向客户下发,但前端不能信任来源唯一,在消息进 state 的唯一入口再拦一道,
+// 避免任何路径(sync 对账/异常下发)把仅坐席可见的系统消息漏给终端客户。
 function mergeMessages(prev: MessageVO[], incoming: MessageVO[]): MessageVO[] {
-  if (incoming.length === 0) return prev
+  const visible = incoming.filter((m) => m.internal !== true)
+  if (visible.length === 0) return prev
   const bySeq = new Map<number, MessageVO>()
   for (const m of prev) bySeq.set(m.seq, m)
-  for (const m of incoming) bySeq.set(m.seq, m)
+  for (const m of visible) bySeq.set(m.seq, m)
   return Array.from(bySeq.values()).sort((a, b) => a.seq - b.seq)
 }
 
