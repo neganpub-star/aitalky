@@ -169,12 +169,12 @@ export default function OrderRecords() {
         scroll={{ x: 1500 }}
         pagination={{ current: page, total, pageSize: PAGE_SIZE, onChange: (p) => load(p) }}
       />
-      {/* 默认字号(全局 15,与现网协调);单元格不换行(时间一行展示);表头加深字色+字重(更清晰协调) */}
+      {/* 默认字号(全局 15);单元格不换行(时间一行展示);表头浅灰+常规字重(对齐参考系统) */}
       <style>{`
         .order-table .ant-table-cell { white-space: nowrap; }
         .order-table .ant-table-thead > tr > th {
-          color: ${token.colorText};
-          font-weight: 600;
+          color: ${token.colorTextTertiary};
+          font-weight: 400;
           font-size: 14px;
           background: ${token.colorBgContainer};
         }
