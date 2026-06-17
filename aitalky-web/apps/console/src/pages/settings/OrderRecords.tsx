@@ -21,6 +21,8 @@ const TYPE_KEY: Record<string, string> = {
   addon_customer: 'bill.typeAddonCustomer',
 }
 const PAGE_SIZE = 10
+// 时间精确到分(对齐现网 2026-06-17 14:35,去掉秒;后端格式 yyyy-MM-dd HH:mm:ss)
+const fmtMin = (s: string | null) => (s ? s.slice(0, 16) : '--')
 
 export default function OrderRecords() {
   const { t } = useTranslation()
@@ -121,8 +123,8 @@ export default function OrderRecords() {
         ? <span style={{ color: token.colorTextTertiary, fontSize: 12 }}>{t('bill.pendingRemark')}</span>
         : '--'),
     },
-    { title: t('bill.createdAt'), dataIndex: 'createTime', width: 160, render: (v) => v || '--' },
-    { title: t('bill.activatedAt'), dataIndex: 'paidTime', width: 160, render: (v) => v || '--' },
+    { title: t('bill.createdAt'), dataIndex: 'createTime', width: 160, render: (v) => fmtMin(v) },
+    { title: t('bill.activatedAt'), dataIndex: 'paidTime', width: 160, render: (v) => fmtMin(v) },
     {
       title: t('bill.action'), width: 190, fixed: 'right',
       render: (_, r) => (r.status === 0 ? (
@@ -160,7 +162,6 @@ export default function OrderRecords() {
 
       <Table
         rowKey="id"
-        size="small"
         className="order-table"
         loading={loading}
         columns={columns}
@@ -168,8 +169,8 @@ export default function OrderRecords() {
         scroll={{ x: 1500 }}
         pagination={{ current: page, total, pageSize: PAGE_SIZE, onChange: (p) => load(p) }}
       />
-      {/* 字号小一点 + 单元格内容不换行(创建时间一行展示) */}
-      <style>{`.order-table .ant-table { font-size: 13px; } .order-table .ant-table-cell { white-space: nowrap; }`}</style>
+      {/* 默认字号(全局 15,与现网协调);单元格不换行(时间一行展示),订阅资源列允许两行 */}
+      <style>{`.order-table .ant-table-cell { white-space: nowrap; }`}</style>
       <PendingPayModal
         open={!!payOrder}
         order={payOrder}
