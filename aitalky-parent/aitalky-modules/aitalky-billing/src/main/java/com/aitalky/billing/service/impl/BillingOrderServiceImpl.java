@@ -465,7 +465,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     }
 
     private String genOrderNo() {
-        return "BIL" + LocalDateTime.now().format(ORDER_NO_FMT)
+        // 纯数字订单号(时间戳+3位随机),不加 BIL 前缀(对齐现网,前端直接展示/搜索一致)
+        return LocalDateTime.now().format(ORDER_NO_FMT)
                 + String.format("%03d", ThreadLocalRandom.current().nextInt(1000));
     }
 
