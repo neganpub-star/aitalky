@@ -28,7 +28,7 @@ function copyText(text: string) {
   navigator.clipboard?.writeText(text).catch(() => {})
 }
 
-// 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 ByteTrack)
+// 消息时间:今天只显 HH:mm,非今天显 MM-DD HH:mm,跨年再带年份(对齐 aitalky)
 // 富文本:把消息文本里的 Markdown 链接 [文本](url) 渲染成可点蓝链,其余为纯文本。
 // onLink:点击链接的回调(信使端在页内弹窗打开,不跳走)
 const LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g
@@ -69,7 +69,7 @@ function fmtTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
-// 信使聊天窗(对齐 ByteTrack 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
+// 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
 export default function Chat({ data, agent, messages, pending, unreadAfterSeq, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
@@ -184,7 +184,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
         </div>
       )}
 
-      {/* 紧急通知红条(对齐 ByteTrack:标题栏下方,可关闭) */}
+      {/* 紧急通知红条(对齐 aitalky:标题栏下方,可关闭) */}
       {urgent && !urgentClosed && (
         <div style={{ background: '#fff1f0', color: '#cf1322', padding: '12px 16px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -218,7 +218,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
             <Fragment key={m.msgId}>
             {m.msgId === firstUnreadId && <div className="msg-unread-divider">{t('unreadDivider')}</div>}
             <div className={`msg-row ${mine ? 'mine' : ''}`}>
-              {/* 对齐 ByteTrack:客户(自己)消息不显头像,仅客服侧显头像 */}
+              {/* 对齐 aitalky:客户(自己)消息不显头像,仅客服侧显头像 */}
               {!mine &&
                 (m.senderAvatar ? (
                   <img className="avatar" src={m.senderAvatar} alt="" />
@@ -228,7 +228,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                   </div>
                 ))}
               <div className="msg-body">
-                {/* 对齐 ByteTrack:客服消息在气泡上方显示发送者昵称 */}
+                {/* 对齐 aitalky:客服消息在气泡上方显示发送者昵称 */}
                 {!mine && m.senderName && <div className="msg-name">{m.senderName}</div>}
                 <div className="bubble-wrap">
                   {m.type === 'rich' ? (
@@ -260,7 +260,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
                     /* 链接仅对客服消息解析:客户自己没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */
                     <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.content, setWebview)}</div>
                   )}
-                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 ByteTrack:菜单冒泡在 ··· 正上方,带小三角) */}
+                  {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(对齐 aitalky:菜单冒泡在 ··· 正上方,带小三角) */}
                   {mine && (
                     <span
                       className="msg-more"

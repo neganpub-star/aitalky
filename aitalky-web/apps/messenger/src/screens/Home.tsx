@@ -14,7 +14,7 @@ const REPLY_TIME_KEYS: Record<string, I18nKey> = {
   replyTimeDay: 'replyTimeDay',
 }
 
-// 信使首页问候卡片(对齐 ByteTrack 20-url-zh / img-83):渐变头图 + 品牌欢迎语 + 紧急通知 + 最近对话 + 发起对话
+// 信使首页问候卡片(对齐 aitalky 20-url-zh / img-83):渐变头图 + 品牌欢迎语 + 紧急通知 + 最近对话 + 发起对话
 // 品牌名/LOGO/问候语/团队介绍/紧急通知/回复时间 来自后端信使配置(init 带出);缺省回退默认文案
 export default function Home({ data, lastMessage, onEnter }: Props) {
   const cfg = data.config

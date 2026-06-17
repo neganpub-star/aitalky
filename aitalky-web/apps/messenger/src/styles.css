@@ -260,7 +260,7 @@ body {
   display: flex;
   gap: 8px;
   margin-bottom: 14px;
-  /* 头像与发送者昵称顶部对齐(对齐 ByteTrack),避免头像掉到底部错位 */
+  /* 头像与发送者昵称顶部对齐(对齐 aitalky),避免头像掉到底部错位 */
   align-items: flex-start;
 }
 .msg-row.mine {
@@ -355,7 +355,7 @@ body {
 .msg-name {
   font-size: 12px;
   color: var(--text-2);
-  /* 略微下移,与头像顶部视觉对齐(对齐 ByteTrack) */
+  /* 略微下移,与头像顶部视觉对齐(对齐 aitalky) */
   margin-top: 5px;
   margin-bottom: 4px;
   line-height: 1;
