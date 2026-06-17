@@ -96,8 +96,6 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
 
   // 客户撤回权限(信使设置开关下发);关则不显示撤回入口
   const canCustomerRetract = data.config?.customerRetractEnabled ?? true
-  // 坐席撤回是否显示系统消息(关则静默移除该气泡)
-  const showAgentRetract = data.config?.sysMsgMemberRetract ?? true
 
   // 未读分割线:界(unreadAfterSeq)之后首条消息上方画线。开关关、无界、或未读里无客服消息→不画
   const showUnread = (data.config?.sysMsgUnread ?? true) && unreadAfterSeq != null
@@ -202,13 +200,13 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, o
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
           const initial = (m.senderName || 'S').charAt(0).toUpperCase()
-          // 已撤回(isVisible=false):渲染居中系统行,不显气泡内容
+          // 已撤回(isVisible=false):客户自己撤回→显示居中系统行;客服撤回→对客户永远静默移除
+          // (客服撤回属坐席内部动作,不向终端客户暴露;客户只看到该气泡消失)
           if (m.isVisible === false) {
-            // 客服撤回且开关关闭→静默移除(不渲染任何行)
-            if (!mine && !showAgentRetract) return null
+            if (!mine) return null
             return (
               <div key={m.msgId} className="msg-system">
-                {mine ? t('retractedByYou') : t('retractedByAgent')}
+                {t('retractedByYou')}
               </div>
             )
           }
