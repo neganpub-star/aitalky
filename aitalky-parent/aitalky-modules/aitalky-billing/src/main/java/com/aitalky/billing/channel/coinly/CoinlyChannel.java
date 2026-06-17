@@ -55,7 +55,10 @@ public class CoinlyChannel implements PaymentChannel {
         body.put("timestamp", System.currentTimeMillis());
         body.put("sign", CoinlySigner.sign(body, cfg.apiKey()));
 
-        JsonNode data = post("v1/address/create", body);
+        // 网关会剥掉一层 /api 前缀再转发后端,后端真实路由是 /api/v1/address/create;
+        // base-url 已含尾 /api/,故路径还需再带一层 api/ → 实发 .../api/api/v1/address/create
+        // (对齐官方 SDK:url=".../api/" + path="/api/v1/address/create")。
+        JsonNode data = post("api/v1/address/create", body);
         JsonNode address = data.path("address");
         if (address.isMissingNode() || address.asText().isBlank()) {
             log.error("Coinly 建址响应无 address 字段, chainId={}, data={}", req.chainId(), data);
