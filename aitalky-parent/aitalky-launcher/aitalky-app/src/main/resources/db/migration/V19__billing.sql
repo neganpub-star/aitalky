@@ -54,6 +54,7 @@ CREATE TABLE `bil_wallet` (
   `project_id`   bigint        NOT NULL COMMENT '项目id',
   `balance`      decimal(20,8) NOT NULL DEFAULT 0 COMMENT '余额',
   `currency`     varchar(16)   NOT NULL DEFAULT 'USDT' COMMENT '币种',
+  `version`      int           NOT NULL DEFAULT 0 COMMENT '乐观锁版本(余额并发更新防丢失)',
   `sign`         varchar(64)   DEFAULT NULL COMMENT 'project_id+balance 的 HMAC(防改库改余额)',
   `create_by`    bigint        DEFAULT NULL,
   `create_time`  datetime      DEFAULT NULL,
