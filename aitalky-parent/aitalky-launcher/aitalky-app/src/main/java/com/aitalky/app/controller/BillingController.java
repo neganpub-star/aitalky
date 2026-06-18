@@ -54,6 +54,7 @@ public class BillingController {
     private final BillingOrderService orderService;
     private final MemberService memberService;
     private final CustomerService customerService;
+    private final com.aitalky.platform.service.ConfigService configService;
 
     /** 上架套餐列表(含配额/功能;对齐套餐订阅页卡片) */
     @GetMapping("/plans")
@@ -165,8 +166,9 @@ public class BillingController {
     }
 
     /**
-     * 资源用量(席位/客户 已用 vs 配额)。已用=真实计量(启用成员数/客户数);
-     * 配额=当前订阅套餐的 seat/customer 配额 + 订阅加购席位。无订阅则配额取 0。
+     * 资源用量(席位/客户 已用 vs 总量)。已用=真实计量(启用成员数/客户数)。
+     * <p>席位=套餐 seat 配额 + 加购席位(套餐驱动)。
+     * <p>客户配额=「默认值(参数 default_customer)+ 加购客户配额」(拓展包模型:不买只有默认值,不走套餐无限)。
      */
     @GetMapping("/usage")
     public R<List<UsageVO>> usage() {
@@ -176,28 +178,25 @@ public class BillingController {
 
         long seatLimit = 0;
         boolean seatUnlimited = false;
-        long customerLimit = 0;
-        boolean customerUnlimited = false;
+        int extraCustomers = 0;
         BilSubscription sub = billingService.getSubscription(projectId);
         if (sub != null) {
             PlanVO plan = planService.get(sub.getPlanId());
             int extraSeats = sub.getSeats() == null ? 0 : sub.getSeats();
-            int extraCustomers = sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers();
+            extraCustomers = sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers();
             for (PlanQuotaVO q : (plan == null ? List.<PlanQuotaVO>of() : plan.quotas())) {
-                boolean unlimited = q.isUnlimited() != null && q.isUnlimited() == 1;
-                long amount = q.amount() == null ? 0 : q.amount();
                 if ("seat".equals(q.resourceType())) {
-                    seatUnlimited = unlimited;
-                    seatLimit = amount + extraSeats; // 套餐席位 + 加购席位
-                } else if ("customer".equals(q.resourceType())) {
-                    customerUnlimited = unlimited;
-                    customerLimit = amount + extraCustomers; // 套餐客户配额 + 加购客户配额
+                    seatUnlimited = q.isUnlimited() != null && q.isUnlimited() == 1;
+                    seatLimit = (q.amount() == null ? 0 : q.amount()) + extraSeats; // 套餐席位 + 加购席位
                 }
             }
         }
+        // 客户配额=默认值(参数)+ 加购客户配额(拓展包模型);未订阅项目 extraCustomers=0,只有默认值
+        long customerLimit = configService.getInt("default_customer", 100) + extraCustomers;
+
         List<UsageVO> list = new ArrayList<>();
         list.add(new UsageVO("seat", seatUsed, seatLimit, seatUnlimited));
-        list.add(new UsageVO("customer", customerUsed, customerLimit, customerUnlimited));
+        list.add(new UsageVO("customer", customerUsed, customerLimit, false));
         return R.ok(list);
     }
 }

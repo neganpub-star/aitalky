@@ -101,18 +101,18 @@ export default function BillingOverview() {
     )
   }
 
-  // 扩展服务可用/总量文本:未订阅用参数默认值;订阅后翻译走套餐配额、客户走真实用量、Tokens 占位
+  // 扩展服务=拓展包模型(不走套餐配额/无限):不买只有「参数默认值」,买了再加上加购量。
+  //  翻译/Tokens 功能未做→恒展示参数默认值;客户拓展包→真实计量(总量=默认值+加购,可用=总量-已用)。
   const extVals = (type: string, defaultVal: number, wan: boolean): { avail: string; total: string } => {
-    const fmt = (n: number) => (n < 0 ? t('bill.unlimited') : wan ? fmtWan(n) : String(n))
-    if (!subscribed) { const txt = fmt(defaultVal); return { avail: txt, total: txt } }
-    const u = usageMap[type]
-    const q = quotaMap[type]
-    // 订阅后套餐也无此配额(如 AI Tokens,功能未做):回退参数默认值,不显示 '--'
-    if (!u && !q) { const txt = fmt(defaultVal); return { avail: txt, total: txt } }
-    const unlimited = u ? u.unlimited : !!q?.unlimited
-    const total = u ? u.limit : (q?.amount ?? 0)
-    const used = u ? u.used : 0
-    return { avail: fmt(unlimited ? -1 : Math.max(0, total - used)), total: fmt(unlimited ? -1 : total) }
+    const fmt = (n: number) => (wan ? fmtWan(n) : String(n))
+    if (type === 'customer') {
+      const u = usageMap.customer
+      const total = u ? u.limit : defaultVal     // 后端 usage 给「默认值+加购」
+      const used = u ? u.used : 0
+      return { avail: fmt(Math.max(0, total - used)), total: fmt(total) }
+    }
+    const txt = fmt(defaultVal)                    // 翻译/Tokens:恒默认值
+    return { avail: txt, total: txt }
   }
 
   const extCard = (cfgItem: { type: string; title: string; unit: string; buyLabel: string; onClick: () => void; defaultVal: number; wan?: boolean }) => {
