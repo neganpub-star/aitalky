@@ -106,6 +106,11 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         if (seats < 0) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
+        // 续费/升级:已购加购席位不能减少(有效订阅时,新加购席位 ≥ 当前订阅加购席位)
+        BilSubscription curSub = activeSubscription(projectId);
+        if (curSub != null && seats < (curSub.getSeats() == null ? 0 : curSub.getSeats())) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
         // 金额 = (套餐月价 + 加购席位数 × 单席位月价) × 月数
         BigDecimal seatUnit = seatUnitMonthlyPrice();
         if (seats > 0 && seatUnit.signum() <= 0) {
