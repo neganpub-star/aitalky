@@ -50,6 +50,8 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const [seatPrice, setSeatPrice] = useState(0)
   const [months, setMonths] = useState(6)
   const [seatsTotal, setSeatsTotal] = useState(0)
+  // 席位下限:续费时=当前总席位(已购席位不能减),新订阅=套餐自带
+  const [seatFloor, setSeatFloor] = useState(0)
   const [currency, setCurrency] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -75,6 +77,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     if (!open || !plan) return
     setMonths(Math.max(minMonths, 6))
     setSeatsTotal(baseSeat)
+    setSeatFloor(baseSeat)
     setAgreed(false)
     setOrder(null)
     setAddr(null)
@@ -92,7 +95,10 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     // 续费/升级:默认带出当前总席位(套餐自带+已加购),避免续费时把加购席位丢掉(对齐参考)
     getUsage().then((us) => {
       const seat = us.find((u) => u.resourceType === 'seat')
-      if (seat && !seat.unlimited && Number(seat.limit) > baseSeat) setSeatsTotal(Number(seat.limit))
+      if (seat && !seat.unlimited && Number(seat.limit) > baseSeat) {
+        setSeatsTotal(Number(seat.limit))
+        setSeatFloor(Number(seat.limit))  // 续费下限=当前总席位,不能往下减
+      }
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, plan?.id])
@@ -213,7 +219,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
             </FieldRow>
             <FieldRow label={t('bill.subSeats')} token={token}
               hint={seatPrice > 0 ? t('bill.seatsTip', { base: baseSeat, price: seatPrice }) : undefined}>
-              <Stepper value={seatsTotal} min={baseSeat} max={9999} onChange={setSeatsTotal} />
+              <Stepper value={seatsTotal} min={seatFloor} max={9999} onChange={setSeatsTotal} />
             </FieldRow>
             {/* 搭售加量包(对齐参考:翻译/AI Tokens/客户扩展,选份数,合计实时累加) */}
             {PACK_DEFS.map((d) => {
