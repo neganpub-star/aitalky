@@ -27,6 +27,10 @@ client.interceptors.response.use(
         logout()
         location.hash = '#/login'
       }
+      // 1004=项目无有效订阅:由订阅遮罩统一引导,不弹通用错误 toast(避免门禁场景重复打扰)
+      if (r.code === 1004) {
+        return Promise.reject(new Error(r.message || 'no subscription'))
+      }
       message.error(r.message || '请求失败')
       return Promise.reject(new Error(r.message || 'fail'))
     }
