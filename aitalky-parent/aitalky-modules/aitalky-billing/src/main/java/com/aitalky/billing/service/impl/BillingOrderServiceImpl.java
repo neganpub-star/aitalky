@@ -8,6 +8,7 @@ import com.aitalky.billing.mapper.BilOrderMapper;
 import com.aitalky.billing.mapper.BilSubscriptionMapper;
 import com.aitalky.billing.mapper.BilWalletMapper;
 import com.aitalky.billing.service.BillingOrderService;
+import com.aitalky.billing.service.QuotaService;
 import com.aitalky.billing.service.dto.AddonQuoteVO;
 import com.aitalky.billing.service.dto.CreateAddonOrderCmd;
 import com.aitalky.billing.service.dto.CreateOrderCmd;
@@ -60,6 +61,10 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private final BillingProperties properties;
     private final DistributedLockTemplate lockTemplate;
     private final TransactionTemplate txTemplate;
+    private final QuotaService quotaService;
+
+    /** 永久加量包资源类型(免订阅购买,配额发放到 bil_project_resource) */
+    private static final java.util.Set<String> PACK_TYPES = java.util.Set.of("customer", "translate_char", "ai_tokens");
 
     public BillingOrderServiceImpl(BilOrderMapper orderMapper,
                                    BilSubscriptionMapper subscriptionMapper,
@@ -69,6 +74,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                                    ConfigService configService,
                                    BillingProperties properties,
                                    DistributedLockTemplate lockTemplate,
+                                   QuotaService quotaService,
                                    PlatformTransactionManager txManager) {
         this.orderMapper = orderMapper;
         this.subscriptionMapper = subscriptionMapper;
@@ -78,6 +84,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         this.addonService = addonService;
         this.properties = properties;
         this.lockTemplate = lockTemplate;
+        this.quotaService = quotaService;
         this.txTemplate = new TransactionTemplate(txManager);
     }
 
@@ -139,13 +146,15 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     public OrderVO createAddonOrder(Long projectId, CreateAddonOrderCmd cmd) {
         String resourceType = cmd.resourceType();
         int qty = cmd.quantity() == null ? 0 : cmd.quantity();
-        if (qty <= 0 || (!"seat".equals(resourceType) && !"customer".equals(resourceType))) {
+        boolean isSeat = "seat".equals(resourceType);
+        boolean isPack = PACK_TYPES.contains(resourceType);
+        if (qty <= 0 || (!isSeat && !isPack)) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
         String payCurrency = requireCurrency(cmd.currency());
-        // 加购前提:必须有有效订阅(否则无周期可折算/无套餐可挂)
+        // 席位加购必须有有效订阅(按剩余周期折算、随订阅到期);永久加量包免订阅
         BilSubscription sub = activeSubscription(projectId);
-        if (sub == null) {
+        if (isSeat && sub == null) {
             throw new BizException(ResultCode.BILLING_SUBSCRIPTION_REQUIRED);
         }
 
@@ -153,15 +162,15 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         order.setProjectId(projectId);
         order.setResourceType(resourceType);
         order.setPayCurrency(payCurrency);
-        order.setPlanId(sub.getPlanId());
-        order.setPlanName(sub.getPlanName());
+        order.setPlanId(sub != null ? sub.getPlanId() : 0L);     // 扩展包无套餐时置 0
+        order.setPlanName(sub != null ? sub.getPlanName() : "");
         order.setMonths(0);
         order.setSeats(0);
         order.setQuantity(0);
         order.setPeriodDays(0);
         order.setCurrency("USDT");
 
-        if ("seat".equals(resourceType)) {
+        if (isSeat) {
             // 席位加购:按剩余天数折算 = 单席位月价 × 数量 × 剩余天/30
             BigDecimal unit = seatUnitMonthlyPrice();
             if (unit.signum() <= 0) {
@@ -173,13 +182,13 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setPeriodDays(remainingDays);
             order.setAmount(proratedSeatAmount(unit, qty, remainingDays));
         } else {
-            // 客户配额加购:永久配额包 = 每包价 × 包数;新增配额 = 每包配额 × 包数
-            AddonVO pack = customerPack();
+            // 永久加量包(客户/翻译/Tokens):每包价 × 包数;发放配额 = 每包规格 × 包数
+            AddonVO pack = packOf(resourceType);
             if (pack == null) {
                 throw new BizException(ResultCode.BILLING_ADDON_UNAVAILABLE);
             }
             long quota = pack.specAmount() * (long) qty;
-            order.setType("addon_customer");
+            order.setType(addonType(resourceType));
             order.setQuantity((int) quota);
             order.setAmount(pack.price().multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP));
         }
@@ -202,11 +211,12 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     public AddonQuoteVO addonQuote(Long projectId, String resourceType) {
         BilSubscription sub = activeSubscription(projectId);
         boolean subscribed = sub != null;
-        if ("customer".equals(resourceType)) {
-            AddonVO pack = customerPack();
+        if (PACK_TYPES.contains(resourceType)) {
+            // 永久加量包(客户/翻译/Tokens):每包价 + 每包规格;免订阅
+            AddonVO pack = packOf(resourceType);
             BigDecimal price = pack == null ? BigDecimal.ZERO : pack.price();
             Long packAmount = pack == null ? 0L : pack.specAmount();
-            return new AddonQuoteVO("customer", subscribed, price, packAmount, null, null);
+            return new AddonQuoteVO(resourceType, subscribed, price, packAmount, null, null);
         }
         // 默认席位
         Integer remainingDays = subscribed ? remainingDays(sub) : null;
@@ -282,21 +292,22 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private void activateSubscription(BilOrder order) {
         Long projectId = order.getProjectId();
         String type = order.getType();
-        // 加购:只加配额、不改套餐/到期日(剩余周期内即时生效)
-        if ("addon_seat".equals(type) || "addon_customer".equals(type)) {
-            BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
-                    .eq(BilSubscription::getProjectId, projectId).last("limit 1"));
-            if (sub == null) {
-                // 加购下单时校验过有订阅;理论不达,保险起见忽略(钱已扣留余额可联系客服)
-                log.warn("加购核销时订阅不存在, projectId={}, orderNo={}", projectId, order.getOrderNo());
-                return;
-            }
+        // 加购:只加配额、不改套餐/到期日
+        if (type != null && type.startsWith("addon_")) {
             if ("addon_seat".equals(type)) {
+                // 席位随订阅:加到订阅行(下单时已校验有订阅)
+                BilSubscription sub = subscriptionMapper.selectOne(Wrappers.<BilSubscription>lambdaQuery()
+                        .eq(BilSubscription::getProjectId, projectId).last("limit 1"));
+                if (sub == null) {
+                    log.warn("席位加购核销时订阅不存在, projectId={}, orderNo={}", projectId, order.getOrderNo());
+                    return;
+                }
                 sub.setSeats((sub.getSeats() == null ? 0 : sub.getSeats()) + order.getSeats());
+                subscriptionMapper.updateById(sub);
             } else {
-                sub.setExtraCustomers((sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers()) + order.getQuantity());
+                // 永久加量包(客户/翻译/Tokens):发放到项目级永久配额表(脱离订阅)
+                quotaService.grantPack(projectId, order.getResourceType(), order.getQuantity());
             }
-            subscriptionMapper.updateById(sub);
             return;
         }
 
@@ -401,13 +412,23 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 .orElse(BigDecimal.ZERO);
     }
 
-    /** 客户拓展包(上架的 customer 加量包;取第一条);无返回 null */
-    private AddonVO customerPack() {
+    /** 指定资源类型上架的加量包(取第一条);无返回 null */
+    private AddonVO packOf(String resourceType) {
         return addonService.list().stream()
-                .filter(a -> "customer".equals(a.resourceType()) && a.status() != null && a.status() == 1)
+                .filter(a -> resourceType.equals(a.resourceType()) && a.status() != null && a.status() == 1)
                 .filter(a -> a.specAmount() != null && a.specAmount() > 0 && a.price() != null)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /** 永久加量包资源类型 → 订单类型 */
+    private static String addonType(String resourceType) {
+        return switch (resourceType) {
+            case "customer" -> "addon_customer";
+            case "translate_char" -> "addon_translate";
+            case "ai_tokens" -> "addon_tokens";
+            default -> "addon_pack";
+        };
     }
 
     /** 当前有效订阅(status=1 且未到期);无返回 null */
