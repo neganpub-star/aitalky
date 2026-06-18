@@ -16,8 +16,10 @@ const PACK_DEFS = [
   { type: 'ai_tokens', labelKey: 'bill.tokensPackName', perKey: 'bill.perTokens', unitKey: 'bill.unitTokens', wan: true },
   { type: 'customer', labelKey: 'bill.customerPackName', perKey: 'bill.perCustomer', unitKey: 'bill.unitCustomer', wan: false },
 ] as const
-// 数量按「万」精简展示(100万字符)
-const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000} 万` : String(n))
+// 数量按「万」精简展示(100万字符,无空格对齐参考)
+const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000}万` : String(n))
+// 加量包可选档位(包数倍数,对齐参考:100万/200万/500万/1000万/5000万)
+const PACK_MULTIPLES = [1, 2, 5, 10, 50]
 
 interface Props {
   open: boolean
@@ -213,7 +215,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
                   <Select style={{ width: 200 }} allowClear placeholder={t('bill.choose')}
                     value={packCounts[d.type] || undefined}
                     onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
-                    options={Array.from({ length: 10 }, (_, i) => i + 1).map((n) => ({
+                    options={PACK_MULTIPLES.map((n) => ({
                       value: n, label: `${fmtAmt(meta ? meta.spec * n : 0, d.wan)}${t(d.unitKey)}`,
                     }))} />
                 </FieldRow>
