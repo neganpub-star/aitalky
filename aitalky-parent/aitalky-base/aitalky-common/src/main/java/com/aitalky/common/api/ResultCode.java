@@ -96,6 +96,8 @@ public enum ResultCode {
     BILLING_ADDON_UNAVAILABLE(1059, "billing.addon.unavailable"),
     /** 已有待支付订单,需先处理完(支付/取消)再下新单 */
     BILLING_HAS_PENDING_ORDER(1060, "billing.has.pending.order"),
+    /** 资源配额不足(席位/客户配额等已达上限,需升级套餐或加购) */
+    RESOURCE_QUOTA_EXCEEDED(1061, "billing.resource.quota.exceeded"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
