@@ -6,7 +6,7 @@
 -- ============================================================
 SET NAMES utf8mb4;
 
-CREATE TABLE `pf_config` (
+CREATE TABLE IF NOT EXISTS `pf_config` (
   `id`           bigint       NOT NULL COMMENT '主键(雪花ID)',
   `config_key`   varchar(64)  NOT NULL COMMENT '配置键(唯一)',
   `config_value` varchar(1024) DEFAULT NULL COMMENT '配置值',
@@ -24,7 +24,7 @@ CREATE TABLE `pf_config` (
   UNIQUE KEY `uk_config_key` (`config_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台参数配置';
 
-INSERT INTO `pf_config` (`id`,`config_key`,`config_value`,`name`,`remark`,`config_group`,`sort`,`status`,`create_by`,`create_time`) VALUES
+INSERT IGNORE INTO `pf_config` (`id`,`config_key`,`config_value`,`name`,`remark`,`config_group`,`sort`,`status`,`create_by`,`create_time`) VALUES
 (1,'contact_telegram',  'https://t.me/aitalky',   '客服 Telegram',       '套餐订阅页「免费体验」横幅点击跳转的 Telegram 链接','contact',1,1,0,NOW()),
 (2,'order_expire_hours','24',                     '订单支付有效期(小时)','下单后订单的支付有效时长,超时自动作废',           'billing',2,1,0,NOW()),
 (3,'free_trial_days',   '15',                     '免费体验天数',        '套餐订阅页「免费体验」横幅展示的天数',             'billing',3,1,0,NOW());
