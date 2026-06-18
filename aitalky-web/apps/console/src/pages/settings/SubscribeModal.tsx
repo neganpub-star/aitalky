@@ -67,9 +67,9 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const minMonths = plan?.minMonths || 6
-  // 套餐自带席位(配额);加购=订阅席位总数 - 自带
-  const baseSeat = plan?.quotas.find((q) => q.resourceType === 'seat')?.amount || 0
-  const addonSeats = Math.max(0, seatsTotal - baseSeat)
+  // 套餐自带席位(配额,后端 Long 序列化为字符串需 Number);加购=订阅席位总数 - 自带
+  const baseSeat = Number(plan?.quotas.find((q) => q.resourceType === 'seat')?.amount) || 0
+  const addonSeats = Math.max(0, Number(seatsTotal) - baseSeat)
 
   useEffect(() => {
     if (!open || !plan) return
@@ -92,7 +92,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     // 续费/升级:默认带出当前总席位(套餐自带+已加购),避免续费时把加购席位丢掉(对齐参考)
     getUsage().then((us) => {
       const seat = us.find((u) => u.resourceType === 'seat')
-      if (seat && !seat.unlimited && seat.limit > baseSeat) setSeatsTotal(seat.limit)
+      if (seat && !seat.unlimited && Number(seat.limit) > baseSeat) setSeatsTotal(Number(seat.limit))
     }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, plan?.id])
@@ -183,6 +183,8 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
         <div style={{ display: 'flex', gap: 24 }}>
           <div style={{ width: 230, flexShrink: 0, background: token.colorFillQuaternary, borderRadius: 10, padding: 20 }}>
             <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 16 }}>{planName}</div>
+            {/* 套餐名与服务列表间的分割线(对齐参考) */}
+            <div style={{ height: 1, background: token.colorBorder, margin: '0 0 16px' }} />
             <div style={{ fontSize: 13, color: token.colorTextSecondary, marginBottom: 10 }}>{t('bill.planService')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
               {plan.features.map((f) => {
@@ -221,7 +223,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
                   hint={meta ? `$${meta.price}/${t(d.perKey)}` : undefined}>
                   {/* 左对齐容器:抵消 FieldRow 右列的 textAlign:right,让「请选择」靠左(对齐参考) */}
                   <div style={{ textAlign: 'left' }}>
-                    <Select style={{ width: CTRL_W }} allowClear placeholder={t('bill.choose')}
+                    <Select size="large" style={{ width: CTRL_W }} allowClear placeholder={t('bill.choose')}
                       value={packCounts[d.type] || undefined}
                       onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
                       options={PACK_MULTIPLES.map((n) => ({
@@ -299,14 +301,18 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
 function Stepper({ value, min, max, onChange }: {
   value: number; min: number; max: number; onChange: (v: number) => void
 }) {
-  const clamp = (v: number) => Math.min(max, Math.max(min, v))
+  // value/min/max 可能是后端 Long 序列化的字符串,强制转数字(否则 "1"+1 拼成 "11")
+  const v = Number(value) || 0
+  const lo = Number(min) || 0
+  const hi = Number(max)
+  const clamp = (x: number) => Math.min(hi, Math.max(lo, x))
   return (
     <Space.Compact style={{ width: CTRL_W }}>
-      <Button style={{ width: 36, flexShrink: 0 }} icon={<MinusOutlined />} disabled={value <= min} onClick={() => onChange(clamp(value - 1))} />
-      <InputNumber min={min} max={max} value={value} controls={false} className="sub-stepper-num"
+      <Button size="large" style={{ width: 40, flexShrink: 0 }} icon={<MinusOutlined />} disabled={v <= lo} onClick={() => onChange(clamp(v - 1))} />
+      <InputNumber size="large" min={lo} max={hi} value={v} controls={false} className="sub-stepper-num"
         style={{ flex: 1, width: '100%' }}
-        onChange={(v) => onChange(clamp(Number(v) || min))} />
-      <Button style={{ width: 36, flexShrink: 0 }} icon={<PlusOutlined />} disabled={value >= max} onClick={() => onChange(clamp(value + 1))} />
+        onChange={(n) => onChange(clamp(Number(n) || lo))} />
+      <Button size="large" style={{ width: 40, flexShrink: 0 }} icon={<PlusOutlined />} disabled={v >= hi} onClick={() => onChange(clamp(v + 1))} />
     </Space.Compact>
   )
 }
