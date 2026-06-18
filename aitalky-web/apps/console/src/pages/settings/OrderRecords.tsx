@@ -116,7 +116,7 @@ export default function OrderRecords() {
         <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => setDetailOrder(r)}>{v}</Button>
       ),
     },
-    { title: t('bill.orderType'), dataIndex: 'type', width: 150, ellipsis: true, render: (v: string) => t(TYPE_KEY[v] || v) },
+    { title: t('bill.orderType'), dataIndex: 'type', width: 170, ellipsis: true, render: (v: string) => t(TYPE_KEY[v] || v) },
     { title: t('bill.subResource'), width: 200, ellipsis: true, render: (_, r) => resourceText(r) },
     { title: t('bill.subPeriod'), width: 100, render: (_, r) => periodText(r) },
     { title: t('bill.amount'), dataIndex: 'amount', width: 120, render: (v: number, r) => `${v} ${r.currency}` },
