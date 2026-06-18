@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Modal, Tag, message, theme } from 'antd'
 import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
-import { listPlans, getOverview, getPendingOrder, type PlanVO, type OrderVO } from '../../api/billing'
+import { listPlans, getOverview, getPendingOrder, getPublicConfig, type PlanVO, type OrderVO } from '../../api/billing'
 import SubscribeModal from './SubscribeModal'
 import PendingPayModal from './PendingPayModal'
 
@@ -26,6 +26,8 @@ export default function BillingPlans() {
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
   const [subPlan, setSubPlan] = useState<PlanVO | null>(null)  // 下单弹窗当前套餐
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)  // 待处理的已有待支付订单
+  const [tgUrl, setTgUrl] = useState('')        // 客服 Telegram(后管参数管理配)
+  const [trialDays, setTrialDays] = useState(15) // 免费体验天数
 
   const loadCurrent = () =>
     getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
@@ -33,6 +35,7 @@ export default function BillingPlans() {
     // 按档位升序(基础→标准→专业→旗舰→定制)
     listPlans().then((ps) => setPlans([...ps].sort((a, b) => a.level - b.level))).catch(() => undefined)
     loadCurrent()
+    getPublicConfig().then((c) => { setTgUrl(c.contactTelegram); setTrialDays(c.freeTrialDays) }).catch(() => undefined)
   }, [])
 
   // 订阅/续费/升级:定制版走联系客服(暂提示);已有待支付订单则提示去处理(对齐现网);否则打开下单弹窗
@@ -75,6 +78,24 @@ export default function BillingPlans() {
     <div>
       {modalCtx}
       <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.plans')}</div>
+      {/* 免费体验横幅:点右侧 TG 图标联系客服(链接在后管参数管理配置) */}
+      {tgUrl && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', marginBottom: 20,
+          background: token.colorPrimaryBg, borderRadius: 10,
+        }}>
+          <Tag color="processing" style={{ margin: 0, borderRadius: 6 }}>{t('bill.freeTrialTag')}</Tag>
+          <span style={{ fontSize: 14, color: token.colorText, flex: 1 }}>
+            {t('bill.freeTrialBanner', { n: trialDays })}
+          </span>
+          <a href={tgUrl} target="_blank" rel="noreferrer" title="Telegram"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: '#229ED9' }}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" aria-hidden>
+              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+            </svg>
+          </a>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginTop: 80 }}>
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id

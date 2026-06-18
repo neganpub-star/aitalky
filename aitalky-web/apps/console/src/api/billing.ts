@@ -133,6 +133,17 @@ export interface PricingVO {
   seatMonthlyPrice: number  // 单席位月价
 }
 
+// 平台公共参数(客服 Telegram、免费体验天数)
+export interface PublicConfigVO {
+  contactTelegram: string
+  freeTrialDays: number
+}
+
+/** 平台公共参数(套餐订阅页免费体验横幅用) */
+export function getPublicConfig() {
+  return client.get<unknown, PublicConfigVO>('/config/public')
+}
+
 /** 上架套餐列表 */
 export function listPlans() {
   return client.get<unknown, PlanVO[]>('/billing/plans')

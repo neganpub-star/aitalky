@@ -551,6 +551,8 @@ export default {
     gateTitle: "You haven't subscribed to a plan\nPlease subscribe before using",
     gateExpiredTitle: 'Your plan has expired\nPlease renew before using',
     gateDesc: 'After subscribing, contact support / your account manager',
+    freeTrialTag: 'Free trial',
+    freeTrialBanner: 'Click the icon on the right to contact us for a {{n}}-day free trial',
     projectId: 'Project ID',
     expireTime: 'Expires',
     expired: 'Expired',

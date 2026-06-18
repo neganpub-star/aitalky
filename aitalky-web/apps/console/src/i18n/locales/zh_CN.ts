@@ -565,6 +565,8 @@ export default {
     gateTitle: '您未订阅套餐\n请订阅后再使用',
     gateExpiredTitle: '套餐已到期\n请续费后再使用',
     gateDesc: '订阅后联系客服/客户经理办理',
+    freeTrialTag: '免费体验',
+    freeTrialBanner: '请点击右侧图标联系我们，为您开通{{n}}天免费体验',
     projectId: '项目ID',
     expireTime: '到期时间',
     expired: '已到期',
