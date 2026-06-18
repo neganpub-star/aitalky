@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu, theme } from 'antd'
 import { MessageOutlined, TeamOutlined, DatabaseOutlined, WalletOutlined } from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
@@ -62,6 +63,14 @@ export default function SettingsLayout() {
     })
     .filter(Boolean) as MenuProps['items']
 
+  // 当前路由所属分组(刷新/直达时自动展开+高亮,不再写死只开信使设置)
+  const activeGroup = groups.find((g) => g.children.some((c) => loc.pathname.startsWith(c.key)))?.key
+  const [openKeys, setOpenKeys] = useState<string[]>(activeGroup ? [activeGroup] : [])
+  // 路由切到别的分组时,确保该分组展开(不关闭用户已展开的其他分组)
+  useEffect(() => {
+    if (activeGroup) setOpenKeys((ks) => (ks.includes(activeGroup) ? ks : [...ks, activeGroup]))
+  }, [activeGroup])
+
   const styles: Record<string, CSSProperties> = {
     // 与收件箱第2栏(分类视图)一致:宽 216、淡灰底、淡分隔线 —— 切换页面时不跳变
     root: { display: 'flex', height: '100%' },
@@ -74,7 +83,7 @@ export default function SettingsLayout() {
     <div style={styles.root}>
       <div style={styles.side}>
         <div style={styles.title}>{t('settings.title')}</div>
-        <Menu mode="inline" selectedKeys={[loc.pathname]} defaultOpenKeys={['mse']} items={items}
+        <Menu mode="inline" selectedKeys={[loc.pathname]} openKeys={openKeys} onOpenChange={setOpenKeys} items={items}
           style={{ border: 'none', background: 'transparent' }} onClick={({ key }) => nav(key)} />
       </div>
       <div style={styles.content}>
