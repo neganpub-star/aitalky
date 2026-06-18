@@ -13,15 +13,14 @@ public interface BillingService {
     BilSubscription getSubscription(Long projectId);
 
     /**
-     * 后管手动开通/调整订阅(送试用,不走支付):upsert 项目订阅,套餐快照+席位+客户配额+到期时间,status=1。
-     * <p>plan 快照由调用方(admin 层有 PlanService)传入;seats/extraCustomers 直接以传入值为准(可调整/送资源)。
+     * 后管手动开通/调整订阅(送试用,不走支付):upsert 项目订阅,套餐快照+席位+到期时间,status=1。
+     * <p>客户/翻译/Tokens 为项目级永久包(bil_project_resource),由「调整扩展额度」单独操作,不在此处。
      * <p>记一条 grant 操作日志(operator=后管账号ID)。
      *
-     * @param seats          加购席位(套餐自带之外;null 视为 0)
-     * @param extraCustomers 加购客户配额(套餐自带之外;null 视为 0)
+     * @param seats 加购席位(套餐自带之外;null 视为 0)
      */
     void grantSubscription(Long projectId, Long planId, String planCode, String planName,
-                           Integer seats, Integer extraCustomers, LocalDateTime expireTime, Long operator);
+                           Integer seats, LocalDateTime expireTime, Long operator);
 
     /** 后管停用项目订阅:status=0 且 expireTime=now,立即触发订阅门禁(前后端一致),记 cancel 日志 */
     void cancelSubscription(Long projectId, Long operator);

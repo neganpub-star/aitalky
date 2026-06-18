@@ -1,9 +1,12 @@
 package com.aitalky.admin.controller;
 
+import com.aitalky.admin.dto.AdjustResourceCmd;
 import com.aitalky.admin.dto.GrantSubscriptionCmd;
 import com.aitalky.admin.dto.ProjectSubscriptionVO;
 import com.aitalky.billing.entity.BilSubscription;
 import com.aitalky.billing.service.BillingService;
+import com.aitalky.billing.service.QuotaService;
+import com.aitalky.billing.service.dto.QuotaLimit;
 import com.aitalky.billing.service.dto.SubscriptionLogVO;
 import com.aitalky.common.api.R;
 import com.aitalky.common.api.ResultCode;
@@ -12,10 +15,11 @@ import com.aitalky.customer.service.CustomerService;
 import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.framework.web.RequiresFunction;
 import com.aitalky.identity.service.MemberService;
-import com.aitalky.platform.dto.PlanQuotaVO;
 import com.aitalky.platform.dto.PlanVO;
 import com.aitalky.platform.service.ConfigService;
 import com.aitalky.platform.service.PlanService;
+
+import java.util.Set;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,8 +46,12 @@ public class SubscriptionAdminController {
     private final MemberService memberService;
     private final CustomerService customerService;
     private final ConfigService configService;
+    private final QuotaService quotaService;
 
-    /** 项目订阅详情 + 资源用量 */
+    /** 可由后管单独调整的永久加量包资源 */
+    private static final Set<String> PACK_TYPES = Set.of("customer", "translate_char", "ai_tokens");
+
+    /** 项目订阅详情 + 资源用量(总量统一走 QuotaService,-1=无限) */
     @RequiresFunction("subscriptions")
     @GetMapping
     public R<ProjectSubscriptionVO> detail(@PathVariable Long projectId) {
@@ -52,33 +60,34 @@ public class SubscriptionAdminController {
         long customerUsed = customerService.countByProject(projectId);
 
         BilSubscription sub = billingService.getSubscription(projectId);
-        if (sub == null) {
-            return R.ok(new ProjectSubscriptionVO(false, null, null, null, null, null, false,
-                    0, 0, seatUsed, 0, customerUsed, 0, List.of(), trialDays));
-        }
-        PlanVO plan = planService.get(sub.getPlanId());
-        boolean expired = sub.getExpireTime() != null && sub.getExpireTime().isBefore(LocalDateTime.now());
-        int extraSeats = sub.getSeats() == null ? 0 : sub.getSeats();
-        int extraCustomers = sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers();
+        boolean subscribed = sub != null;
+        PlanVO plan = sub == null ? null : planService.get(sub.getPlanId());
+        boolean expired = sub != null && sub.getExpireTime() != null && sub.getExpireTime().isBefore(LocalDateTime.now());
 
-        long seatTotal = extraSeats;
-        long customerTotal = extraCustomers;
-        List<PlanQuotaVO> quotas = plan == null ? List.of() : plan.quotas();
-        for (PlanQuotaVO q : quotas) {
-            boolean unlimited = q.isUnlimited() != null && q.isUnlimited() == 1;
-            long amount = q.amount() == null ? 0 : q.amount();
-            if ("seat".equals(q.resourceType())) {
-                seatTotal = unlimited ? -1 : amount + extraSeats;
-            } else if ("customer".equals(q.resourceType())) {
-                customerTotal = unlimited ? -1 : amount + extraCustomers;
-            }
-        }
-        return R.ok(new ProjectSubscriptionVO(true, sub.getPlanId(), sub.getPlanCode(), sub.getPlanName(),
-                sub.getStatus(), sub.getExpireTime(), expired, extraSeats, extraCustomers,
-                seatUsed, seatTotal, customerUsed, customerTotal, quotas, trialDays));
+        return R.ok(new ProjectSubscriptionVO(
+                subscribed,
+                sub == null ? null : sub.getPlanId(),
+                sub == null ? null : sub.getPlanCode(),
+                sub == null ? null : sub.getPlanName(),
+                sub == null ? null : sub.getStatus(),
+                sub == null ? null : sub.getExpireTime(),
+                expired,
+                sub == null || sub.getSeats() == null ? 0 : sub.getSeats(),
+                seatUsed, total(projectId, "seat"),
+                customerUsed, total(projectId, "customer"),
+                total(projectId, "article"), total(projectId, "site"),
+                total(projectId, "translate_char"), total(projectId, "ai_tokens"),
+                plan == null ? List.of() : plan.quotas(),
+                trialDays));
     }
 
-    /** 手动开通/调整订阅(送试用,不走支付) */
+    /** 资源总量(无限返回 -1) */
+    private long total(Long projectId, String resourceType) {
+        QuotaLimit l = quotaService.limit(projectId, resourceType);
+        return l.unlimited() ? -1 : l.limit();
+    }
+
+    /** 手动开通/调整订阅(送试用,不走支付;客户/翻译/Tokens 走「调整扩展额度」) */
     @RequiresFunction("subscriptions")
     @PostMapping
     public R<Void> grant(@PathVariable Long projectId, @Valid @RequestBody GrantSubscriptionCmd cmd) {
@@ -87,7 +96,18 @@ public class SubscriptionAdminController {
             throw new BizException(ResultCode.BILLING_PLAN_UNAVAILABLE); // 定制版不支持直接开通
         }
         billingService.grantSubscription(projectId, plan.id(), plan.code(), plan.name(),
-                cmd.seats(), cmd.extraCustomers(), cmd.expireTime(), TenantContext.getAccountId());
+                cmd.seats(), cmd.expireTime(), TenantContext.getAccountId());
+        return R.ok();
+    }
+
+    /** 调整项目扩展额度(永久加量包 customer/translate_char/ai_tokens;覆盖设置已购量) */
+    @RequiresFunction("subscriptions")
+    @PostMapping("/resource")
+    public R<Void> adjustResource(@PathVariable Long projectId, @Valid @RequestBody AdjustResourceCmd cmd) {
+        if (!PACK_TYPES.contains(cmd.resourceType())) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        quotaService.setPack(projectId, cmd.resourceType(), cmd.amount() == null ? 0 : cmd.amount());
         return R.ok();
     }
 

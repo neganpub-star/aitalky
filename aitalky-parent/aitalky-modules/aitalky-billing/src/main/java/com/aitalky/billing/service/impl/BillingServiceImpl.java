@@ -31,7 +31,7 @@ public class BillingServiceImpl implements BillingService {
 
     @Override
     public void grantSubscription(Long projectId, Long planId, String planCode, String planName,
-                                  Integer seats, Integer extraCustomers, LocalDateTime expireTime, Long operator) {
+                                  Integer seats, LocalDateTime expireTime, Long operator) {
         BilSubscription sub = getSubscription(projectId);
         boolean isNew = sub == null;
         if (isNew) {
@@ -47,7 +47,8 @@ public class BillingServiceImpl implements BillingService {
         sub.setPlanCode(planCode);
         sub.setPlanName(planName);
         sub.setSeats(seats == null ? 0 : seats);
-        sub.setExtraCustomers(extraCustomers == null ? 0 : extraCustomers);
+        // 客户配额已改为项目级永久包(bil_project_resource),不再挂订阅;extra_customers 字段废弃保持 0
+        sub.setExtraCustomers(0);
         sub.setExpireTime(expireTime);
         sub.setStatus(1);
         if (isNew) {
@@ -55,14 +56,14 @@ public class BillingServiceImpl implements BillingService {
         } else {
             subscriptionMapper.updateById(sub);
         }
-        log.info("后管手动开通订阅, projectId={}, planId={}, seats={}, extraCustomers={}, expire={}",
-                projectId, planId, seats, extraCustomers, expireTime);
+        log.info("后管手动开通订阅, projectId={}, planId={}, seats={}, expire={}",
+                projectId, planId, seats, expireTime);
         BilSubscriptionLog logRow = new BilSubscriptionLog();
         logRow.setProjectId(projectId);
         logRow.setAction("grant");
         logRow.setPlanName(planName);
         logRow.setSeats(seats == null ? 0 : seats);
-        logRow.setExtraCustomers(extraCustomers == null ? 0 : extraCustomers);
+        logRow.setExtraCustomers(0);
         logRow.setExpireTime(expireTime);
         logRow.setOperator(operator);
         logMapper.insert(logRow);
