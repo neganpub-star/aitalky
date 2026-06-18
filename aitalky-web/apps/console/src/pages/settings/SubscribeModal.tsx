@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, message, theme,
+  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, Space, message, theme,
 } from 'antd'
-import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
+import { CheckCircleFilled, CopyOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
   listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder, getUsage, getAddonQuote,
@@ -195,16 +195,14 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <FieldRow label={t('bill.subPeriod')} token={token}>
-              <InputNumber min={minMonths} max={120} value={months} style={{ width: 160 }}
-                addonAfter={t('bill.months')} onChange={(v) => setMonths(Number(v) || minMonths)} />
+              <Stepper value={months} min={minMonths} max={120} onChange={setMonths} />
             </FieldRow>
             <FieldRow label={t('bill.expireTime')} token={token}>
               <span>{expireDate}</span>
             </FieldRow>
             <FieldRow label={t('bill.subSeats')} token={token}
               hint={seatPrice > 0 ? t('bill.seatsTip', { base: baseSeat, price: seatPrice }) : undefined}>
-              <InputNumber min={baseSeat} max={9999} value={seatsTotal} style={{ width: 160 }}
-                onChange={(v) => setSeatsTotal(Number(v) || baseSeat)} />
+              <Stepper value={seatsTotal} min={baseSeat} max={9999} onChange={setSeatsTotal} />
             </FieldRow>
             {/* 搭售加量包(对齐参考:翻译/AI Tokens/客户扩展,选份数,合计实时累加) */}
             {PACK_DEFS.map((d) => {
@@ -282,6 +280,22 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
         </div>
       )}
     </Modal>
+  )
+}
+
+// 数字步进器(− 数字 +,对齐参考样式)
+function Stepper({ value, min, max, onChange }: {
+  value: number; min: number; max: number; onChange: (v: number) => void
+}) {
+  const clamp = (v: number) => Math.min(max, Math.max(min, v))
+  return (
+    <Space.Compact>
+      <Button icon={<MinusOutlined />} disabled={value <= min} onClick={() => onChange(clamp(value - 1))} />
+      <InputNumber min={min} max={max} value={value} controls={false}
+        style={{ width: 72, textAlign: 'center' }}
+        onChange={(v) => onChange(clamp(Number(v) || min))} />
+      <Button icon={<PlusOutlined />} disabled={value >= max} onClick={() => onChange(clamp(value + 1))} />
+    </Space.Compact>
   )
 }
 
