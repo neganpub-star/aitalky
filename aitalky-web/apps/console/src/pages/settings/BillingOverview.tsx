@@ -97,7 +97,7 @@ export default function BillingOverview() {
     const unlimited = subscribed ? (u ? u.unlimited : !!q?.unlimited) : false
     const total = subscribed ? (u ? u.limit : (q?.amount ?? 0)) : 0
     return (
-      <div key={type} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 20px' }}>
+      <div key={type} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 6, padding: '18px 20px' }}>
         <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{resLabel(type)}</div>
         <div style={{ fontSize: 26, fontWeight: 700, margin: '10px 0 4px' }}>
           {used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {unlimited ? t('bill.unlimited') : total}</span>
@@ -129,7 +129,7 @@ export default function BillingOverview() {
     const big = { fontSize: 26, fontWeight: 700 as const }
     const sub = { fontSize: 12, color: token.colorTextTertiary }
     return (
-      <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 24px', marginBottom: 16 }}>
+      <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 6, padding: '18px 24px', marginBottom: 16 }}>
         <div style={{ fontSize: 14, color: token.colorTextSecondary, marginBottom: 12 }}>{cfgItem.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 64 }}>
