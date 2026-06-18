@@ -18,6 +18,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-framework</artifactId>
         </dependency>
+        <!-- 加成员前用 QuotaService 校验席位配额(billing 不反向依赖 identity,无环) -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-billing</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

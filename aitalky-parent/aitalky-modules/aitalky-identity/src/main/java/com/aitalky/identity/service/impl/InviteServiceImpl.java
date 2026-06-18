@@ -26,6 +26,7 @@ import com.aitalky.identity.entity.IdRole;
 import com.aitalky.identity.mapper.IdAccountMapper;
 import com.aitalky.identity.mapper.IdInviteLinkMapper;
 import com.aitalky.identity.mapper.IdInviteMapper;
+import com.aitalky.billing.service.QuotaService;
 import com.aitalky.identity.mapper.IdMemberMapper;
 import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.mapper.IdRoleMapper;
@@ -85,6 +86,7 @@ public class InviteServiceImpl implements InviteService {
     private final SnowflakeIdGenerator idGenerator;
     private final VerifyCodeProperties mailProps;
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
+    private final QuotaService quotaService;
 
     /** 坐席台基址(邀请邮件链接拼这个 + /#/join?token=);上线改环境变量 */
     @Value("${aitalky.invite.console-base-url:http://localhost:5173}")
@@ -94,7 +96,8 @@ public class InviteServiceImpl implements InviteService {
                              IdMemberMapper memberMapper, IdRoleMapper roleMapper,
                              IdProjectMapper projectMapper, IdAccountMapper accountMapper,
                              ProjectService projectService, SnowflakeIdGenerator idGenerator,
-                             VerifyCodeProperties mailProps, ObjectProvider<JavaMailSender> mailSenderProvider) {
+                             VerifyCodeProperties mailProps, ObjectProvider<JavaMailSender> mailSenderProvider,
+                             QuotaService quotaService) {
         this.inviteMapper = inviteMapper;
         this.linkMapper = linkMapper;
         this.memberMapper = memberMapper;
@@ -105,6 +108,7 @@ public class InviteServiceImpl implements InviteService {
         this.idGenerator = idGenerator;
         this.mailProps = mailProps;
         this.mailSenderProvider = mailSenderProvider;
+        this.quotaService = quotaService;
     }
 
     // ====================================================================
@@ -496,6 +500,10 @@ public class InviteServiceImpl implements InviteService {
 
     /** 建成员(接受邀请;account 无项目上下文,显式带 projectId) */
     private Long createMember(Long projectId, Long accountId, Long roleId, String nickname, Long inviteLinkId) {
+        // 席位配额校验(统一公共方法):当前启用成员数 + 1 不得超出有效席位(无订阅=1免费席位)
+        long activeMembers = memberMapper.selectCount(Wrappers.<IdMember>lambdaQuery()
+                .eq(IdMember::getProjectId, projectId).eq(IdMember::getStatus, 1));
+        quotaService.ensure(projectId, "seat", activeMembers, 1);
         // 重新加入(曾退出/被移除=软删 del_flag=1):唯一键 uk_project_account 不含 del_flag,
         // 死行仍占键,直接 insert 会撞唯一键。先探测(含软删)旧行,有则复活而非新插。
         Long existingId = memberMapper.findAnyMemberId(projectId, accountId);

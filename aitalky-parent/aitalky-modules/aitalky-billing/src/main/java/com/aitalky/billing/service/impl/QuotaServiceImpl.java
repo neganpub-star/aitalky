@@ -40,9 +40,13 @@ public class QuotaServiceImpl implements QuotaService {
             case "ai_tokens" -> { return packLimit(projectId, resourceType, "default_ai_tokens", 4000); }
             default -> { /* 套餐型,下面处理 */ }
         }
-        // 套餐型(seat/article/site):未订阅 = 0
+        // 套餐型(seat/article/site)
         BilSubscription sub = subscription(projectId);
         if (sub == null) {
+            // 未订阅:席位给 1 个免费席位(项目负责人,对齐参考基础席位=1);其它套餐型资源 0
+            if ("seat".equals(resourceType)) {
+                return new QuotaLimit(configService.getInt("default_seat", 1), false);
+            }
             return new QuotaLimit(0, false);
         }
         PlanVO plan = planService.get(sub.getPlanId());
