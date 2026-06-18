@@ -99,6 +99,16 @@ export interface AddonVO {
   status: number
 }
 
+export interface ConfigVO {
+  id: string
+  configKey: string
+  configValue: string
+  name: string
+  remark: string
+  configGroup: string
+  status: number
+}
+
 export interface AgreementVO {
   id: string
   type: string

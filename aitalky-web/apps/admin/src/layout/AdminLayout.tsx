@@ -5,7 +5,7 @@ import {
   AppstoreOutlined, FileTextOutlined, TranslationOutlined,
   GlobalOutlined, PoweroffOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
   CloseOutlined, HomeOutlined, SunOutlined, MoonOutlined, ReloadOutlined,
-  TeamOutlined, SafetyCertificateOutlined, ProfileOutlined, WalletOutlined,
+  TeamOutlined, SafetyCertificateOutlined, ProfileOutlined, WalletOutlined, ControlOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -59,6 +59,7 @@ export default function AdminLayout() {
     { key: '/addons', icon: <AppstoreOutlined />, label: t('nav.addons'), perm: 'addons' },
     { key: '/orders', icon: <ProfileOutlined />, label: t('nav.orders'), perm: 'orders' },
     { key: '/coins', icon: <WalletOutlined />, label: t('nav.coins'), perm: 'orders' },
+    { key: '/configs', icon: <ControlOutlined />, label: t('nav.params'), perm: 'config' },
     { key: '/agreements', icon: <FileTextOutlined />, label: t('nav.agreements'), perm: 'agreements' },
     { key: '/languages', icon: <TranslationOutlined />, label: t('nav.languages'), perm: 'dict' },
     { key: '/admins', icon: <TeamOutlined />, label: t('nav.admins'), perm: 'admins' },

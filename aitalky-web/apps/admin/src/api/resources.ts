@@ -2,7 +2,7 @@ import client from './client'
 import { encryptPassword } from './crypto'
 import type {
   AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminOrderVO, AdminProjectVO,
-  AdminVO, AgreementVO, CoinVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
+  AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
 } from '../types'
 
 // ===== 用户 =====
@@ -128,6 +128,14 @@ export function setCoinStatus(id: string, status: number) {
 }
 export function deleteCoin(id: string) {
   return client.delete<unknown, void>(`/admin/coins/${id}`)
+}
+
+// ===== 参数管理 =====
+export function listConfigs() {
+  return client.get<unknown, ConfigVO[]>('/admin/configs')
+}
+export function updateConfig(id: string, value: string) {
+  return client.put<unknown, void>(`/admin/configs/${id}`, null, { params: { value } })
 }
 
 // ===== 后管角色 =====

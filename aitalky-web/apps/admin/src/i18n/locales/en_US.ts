@@ -61,6 +61,7 @@ export default {
     addons: 'Add-on Packs',
     orders: 'Orders',
     coins: 'Coins',
+    params: 'Parameters',
     agreements: 'Agreements',
     languages: 'Languages',
     admins: 'Admins',
@@ -152,6 +153,12 @@ export default {
     resourceType: 'Resource',
     spec: 'Spec Amount',
     price: 'Price',
+  },
+  params: {
+    name: 'Name',
+    key: 'Key',
+    value: 'Value',
+    remark: 'Remark',
   },
   agreements: {
     type: 'Type',

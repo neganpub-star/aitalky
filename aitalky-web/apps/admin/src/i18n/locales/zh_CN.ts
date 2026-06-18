@@ -61,6 +61,7 @@ export default {
     addons: '加量包管理',
     orders: '订单管理',
     coins: '币种管理',
+    params: '参数管理',
     agreements: '协议管理',
     languages: '语种字典',
     admins: '账号管理',
@@ -152,6 +153,12 @@ export default {
     resourceType: '资源类型',
     spec: '规格数量',
     price: '价格',
+  },
+  params: {
+    name: '名称',
+    key: '键',
+    value: '值',
+    remark: '说明',
   },
   agreements: {
     type: '类型',

@@ -10,6 +10,7 @@ import Plans from './pages/Plans'
 import Addons from './pages/Addons'
 import Orders from './pages/Orders'
 import Coins from './pages/Coins'
+import Params from './pages/Params'
 import Agreements from './pages/Agreements'
 import Languages from './pages/Languages'
 import Admins from './pages/Admins'
@@ -38,6 +39,7 @@ export const router = createHashRouter([
       { path: 'addons', element: <Addons /> },
       { path: 'orders', element: <Orders /> },
       { path: 'coins', element: <Coins /> },
+      { path: 'configs', element: <Params /> },
       { path: 'agreements', element: <Agreements /> },
       { path: 'languages', element: <Languages /> },
       { path: 'admins', element: <Admins /> },
