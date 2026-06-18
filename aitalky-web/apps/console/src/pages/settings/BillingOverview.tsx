@@ -97,7 +97,7 @@ export default function BillingOverview() {
     const unlimited = subscribed ? (u ? u.unlimited : !!q?.unlimited) : false
     const total = subscribed ? (u ? u.limit : (q?.amount ?? 0)) : 0
     return (
-      <div key={type} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorder}`, borderRadius: 6, padding: '18px 20px' }}>
+      <div key={type} style={{ border: `1px solid ${token.colorBorder}`, borderRadius: 6, padding: '18px 20px' }}>
         <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{resLabel(type)}</div>
         <div style={{ fontSize: 26, fontWeight: 700, margin: '10px 0 4px' }}>
           {used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {unlimited ? t('bill.unlimited') : total}</span>
@@ -150,7 +150,7 @@ export default function BillingOverview() {
         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.overview')}</div>
 
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>{t('bill.resourceUsage')}</div>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
           {usageCard('seat', { buyable: true })}
           {usageCard('article', {})}
           {usageCard('site', {})}
