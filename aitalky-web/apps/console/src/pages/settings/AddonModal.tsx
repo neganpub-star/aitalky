@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, message, theme,
+  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, Space, message, theme,
 } from 'antd'
-import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
+import { CheckCircleFilled, CopyOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
   listCoins, getAddonQuote, createAddonOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
@@ -166,8 +166,13 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
           {isSeat ? (
             <>
               <FieldRow label={t('bill.subSeats')} token={token}>
-                <InputNumber min={1} max={9999} value={qty} style={{ width: 200 }}
-                  onChange={(v) => setQty(Number(v) || 1)} />
+                {/* 步进器(与订阅弹窗一致) */}
+                <Space.Compact style={{ width: 200 }}>
+                  <Button style={{ width: 40, flexShrink: 0 }} icon={<MinusOutlined />} disabled={qty <= 1} onClick={() => setQty(Math.max(1, qty - 1))} />
+                  <InputNumber min={1} max={9999} value={qty} controls={false} className="sub-stepper-num"
+                    style={{ flex: 1, width: '100%' }} onChange={(v) => setQty(Math.max(1, Number(v) || 1))} />
+                  <Button style={{ width: 40, flexShrink: 0 }} icon={<PlusOutlined />} disabled={qty >= 9999} onClick={() => setQty(Math.min(9999, qty + 1))} />
+                </Space.Compact>
               </FieldRow>
               <FieldRow label={t('bill.subPeriod')} token={token}>
                 <span>{quote ? t('bill.days', { n: quote.remainingDays || 0 }) : '--'}</span>
