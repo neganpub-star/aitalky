@@ -6,9 +6,9 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import {
-  cancelSubscription, getProjectSubscription, grantSubscription, listPlans, pageOrders,
+  cancelSubscription, getProjectSubscription, getSubscriptionLogs, grantSubscription, listPlans,
 } from '../api/resources'
-import type { AdminOrderVO, AdminProjectVO, PlanVO, ProjectSubscriptionVO } from '../types'
+import type { AdminProjectVO, PlanVO, ProjectSubscriptionVO, SubscriptionLogVO } from '../types'
 
 interface Props {
   project: AdminProjectVO | null  // 非空=打开
@@ -30,7 +30,7 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
   const { t } = useTranslation()
   const [detail, setDetail] = useState<ProjectSubscriptionVO | null>(null)
   const [plans, setPlans] = useState<PlanVO[]>([])
-  const [orders, setOrders] = useState<AdminOrderVO[]>([])
+  const [logs, setLogs] = useState<SubscriptionLogVO[]>([])
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
@@ -40,14 +40,14 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
     if (!project) return
     setLoading(true)
     try {
-      const [d, ps, od] = await Promise.all([
+      const [d, ps, lg] = await Promise.all([
         getProjectSubscription(project.id),
         listPlans(),
-        pageOrders({ projectId: project.id, page: 1, size: 5 }),
+        getSubscriptionLogs(project.id),
       ])
       setDetail(d)
       setPlans(ps.filter((p) => p.isCustom !== 1 && p.status === 1).sort((a, b) => a.level - b.level))
-      setOrders(od.records)
+      setLogs(lg)
       form.setFieldsValue({
         planId: d.subscribed ? d.planId : undefined,
         seats: d.seats || 0,
@@ -102,11 +102,15 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
     return q.isUnlimited === 1 ? t('sub.unlimited') : String(Number(q.amount))
   }
 
-  const orderCols: ColumnsType<AdminOrderVO> = [
-    { title: t('orders.type'), dataIndex: 'type', width: 70, render: (v: string) => t(`orders.type_${v}`, { defaultValue: v }) },
-    { title: t('orders.amount'), dataIndex: 'amount', width: 90, render: (v, r) => `${v} ${r.currency}` },
-    { title: t('common.status'), dataIndex: 'status', width: 80, render: (s) => t(`orders.status_${s}`) },
-    { title: t('orders.createTime'), dataIndex: 'createTime', render: (v) => fmtDisplay(v) },
+  const logCols: ColumnsType<SubscriptionLogVO> = [
+    { title: t('sub.logAction'), dataIndex: 'action', width: 80, render: (a: string) => t(`sub.action_${a}`, { defaultValue: a }) },
+    {
+      title: t('sub.logDetail'),
+      render: (_, r) => (r.action === 'grant'
+        ? `${r.planName || ''} · ${t('sub.extraSeats')}${r.seats ?? 0} · ${t('sub.extraCustomers')}${r.extraCustomers ?? 0} · ${t('sub.expire')}${fmtDisplay(r.expireTime)}`
+        : '--'),
+    },
+    { title: t('orders.createTime'), dataIndex: 'createTime', width: 130, render: (v) => fmtDisplay(v) },
   ]
 
   return (
@@ -173,7 +177,7 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
           </Form>
 
           <Divider>{t('sub.changeLog')}</Divider>
-          <Table rowKey="id" size="small" columns={orderCols} dataSource={orders} pagination={false}
+          <Table rowKey="id" size="small" columns={logCols} dataSource={logs} pagination={false}
             locale={{ emptyText: t('sub.noChange') }} />
         </>
       )}

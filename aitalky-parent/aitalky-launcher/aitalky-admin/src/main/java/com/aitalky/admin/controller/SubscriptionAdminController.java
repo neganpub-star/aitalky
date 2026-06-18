@@ -4,10 +4,12 @@ import com.aitalky.admin.dto.GrantSubscriptionCmd;
 import com.aitalky.admin.dto.ProjectSubscriptionVO;
 import com.aitalky.billing.entity.BilSubscription;
 import com.aitalky.billing.service.BillingService;
+import com.aitalky.billing.service.dto.SubscriptionLogVO;
 import com.aitalky.common.api.R;
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.customer.service.CustomerService;
+import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.framework.web.RequiresFunction;
 import com.aitalky.identity.service.MemberService;
 import com.aitalky.platform.dto.PlanQuotaVO;
@@ -85,7 +87,7 @@ public class SubscriptionAdminController {
             throw new BizException(ResultCode.BILLING_PLAN_UNAVAILABLE); // 定制版不支持直接开通
         }
         billingService.grantSubscription(projectId, plan.id(), plan.code(), plan.name(),
-                cmd.seats(), cmd.extraCustomers(), cmd.expireTime());
+                cmd.seats(), cmd.extraCustomers(), cmd.expireTime(), TenantContext.getAccountId());
         return R.ok();
     }
 
@@ -93,7 +95,14 @@ public class SubscriptionAdminController {
     @RequiresFunction("subscriptions")
     @PostMapping("/cancel")
     public R<Void> cancel(@PathVariable Long projectId) {
-        billingService.cancelSubscription(projectId);
+        billingService.cancelSubscription(projectId, TenantContext.getAccountId());
         return R.ok();
+    }
+
+    /** 订阅操作日志(后管手动开通/停用) */
+    @RequiresFunction("subscriptions")
+    @GetMapping("/logs")
+    public R<List<SubscriptionLogVO>> logs(@PathVariable Long projectId) {
+        return R.ok(billingService.listSubscriptionLogs(projectId));
     }
 }

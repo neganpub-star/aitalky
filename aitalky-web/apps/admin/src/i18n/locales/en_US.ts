@@ -196,7 +196,11 @@ export default {
     cancelConfirm: 'Cancel this project subscription? The project will then be blocked by the subscription gate.',
     cancelled: 'Subscription cancelled',
     changeLog: 'Change log',
-    noChange: 'No orders yet',
+    noChange: 'No operations yet',
+    logAction: 'Action',
+    logDetail: 'Detail',
+    action_grant: 'Granted',
+    action_cancel: 'Cancelled',
   },
   agreements: {
     type: 'Type',

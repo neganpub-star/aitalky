@@ -3,7 +3,7 @@ import { encryptPassword } from './crypto'
 import type {
   AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminOrderVO, AdminProjectVO,
   AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, PageResult, PlanVO,
-  ProjectSubscriptionVO, RoleVO,
+  ProjectSubscriptionVO, RoleVO, SubscriptionLogVO,
 } from '../types'
 
 // ===== 用户 =====
@@ -140,6 +140,9 @@ export function grantSubscription(projectId: string, body: { planId: string; sea
 }
 export function cancelSubscription(projectId: string) {
   return client.post<unknown, void>(`/admin/projects/${projectId}/subscription/cancel`)
+}
+export function getSubscriptionLogs(projectId: string) {
+  return client.get<unknown, SubscriptionLogVO[]>(`/admin/projects/${projectId}/subscription/logs`)
 }
 
 // ===== 参数管理 =====

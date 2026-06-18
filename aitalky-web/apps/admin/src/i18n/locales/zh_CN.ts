@@ -196,7 +196,11 @@ export default {
     cancelConfirm: '确认停用该项目订阅?停用后该项目将被订阅门禁拦截',
     cancelled: '订阅已停用',
     changeLog: '订阅变更记录',
-    noChange: '暂无订单记录',
+    noChange: '暂无操作记录',
+    logAction: '操作',
+    logDetail: '详情',
+    action_grant: '手动开通',
+    action_cancel: '停用',
   },
   agreements: {
     type: '类型',

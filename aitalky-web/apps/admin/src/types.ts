@@ -127,6 +127,16 @@ export interface ProjectSubscriptionVO {
   freeTrialDays: number
 }
 
+export interface SubscriptionLogVO {
+  id: string
+  action: string          // grant 手动开通 / cancel 停用
+  planName: string | null
+  seats: number | null
+  extraCustomers: number | null
+  expireTime: string | null
+  createTime: string | null
+}
+
 export interface AgreementVO {
   id: string
   type: string
