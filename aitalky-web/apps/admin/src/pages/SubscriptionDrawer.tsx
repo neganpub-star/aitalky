@@ -3,8 +3,25 @@ import {
   Button, DatePicker, Descriptions, Divider, Drawer, Form, InputNumber, Modal, Popconfirm,
   Select, Space, Table, Tag, message,
 } from 'antd'
+import { MinusOutlined, PlusOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
+
+// 数字步进器(− 数字 +,与坐席端订阅弹窗一致);受控 value/onChange,可用于 Form.Item
+function Stepper({ value = 0, onChange, min = 0, max = 9999 }: {
+  value?: number; onChange?: (v: number) => void; min?: number; max?: number
+}) {
+  const v = Number(value) || 0
+  const clamp = (x: number) => Math.min(max, Math.max(min, x))
+  return (
+    <Space.Compact style={{ width: 200 }}>
+      <Button style={{ width: 40, flexShrink: 0 }} icon={<MinusOutlined />} disabled={v <= min} onClick={() => onChange?.(clamp(v - 1))} />
+      <InputNumber controls={false} value={v} min={min} max={max} className="adm-stepper-num"
+        style={{ flex: 1, width: '100%' }} onChange={(n) => onChange?.(clamp(Number(n) || min))} />
+      <Button style={{ width: 40, flexShrink: 0 }} icon={<PlusOutlined />} disabled={v >= max} onClick={() => onChange?.(clamp(v + 1))} />
+    </Space.Compact>
+  )
+}
 import {
   adjustProjectResource, cancelSubscription, getProjectSubscription, getSubscriptionLogs, grantSubscription, listPlans,
 } from '../api/resources'
@@ -164,7 +181,7 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
               <Select placeholder={t('sub.pickPlan')} options={plans.map((p) => ({ value: p.id, label: p.name }))} />
             </Form.Item>
             <Form.Item name="seats" label={t('sub.extraSeats')} initialValue={0}>
-              <InputNumber min={0} max={9999} style={{ width: '100%' }} />
+              <Stepper min={0} max={9999} />
             </Form.Item>
             <Form.Item label={t('sub.expire')} required>
               <Space direction="vertical" style={{ width: '100%' }}>

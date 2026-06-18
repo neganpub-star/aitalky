@@ -91,3 +91,8 @@ body {
   background: rgba(0, 0, 0, 0.2);
   color: #fff;
 }
+
+/* 订阅抽屉步进器:数字居中(InputNumber 内部 input) */
+.adm-stepper-num .ant-input-number-input {
+  text-align: center;
+}
