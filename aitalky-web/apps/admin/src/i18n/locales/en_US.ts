@@ -22,6 +22,7 @@ export default {
     theme: 'Theme',
     lang: 'Language',
     refresh: 'Refresh',
+    copied: 'Copied',
     lightMode: 'Light mode',
     darkMode: 'Dark mode',
     saved: 'Saved',

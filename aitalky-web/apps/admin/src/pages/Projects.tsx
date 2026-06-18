@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Space, Table, Tag } from 'antd'
-import { CrownOutlined } from '@ant-design/icons'
+import { Button, Input, Space, Table, Tag, message } from 'antd'
+import { CrownOutlined, CopyOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import { pageProjects } from '../api/resources'
@@ -33,7 +33,18 @@ export default function Projects() {
 
   const columns: ColumnsType<AdminProjectVO> = [
     { title: t('projects.name'), dataIndex: 'name' },
-    { title: t('projects.appId'), dataIndex: 'appId' },
+    {
+      title: t('projects.appId'), dataIndex: 'appId',
+      render: (v: string) => (
+        <Space size={6}>
+          <span>{v}</span>
+          <CopyOutlined
+            style={{ cursor: 'pointer', color: 'var(--ant-color-text-tertiary, #999)' }}
+            onClick={() => navigator.clipboard?.writeText(v).then(() => message.success(t('common.copied'))).catch(() => undefined)}
+          />
+        </Space>
+      ),
+    },
     { title: t('projects.owner'), dataIndex: 'ownerEmail', render: (v) => v || '-' },
     { title: t('projects.members'), dataIndex: 'memberCount', width: 90 },
     { title: t('projects.site'), dataIndex: 'site', width: 80, render: (v) => v || '-' },

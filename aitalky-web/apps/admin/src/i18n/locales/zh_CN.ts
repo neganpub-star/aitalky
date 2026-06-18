@@ -22,6 +22,7 @@ export default {
     theme: '主题',
     lang: '语言',
     refresh: '刷新',
+    copied: '已复制',
     lightMode: '白天模式',
     darkMode: '夜间模式',
     saved: '保存成功',
