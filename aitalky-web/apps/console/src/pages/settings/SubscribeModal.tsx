@@ -9,11 +9,12 @@ import {
   type PlanVO, type CoinVO, type OrderVO, type RechargeAddressVO,
 } from '../../api/billing'
 
-// 订阅单可搭售的永久加量包(对齐参考:翻译/AI Tokens/客户扩展)
+// 订阅单可搭售的永久加量包(对齐参考弹窗:翻译包/AI Tokens包/客户扩展包)
+// perKey=单价提示里「每包规格」描述(对齐参考:百万字符/百万Tokens/1000客户配额);unitKey=下拉数量单位
 const PACK_DEFS = [
-  { type: 'translate_char', labelKey: 'bill.translatePack', unitKey: 'bill.unitChar', wan: true },
-  { type: 'ai_tokens', labelKey: 'bill.tokensQuota', unitKey: 'bill.unitTokens', wan: true },
-  { type: 'customer', labelKey: 'bill.customerPack', unitKey: 'bill.unitCustomer', wan: false },
+  { type: 'translate_char', labelKey: 'bill.translatePack', perKey: 'bill.perTranslate', unitKey: 'bill.unitChar', wan: true },
+  { type: 'ai_tokens', labelKey: 'bill.tokensPackName', perKey: 'bill.perTokens', unitKey: 'bill.unitTokens', wan: true },
+  { type: 'customer', labelKey: 'bill.customerPackName', perKey: 'bill.perCustomer', unitKey: 'bill.unitCustomer', wan: false },
 ] as const
 // 数量按「万」精简展示(100万字符)
 const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000} 万` : String(n))
@@ -208,7 +209,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
               const meta = packMeta[d.type]
               return (
                 <FieldRow key={d.type} label={t(d.labelKey)} token={token}
-                  hint={meta ? `$${meta.price}/${fmtAmt(meta.spec, d.wan)}${t(d.unitKey)}` : undefined}>
+                  hint={meta ? `$${meta.price}/${t(d.perKey)}` : undefined}>
                   <Select style={{ width: 200 }} allowClear placeholder={t('bill.choose')}
                     value={packCounts[d.type] || undefined}
                     onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
@@ -288,11 +289,12 @@ function FieldRow({ label, children, hint, token }: {
 }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0' }}>
-      <span style={{ fontSize: 14, color: token.colorTextSecondary, paddingTop: 4 }}>{label}</span>
-      <div style={{ textAlign: 'right' }}>
-        {children}
+      {/* 提示在标签下方(对齐参考),控件靠右 */}
+      <div style={{ paddingTop: 4 }}>
+        <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{label}</div>
         {hint && <div style={{ fontSize: 12, color: token.colorTextTertiary, marginTop: 4 }}>{hint}</div>}
       </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>{children}</div>
     </div>
   )
 }

@@ -586,6 +586,13 @@ export default {
     translatePack: '翻译包',
     tokensQuota: 'AI Tokens额度',
     customerPack: '客户拓展包',
+    // 订阅弹窗内的加量包标签(对齐参考弹窗:AI Tokens包/客户扩展包)
+    tokensPackName: 'AI Tokens包',
+    customerPackName: '客户扩展包',
+    // 加量包单价提示的「每包规格」(对齐参考:$69/百万字符)
+    perTranslate: '百万字符',
+    perTokens: '百万Tokens',
+    perCustomer: '1000客户配额',
     unitChar: '字符',
     unitTokens: 'Tokens',
     unitCustomer: '客户配额',
