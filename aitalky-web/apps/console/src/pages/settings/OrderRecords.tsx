@@ -19,6 +19,8 @@ const TYPE_KEY: Record<string, string> = {
   upgrade: 'bill.typeUpgrade',
   addon_seat: 'bill.typeAddonSeat',
   addon_customer: 'bill.typeAddonCustomer',
+  addon_translate: 'bill.typeAddonTranslate',
+  addon_tokens: 'bill.typeAddonTokens',
 }
 const PAGE_SIZE = 10
 // 时间精确到分(对齐现网 2026-06-17 14:35,去掉秒;后端格式 yyyy-MM-dd HH:mm:ss)
@@ -87,6 +89,8 @@ export default function OrderRecords() {
   const resourceText = (r: OrderVO) => {
     if (r.type === 'addon_seat') return `${t('bill.res.seat')}: ${r.seats}`
     if (r.type === 'addon_customer') return `${t('bill.res.customer')}: ${r.quantity}`
+    if (r.type === 'addon_translate') return `${t('bill.res.translate_char')}: ${r.quantity}`
+    if (r.type === 'addon_tokens') return `${t('bill.res.ai_tokens')}: ${r.quantity}`
     return (
       <span>
         {planLabel(r)}
@@ -97,7 +101,8 @@ export default function OrderRecords() {
   // 订阅周期列:套餐=月数×30天;席位加购=折算剩余天数;客户配额加购=--
   const periodText = (r: OrderVO) => {
     if (r.type === 'addon_seat') return t('bill.days', { n: r.periodDays })
-    if (r.type === 'addon_customer') return '--'
+    // 永久加量包(客户/翻译/Tokens)无周期
+    if (['addon_customer', 'addon_translate', 'addon_tokens'].includes(r.type)) return '--'
     return t('bill.days', { n: r.months * 30 })
   }
 
@@ -138,7 +143,7 @@ export default function OrderRecords() {
     },
   ]
 
-  const typeOptions = ['new', 'renew', 'upgrade', 'addon_seat', 'addon_customer']
+  const typeOptions = ['new', 'renew', 'upgrade', 'addon_seat', 'addon_customer', 'addon_translate', 'addon_tokens']
     .map((v) => ({ value: v, label: t(TYPE_KEY[v]) }))
 
   return (

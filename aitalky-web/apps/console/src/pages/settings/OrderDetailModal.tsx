@@ -13,6 +13,11 @@ interface Props {
 const TYPE_KEY: Record<string, string> = {
   new: 'bill.typeNew', renew: 'bill.typeRenew', upgrade: 'bill.typeUpgrade',
   addon_seat: 'bill.typeAddonSeat', addon_customer: 'bill.typeAddonCustomer',
+  addon_translate: 'bill.typeAddonTranslate', addon_tokens: 'bill.typeAddonTokens',
+}
+// 永久加量包订单类型 → 资源类型(资源列显示「资源名: 配额数」)
+const PACK_RES: Record<string, string> = {
+  addon_customer: 'customer', addon_translate: 'translate_char', addon_tokens: 'ai_tokens',
 }
 const STATUS = (t: (k: string) => string): Record<number, { color: string; text: string }> => ({
   0: { color: 'gold', text: t('bill.stPending') },
@@ -41,7 +46,7 @@ export default function OrderDetailModal({ open, order, plan, onClose }: Props) 
     : `${Number(seatQuota?.amount || 0) + Number(order.seats || 0)}`
   const periodText = order.type === 'addon_seat'
     ? t('bill.days', { n: order.periodDays })
-    : order.type === 'addon_customer' ? '--' : t('bill.days', { n: order.months * 30 })
+    : ['addon_customer', 'addon_translate', 'addon_tokens'].includes(order.type) ? '--' : t('bill.days', { n: order.months * 30 })
   const features = plan?.features || []
   const featLabel = (code: string) => { const k = `bill.feat.${code}`; const l = t(k); return l === k ? code : l }
 
@@ -88,8 +93,8 @@ export default function OrderDetailModal({ open, order, plan, onClose }: Props) 
       {/* 套餐信息网格(套餐类型可点→Popover 展示套餐服务,对齐现网) */}
       <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, marginTop: 20, overflow: 'hidden' }}>
         <GridRow token={token}
-          left={order.type === 'addon_customer'
-            ? [t('bill.res.customer'), String(order.quantity)]
+          left={PACK_RES[order.type]
+            ? [t(`bill.res.${PACK_RES[order.type]}`), String(order.quantity)]
             : [t('bill.planType'), planNameNode]}
           right={[t('bill.subSeats'), seatText]} />
         <GridRow token={token}
