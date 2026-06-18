@@ -101,7 +101,7 @@ export default function BillingPlans() {
           </a>
         </div>
       )}
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'stretch', marginTop: 80 }}>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center', alignItems: 'stretch', marginTop: 80 }}>
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id
           // 比当前订阅档位低的套餐不可订(只能续费当前/升级更高档);定制版始终可联系客服
@@ -109,7 +109,7 @@ export default function BillingPlans() {
           const color = LEVEL_COLORS[p.level] || token.colorPrimary
           return (
             <div key={p.id} className="plan-card" style={{
-              position: 'relative', width: 300, minHeight: 560, borderRadius: 12, overflow: 'hidden',
+              position: 'relative', flex: '1 1 260px', minWidth: 240, maxWidth: 320, minHeight: 560, borderRadius: 12, overflow: 'hidden',
               border: `1.5px solid ${isCurrent ? token.colorPrimary : token.colorBorder}`,
               boxShadow: isCurrent ? `0 0 0 1px ${token.colorPrimary}` : token.boxShadow,
             }}>
