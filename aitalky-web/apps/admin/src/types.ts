@@ -117,12 +117,15 @@ export interface ProjectSubscriptionVO {
   status: number | null
   expireTime: string | null
   expired: boolean
-  seats: number
-  extraCustomers: number
+  seats: number          // 当前加购席位(开通表单回填)
   seatUsed: number
   seatTotal: number      // -1 = 无限
   customerUsed: number
-  customerTotal: number  // -1 = 无限
+  customerTotal: number  // -1 = 无限(免费默认 + 已购包)
+  articleTotal: number   // -1 = 无限
+  siteTotal: number      // -1 = 无限
+  translateTotal: number // 翻译字符总量(默认 + 已购包)
+  aiTokensTotal: number  // AI Tokens 总量(默认 + 已购包)
   quotas: { resourceType: string; amount: number; isUnlimited: number }[]
   freeTrialDays: number
 }

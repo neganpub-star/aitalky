@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import {
-  Button, DatePicker, Descriptions, Divider, Drawer, Form, InputNumber, Popconfirm,
+  Button, DatePicker, Descriptions, Divider, Drawer, Form, InputNumber, Modal, Popconfirm,
   Select, Space, Table, Tag, message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
 import {
-  cancelSubscription, getProjectSubscription, getSubscriptionLogs, grantSubscription, listPlans,
+  adjustProjectResource, cancelSubscription, getProjectSubscription, getSubscriptionLogs, grantSubscription, listPlans,
 } from '../api/resources'
 import type { AdminProjectVO, PlanVO, ProjectSubscriptionVO, SubscriptionLogVO } from '../types'
 
@@ -35,6 +35,9 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
   const [expire, setExpire] = useState('')
+  // 调整扩展额度弹窗
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [adjustForm] = Form.useForm()
 
   const load = async () => {
     if (!project) return
@@ -51,7 +54,6 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
       form.setFieldsValue({
         planId: d.subscribed ? d.planId : undefined,
         seats: d.seats || 0,
-        extraCustomers: d.extraCustomers || 0,
       })
       setExpire('')
     } finally {
@@ -75,11 +77,25 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
     setSubmitting(true)
     try {
       await grantSubscription(project.id, {
-        planId: v.planId, seats: v.seats || 0, extraCustomers: v.extraCustomers || 0, expireTime: expire,
+        planId: v.planId, seats: v.seats || 0, expireTime: expire,
       })
       message.success(t('sub.granted'))
       load()
     } finally { setSubmitting(false) }
+  }
+
+  // 调整扩展额度(永久包:覆盖设置已购量)
+  const openAdjust = () => {
+    adjustForm.setFieldsValue({ resourceType: 'customer', amount: 0 })
+    setAdjustOpen(true)
+  }
+  const submitAdjust = async () => {
+    const v = await adjustForm.validateFields()
+    if (!project) return
+    await adjustProjectResource(project.id, { resourceType: v.resourceType, amount: v.amount || 0 })
+    message.success(t('sub.adjustDone'))
+    setAdjustOpen(false)
+    load()
   }
 
   const doCancel = async () => {
@@ -95,12 +111,8 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
     return <Tag color="success">{t('sub.active')}</Tag>
   }
   const totalText = (used: number, total: number) => `${used} / ${total < 0 ? t('sub.unlimited') : total}`
-  // 配额总量(占位资源:公网文章/应用站点/翻译包);amount 是 Long 序列化字符串,Number 强转
-  const quotaTotal = (type: string) => {
-    const q = detail?.quotas.find((x) => x.resourceType === type)
-    if (!q) return '--'
-    return q.isUnlimited === 1 ? t('sub.unlimited') : String(Number(q.amount))
-  }
+  // 单一总量展示(-1=无限)
+  const oneTotal = (n: number) => (n < 0 ? t('sub.unlimited') : String(n))
 
   const logCols: ColumnsType<SubscriptionLogVO> = [
     { title: t('sub.logAction'), dataIndex: 'action', width: 80, render: (a: string) => t(`sub.action_${a}`, { defaultValue: a }) },
@@ -138,25 +150,22 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
           <Descriptions column={1} size="small" bordered>
             <Descriptions.Item label={t('sub.seatUsage')}>{totalText(detail.seatUsed, detail.seatTotal)}</Descriptions.Item>
             <Descriptions.Item label={t('sub.customerUsage')}>{totalText(detail.customerUsed, detail.customerTotal)}</Descriptions.Item>
-            <Descriptions.Item label={t('sub.article')}>0 / {quotaTotal('article')}</Descriptions.Item>
-            <Descriptions.Item label={t('sub.site')}>0 / {quotaTotal('site')}</Descriptions.Item>
-            <Descriptions.Item label={t('sub.translatePack')}>{quotaTotal('translate_char')}</Descriptions.Item>
-            <Descriptions.Item label={t('sub.tokens')}>--</Descriptions.Item>
+            <Descriptions.Item label={t('sub.article')}>0 / {oneTotal(detail.articleTotal)}</Descriptions.Item>
+            <Descriptions.Item label={t('sub.site')}>0 / {oneTotal(detail.siteTotal)}</Descriptions.Item>
+            <Descriptions.Item label={t('sub.translatePack')}>{oneTotal(detail.translateTotal)}</Descriptions.Item>
+            <Descriptions.Item label={t('sub.tokens')}>{oneTotal(detail.aiTokensTotal)}</Descriptions.Item>
           </Descriptions>
+          {/* 扩展额度(永久包:客户/翻译/Tokens)单独调整 */}
+          <Button size="small" style={{ marginTop: 12 }} onClick={openAdjust}>{t('sub.adjustExt')}</Button>
 
           <Divider>{t('sub.grantTitle')}</Divider>
           <Form form={form} layout="vertical">
             <Form.Item name="planId" label={t('sub.plan')} rules={[{ required: true }]}>
               <Select placeholder={t('sub.pickPlan')} options={plans.map((p) => ({ value: p.id, label: p.name }))} />
             </Form.Item>
-            <Space size="large" style={{ display: 'flex' }}>
-              <Form.Item name="seats" label={t('sub.extraSeats')} initialValue={0} style={{ flex: 1 }}>
-                <InputNumber min={0} max={9999} style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item name="extraCustomers" label={t('sub.extraCustomers')} initialValue={0} style={{ flex: 1 }}>
-                <InputNumber min={0} max={9999999} style={{ width: '100%' }} />
-              </Form.Item>
-            </Space>
+            <Form.Item name="seats" label={t('sub.extraSeats')} initialValue={0}>
+              <InputNumber min={0} max={9999} style={{ width: '100%' }} />
+            </Form.Item>
             <Form.Item label={t('sub.expire')} required>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Space wrap>
@@ -179,6 +188,24 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
           <Divider>{t('sub.changeLog')}</Divider>
           <Table rowKey="id" size="small" columns={logCols} dataSource={logs} pagination={false}
             locale={{ emptyText: t('sub.noChange') }} />
+
+          {/* 调整扩展额度(永久包:覆盖设置已购量;总量=免费默认+本值) */}
+          <Modal title={t('sub.adjustExt')} open={adjustOpen} onOk={submitAdjust}
+            onCancel={() => setAdjustOpen(false)} destroyOnClose>
+            <Form form={adjustForm} layout="vertical">
+              <Form.Item name="resourceType" label={t('sub.extResType')} rules={[{ required: true }]}>
+                <Select options={[
+                  { value: 'customer', label: t('sub.extCustomer') },
+                  { value: 'translate_char', label: t('sub.extTranslate') },
+                  { value: 'ai_tokens', label: t('sub.extTokens') },
+                ]} />
+              </Form.Item>
+              <Form.Item name="amount" label={t('sub.extAmount')} initialValue={0} rules={[{ required: true }]}>
+                <InputNumber min={0} max={999999999} style={{ width: '100%' }} />
+              </Form.Item>
+              <span style={{ color: '#999', fontSize: 12 }}>{t('sub.extHint')}</span>
+            </Form>
+          </Modal>
         </>
       )}
     </Drawer>

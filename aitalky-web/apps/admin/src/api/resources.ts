@@ -135,8 +135,12 @@ export function deleteCoin(id: string) {
 export function getProjectSubscription(projectId: string) {
   return client.get<unknown, ProjectSubscriptionVO>(`/admin/projects/${projectId}/subscription`)
 }
-export function grantSubscription(projectId: string, body: { planId: string; seats: number; extraCustomers: number; expireTime: string }) {
+export function grantSubscription(projectId: string, body: { planId: string; seats: number; expireTime: string }) {
   return client.post<unknown, void>(`/admin/projects/${projectId}/subscription`, body)
+}
+/** 调整项目扩展额度(永久包 customer/translate_char/ai_tokens;覆盖设置已购量) */
+export function adjustProjectResource(projectId: string, body: { resourceType: string; amount: number }) {
+  return client.post<unknown, void>(`/admin/projects/${projectId}/subscription/resource`, body)
 }
 export function cancelSubscription(projectId: string) {
   return client.post<unknown, void>(`/admin/projects/${projectId}/subscription/cancel`)
