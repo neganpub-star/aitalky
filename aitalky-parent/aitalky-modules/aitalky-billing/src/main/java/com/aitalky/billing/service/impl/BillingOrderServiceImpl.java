@@ -21,6 +21,7 @@ import com.aitalky.framework.security.HmacUtil;
 import com.aitalky.platform.dto.AddonVO;
 import com.aitalky.platform.dto.PlanVO;
 import com.aitalky.platform.service.AddonService;
+import com.aitalky.platform.service.ConfigService;
 import com.aitalky.platform.service.PlanService;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -55,6 +56,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private final BilWalletMapper walletMapper;
     private final PlanService planService;
     private final AddonService addonService;
+    private final ConfigService configService;
     private final BillingProperties properties;
     private final DistributedLockTemplate lockTemplate;
     private final TransactionTemplate txTemplate;
@@ -64,6 +66,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                                    BilWalletMapper walletMapper,
                                    PlanService planService,
                                    AddonService addonService,
+                                   ConfigService configService,
                                    BillingProperties properties,
                                    DistributedLockTemplate lockTemplate,
                                    PlatformTransactionManager txManager) {
@@ -71,6 +74,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         this.subscriptionMapper = subscriptionMapper;
         this.walletMapper = walletMapper;
         this.planService = planService;
+        this.configService = configService;
         this.addonService = addonService;
         this.properties = properties;
         this.lockTemplate = lockTemplate;
@@ -123,7 +127,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setCurrency("USDT");
             order.setPayCurrency(payCurrency);
             order.setStatus(0);
-            order.setExpireTime(LocalDateTime.now().plusHours(24)); // 24h 支付有效期
+            order.setExpireTime(LocalDateTime.now().plusHours(configService.getInt("order_expire_hours", 24))); // 24h 支付有效期
             order.setSign(orderSign(order));
             orderMapper.insert(order);
             log.info("创建订单, projectId={}, orderNo={}, type={}, amount={}", projectId, order.getOrderNo(), type, amount);
@@ -185,7 +189,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             ensureNoPending(projectId);
             order.setOrderNo(genOrderNo());
             order.setStatus(0);
-            order.setExpireTime(LocalDateTime.now().plusHours(24));
+            order.setExpireTime(LocalDateTime.now().plusHours(configService.getInt("order_expire_hours", 24)));
             order.setSign(orderSign(order));
             orderMapper.insert(order);
             log.info("创建加购订单, projectId={}, orderNo={}, type={}, amount={}",
