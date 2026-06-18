@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Avatar, Button, Modal, Tag, message, theme } from 'antd'
-import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
+import { ExclamationCircleFilled } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,6 +10,8 @@ import {
 import { useAppStore } from '../../store/useAppStore'
 import AddonModal from './AddonModal'
 import PendingPayModal from './PendingPayModal'
+// 订阅卡渐变头装饰图(从参考系统提取:蓝渐变 + 3D 立方体 + 轨道环 + 底部波浪,已去文字)
+import planDecor from '../../assets/plan-decor.png'
 
 function fmtTime(s: string | null): string {
   if (!s) return '--'
@@ -20,6 +22,13 @@ function fmtTime(s: string | null): string {
 }
 // 字符/Tokens 大数按「万」展示(对齐现网 95.59 万)
 const fmtWan = (n: number) => (n >= 10000 ? `${(n / 10000).toFixed(2)} 万` : String(n))
+// 带配额数的功能(公网文章/应用站点)+ 功能徽章(数字员工=AI 紫,客户洞察/自动营销=New 橙)
+const QUOTA_FEATURES = ['article', 'site']
+const FEATURE_BADGE: Record<string, { text: string; color: string }> = {
+  ai_employee: { text: 'AI', color: '#722ed1' },
+  insight: { text: 'New', color: '#fa8c16' },
+  marketing: { text: 'New', color: '#fa8c16' },
+}
 
 // 数据管理 → 服务订阅 → 概览(对齐现网):资源用量(团队席位/公网文章/应用站点) + 扩展服务(翻译包/AI Tokens/客户拓展包) + 右侧渐变卡。
 //  未订阅也展示:资源用量 0/0,扩展服务展示后管参数的默认免费额度,右卡「暂无订阅+立即订阅」。
@@ -153,60 +162,78 @@ export default function BillingOverview() {
         {extCard({ type: 'customer', title: t('bill.customerPack'), unit: t('bill.unitCustomer'), buyLabel: t('bill.buyCustomerQuota'), onClick: () => onBuy('customer'), defaultVal: cfg?.defaultCustomer ?? 100 })}
       </div>
 
-      {/* 右:渐变卡(订阅信息 / 未订阅引导) */}
+      {/* 右:套餐卡(对齐参考:灰底面板 + 项目头 + 白底卡[蓝渐变头 + 套餐服务圆点列表 + 续费按钮]) */}
       <div style={{ width: 300, flexShrink: 0 }}>
-        <div style={{
-          borderRadius: 14, padding: 22, color: '#fff',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 60%, #1e3a8a 100%)',
-          boxShadow: '0 8px 24px rgba(29,78,216,0.25)',
-        }}>
-          {/* 项目信息(LOGO + 名称 + 项目ID) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-            <Avatar shape="square" size={40} src={projectLogo || undefined} style={{ background: 'rgba(255,255,255,0.2)', flexShrink: 0 }}>
+        <div style={{ background: token.colorFillQuaternary, borderRadius: 12, padding: 16 }}>
+          {/* 项目信息(LOGO + 名称 + 项目ID),深色文字在灰底上 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <Avatar shape="square" size={40} src={projectLogo || undefined} style={{ flexShrink: 0 }}>
               {projectName?.[0] || 'A'}
             </Avatar>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{projectName || '--'}</div>
-              {appId && <div style={{ fontSize: 12, opacity: 0.8 }}>{t('bill.projectId')}:{appId}</div>}
+              <div style={{ fontSize: 15, fontWeight: 700, color: token.colorText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{projectName || '--'}</div>
+              {appId && <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.projectId')}:{appId}</div>}
             </div>
           </div>
 
-          {subscribed ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 20, fontWeight: 700 }}>
-                  {data.planCode && t(`bill.plan.${data.planCode}`) !== `bill.plan.${data.planCode}` ? t(`bill.plan.${data.planCode}`) : data.planName}
-                </span>
-                {data.expired
-                  ? <Tag color="error" style={{ margin: 0 }}>{t('bill.expired')}</Tag>
-                  : <Tag color="success" style={{ margin: 0 }}>{t('bill.subscribing')}</Tag>}
+          {/* 白底卡 */}
+          <div style={{ borderRadius: 12, overflow: 'hidden', background: token.colorBgContainer, boxShadow: token.boxShadowTertiary }}>
+            {subscribed ? (
+              <>
+                {/* 蓝渐变头(背景=参考装饰图,文字叠加在左) */}
+                <div style={{ position: 'relative', backgroundImage: `url(${planDecor})`, backgroundSize: 'cover', backgroundPosition: 'right top', backgroundRepeat: 'no-repeat', color: '#fff', padding: '16px 18px 18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 20, fontWeight: 700 }}>
+                      {data.planCode && t(`bill.plan.${data.planCode}`) !== `bill.plan.${data.planCode}` ? t(`bill.plan.${data.planCode}`) : data.planName}
+                    </span>
+                    <span style={{ fontSize: 11, padding: '1px 7px', borderRadius: 4, background: data.expired ? 'rgba(255,80,80,0.9)' : 'rgba(255,255,255,0.25)' }}>
+                      {data.expired ? t('bill.expired') : t('bill.subscribing')}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, opacity: 0.9, marginTop: 10 }}>
+                    {t('bill.expireTime')}: {fmtTime(data.expireTime)}
+                  </div>
+                </div>
+                {/* 白底:套餐服务列表(圆点 + 徽章,团队席位[N] 首项) */}
+                <div style={{ padding: '16px 18px 18px' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: token.colorTextSecondary, marginBottom: 12 }}>{t('bill.planService')}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+                    {quotaMap.seat && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: token.colorText }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: token.colorPrimary, flexShrink: 0 }} />
+                        {t('bill.res.seat')}[{quotaMap.seat.unlimited ? t('bill.unlimited') : quotaMap.seat.amount}]
+                      </span>
+                    )}
+                    {data.features.map((f) => {
+                      const badge = FEATURE_BADGE[f]
+                      const sfx = QUOTA_FEATURES.includes(f) && quotaMap[f]
+                        ? `[${quotaMap[f].unlimited ? t('bill.unlimited') : quotaMap[f].amount}]` : ''
+                      return (
+                        <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: token.colorText }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: token.colorPrimary, flexShrink: 0 }} />
+                          {featLabel(f)}{sfx}
+                          {badge && <Tag color={badge.color} style={{ margin: 0, lineHeight: '16px', fontSize: 11, padding: '0 5px' }}>{badge.text}</Tag>}
+                        </span>
+                      )
+                    })}
+                  </div>
+                  <Button type="primary" block style={{ marginTop: 20, fontWeight: 600 }}
+                    onClick={() => nav('/settings/billing/plans')}>
+                    {t('bill.renewUpgrade')}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: '22px 18px' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: token.colorText }}>{t('bill.noSubTitle')}</div>
+                <div style={{ fontSize: 13, color: token.colorTextTertiary, margin: '12px 0 90px', lineHeight: 1.6 }}>{t('bill.noSubDesc')}</div>
+                <Button type="primary" block style={{ fontWeight: 600 }}
+                  onClick={() => nav('/settings/billing/plans')}>
+                  {t('bill.subscribeNow')}
+                </Button>
               </div>
-              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
-                {t('bill.expireTime')}: {fmtTime(data.expireTime)}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 12px' }}>{t('bill.planService')}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-                {data.features.map((f) => (
-                  <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                    <CheckOutlined style={{ fontSize: 12 }} />{featLabel(f)}
-                  </span>
-                ))}
-              </div>
-              <Button block style={{ marginTop: 22, background: '#fff', color: '#1d4ed8', fontWeight: 600, border: 'none' }}
-                onClick={() => nav('/settings/billing/plans')}>
-                {t('bill.renewUpgrade')}
-              </Button>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 20, fontWeight: 700 }}>{t('bill.noSubTitle')}</div>
-              <div style={{ fontSize: 13, opacity: 0.9, margin: '14px 0 110px', lineHeight: 1.6 }}>{t('bill.noSubDesc')}</div>
-              <Button block style={{ background: '#fff', color: '#1d4ed8', fontWeight: 600, border: 'none' }}
-                onClick={() => nav('/settings/billing/plans')}>
-                {t('bill.subscribeNow')}
-              </Button>
-            </>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
