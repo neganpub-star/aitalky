@@ -12,6 +12,7 @@ import com.aitalky.conversation.service.ConversationService;
 import com.aitalky.customer.entity.CusCustomer;
 import com.aitalky.customer.service.CustomerService;
 import com.aitalky.framework.tenant.TenantContext;
+import com.aitalky.framework.web.RequiresSubscription;
 import com.aitalky.identity.dto.MemberBrief;
 import com.aitalky.identity.service.MemberService;
 import com.aitalky.message.document.Message;
@@ -37,6 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/conversations")
 @RequiredArgsConstructor
+@RequiresSubscription  // 工作台功能:项目无有效订阅则整体拦截,引导前往订阅
 public class ConversationController {
 
     private final ConversationService conversationService;

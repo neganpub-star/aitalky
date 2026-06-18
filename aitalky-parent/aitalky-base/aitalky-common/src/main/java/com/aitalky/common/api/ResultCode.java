@@ -20,6 +20,8 @@ public enum ResultCode {
     PARAM_INVALID(1001, "param.invalid"),
     TENANT_MISSING(1002, "tenant.missing"),
     NO_FUNCTION_PERMISSION(1003, "no.function.permission"),
+    /** 项目无有效订阅(未订阅/已到期);前端据此引导前往订阅页 */
+    NO_SUBSCRIPTION(1004, "no.subscription"),
 
     // ===== 身份/账号 101x =====
     EMAIL_ALREADY_EXISTS(1010, "email.exists"),
