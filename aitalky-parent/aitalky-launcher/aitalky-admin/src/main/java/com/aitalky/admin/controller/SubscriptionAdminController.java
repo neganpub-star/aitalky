@@ -52,7 +52,7 @@ public class SubscriptionAdminController {
         BilSubscription sub = billingService.getSubscription(projectId);
         if (sub == null) {
             return R.ok(new ProjectSubscriptionVO(false, null, null, null, null, null, false,
-                    0, seatUsed, 0, customerUsed, 0, List.of(), trialDays));
+                    0, 0, seatUsed, 0, customerUsed, 0, List.of(), trialDays));
         }
         PlanVO plan = planService.get(sub.getPlanId());
         boolean expired = sub.getExpireTime() != null && sub.getExpireTime().isBefore(LocalDateTime.now());
@@ -72,7 +72,7 @@ public class SubscriptionAdminController {
             }
         }
         return R.ok(new ProjectSubscriptionVO(true, sub.getPlanId(), sub.getPlanCode(), sub.getPlanName(),
-                sub.getStatus(), sub.getExpireTime(), expired, extraSeats,
+                sub.getStatus(), sub.getExpireTime(), expired, extraSeats, extraCustomers,
                 seatUsed, seatTotal, customerUsed, customerTotal, quotas, trialDays));
     }
 
@@ -85,7 +85,15 @@ public class SubscriptionAdminController {
             throw new BizException(ResultCode.BILLING_PLAN_UNAVAILABLE); // 定制版不支持直接开通
         }
         billingService.grantSubscription(projectId, plan.id(), plan.code(), plan.name(),
-                cmd.seats(), cmd.expireTime());
+                cmd.seats(), cmd.extraCustomers(), cmd.expireTime());
+        return R.ok();
+    }
+
+    /** 停用项目订阅(status=0 立即过期,触发订阅门禁) */
+    @RequiresFunction("subscriptions")
+    @PostMapping("/cancel")
+    public R<Void> cancel(@PathVariable Long projectId) {
+        billingService.cancelSubscription(projectId);
         return R.ok();
     }
 }

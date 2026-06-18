@@ -11,6 +11,7 @@ import java.util.List;
  * @param subscribed      是否有订阅记录
  * @param expired         是否已过期
  * @param seats           加购席位(套餐自带之外)
+ * @param extraCustomers  加购客户配额(套餐自带之外)
  * @param seatUsed        已用席位(启用成员数)
  * @param seatTotal       席位总额(套餐席位 + 加购;无限时为 -1)
  * @param customerUsed    已用客户数
@@ -27,6 +28,7 @@ public record ProjectSubscriptionVO(
         LocalDateTime expireTime,
         boolean expired,
         Integer seats,
+        Integer extraCustomers,
         long seatUsed,
         long seatTotal,
         long customerUsed,

@@ -26,7 +26,7 @@ public class BillingServiceImpl implements BillingService {
 
     @Override
     public void grantSubscription(Long projectId, Long planId, String planCode, String planName,
-                                  Integer seats, LocalDateTime expireTime) {
+                                  Integer seats, Integer extraCustomers, LocalDateTime expireTime) {
         BilSubscription sub = getSubscription(projectId);
         boolean isNew = sub == null;
         if (isNew) {
@@ -34,15 +34,15 @@ public class BillingServiceImpl implements BillingService {
             sub.setProjectId(projectId);
             sub.setStartTime(LocalDateTime.now());
         }
-        // 换套餐:加购客户配额不跨套餐保留,重置 0(与下单 applyPlan 一致)
+        // 换套餐:起算时间重置为当前(到期时间以传入为准)
         if (sub.getPlanId() == null || !sub.getPlanId().equals(planId)) {
-            sub.setExtraCustomers(0);
             sub.setStartTime(LocalDateTime.now());
         }
         sub.setPlanId(planId);
         sub.setPlanCode(planCode);
         sub.setPlanName(planName);
         sub.setSeats(seats == null ? 0 : seats);
+        sub.setExtraCustomers(extraCustomers == null ? 0 : extraCustomers);
         sub.setExpireTime(expireTime);
         sub.setStatus(1);
         if (isNew) {
@@ -50,7 +50,22 @@ public class BillingServiceImpl implements BillingService {
         } else {
             subscriptionMapper.updateById(sub);
         }
-        log.info("后管手动开通订阅, projectId={}, planId={}, expire={}", projectId, planId, expireTime);
+        log.info("后管手动开通订阅, projectId={}, planId={}, seats={}, extraCustomers={}, expire={}",
+                projectId, planId, seats, extraCustomers, expireTime);
+    }
+
+    @Override
+    public void cancelSubscription(Long projectId) {
+        BilSubscription sub = getSubscription(projectId);
+        if (sub == null) {
+            return;
+        }
+        BilSubscription update = new BilSubscription();
+        update.setId(sub.getId());
+        update.setStatus(0);
+        update.setExpireTime(LocalDateTime.now()); // 立即过期,前后端门禁一致拦截
+        subscriptionMapper.updateById(update);
+        log.info("后管停用项目订阅, projectId={}", projectId);
     }
 
     @Override
