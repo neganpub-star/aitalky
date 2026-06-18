@@ -18,9 +18,12 @@ function fmtTime(s: string | null): string {
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
+// 字符/Tokens 大数按「万」展示(对齐现网 95.59 万)
+const fmtWan = (n: number) => (n >= 10000 ? `${(n / 10000).toFixed(2)} 万` : String(n))
 
-// 数据管理 → 服务订阅 → 概览(对齐现网 img.png):左侧资源用量卡(席位/客户 已用/总量,真实计量,可加购) + 右侧渐变套餐卡。
-// MVP 资源只放 aitalky 现有的 seat/customer;扩展服务(翻译/AI Tokens 未做)不展示。
+// 数据管理 → 服务订阅 → 概览(对齐现网 img.png):
+//  资源用量(团队席位[可购买]/公网文章/应用站点) + 扩展服务(翻译包/AI Tokens/客户拓展包) + 右侧渐变套餐卡。
+//  真实可购买:席位 + 客户配额;其余(公网文章/应用站点/翻译包/AI Tokens)功能未做,先占位展示,购买提示敬请期待。
 export default function BillingOverview() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
@@ -46,7 +49,7 @@ export default function BillingOverview() {
   const featLabel = (code: string) => { const k = `bill.feat.${code}`; const l = t(k); return l === k ? code : l }
   const resLabel = (type: string) => { const k = `bill.res.${type}`; const l = t(k); return l === k ? type : l }
 
-  // 加购前置:无有效订阅不能加购;已有待支付订单则提示"去处理"(对齐现网 img_3),否则打开加购弹窗。
+  // 加购前置:无有效订阅不能加购;已有待支付订单则提示"去处理",否则打开加购弹窗。
   const onBuy = async (type: 'seat' | 'customer') => {
     if (!data?.subscribed || data.expired) { message.warning(t('bill.subscribeFirst')); return }
     try {
@@ -65,6 +68,7 @@ export default function BillingOverview() {
     } catch { /* 查询失败按无待支付处理 */ }
     setAddonType(type)
   }
+  const comingSoon = () => message.info(t('bill.comingSoon'))
 
   if (!data) return null
 
@@ -80,33 +84,85 @@ export default function BillingOverview() {
     )
   }
 
+  // 配额总量(套餐 quotas;amount 是 Long 序列化字符串,Number 强转) / 真实用量(usage)
+  const quotaMap: Record<string, { amount: number; unlimited: boolean }> = {}
+  data.quotas.forEach((q) => { quotaMap[q.resourceType] = { amount: Number(q.amount || 0), unlimited: q.isUnlimited === 1 } })
+  const usageMap: Record<string, UsageVO> = {}
+  usage.forEach((u) => { usageMap[u.resourceType] = u })
+
+  // 资源用量卡(已用/总量):团队席位真实计量可购买;公网文章/应用站点占位(功能未做,已用记 0)
+  const usageCard = (type: string, opts: { buyable?: boolean }) => {
+    const u = usageMap[type]
+    const q = quotaMap[type]
+    const used = u ? u.used : 0
+    const unlimited = u ? u.unlimited : !!q?.unlimited
+    const total = u ? u.limit : (q?.amount ?? 0)
+    return (
+      <div key={type} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 20px' }}>
+        <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{resLabel(type)}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, margin: '10px 0 4px' }}>
+          {used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {unlimited ? t('bill.unlimited') : total}</span>
+        </div>
+        <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.usedTotal')}</div>
+        {opts.buyable && (
+          <Button size="small" style={{ marginTop: 14 }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
+        )}
+      </div>
+    )
+  }
+
+  // 扩展服务卡(可用/总量 + 购买):翻译包/AI Tokens 占位(敬请期待),客户拓展包真实加购
+  const extCard = (cfg: {
+    type: string; title: string; unit: string; buyLabel: string
+    onClick: () => void; wan?: boolean; noQuota?: boolean
+  }) => {
+    const u = usageMap[cfg.type]
+    const q = quotaMap[cfg.type]
+    const unlimited = u ? u.unlimited : !!q?.unlimited
+    const total = u ? u.limit : (q?.amount ?? 0)
+    const used = u ? u.used : 0
+    const avail = unlimited ? -1 : Math.max(0, total - used)
+    const show = (n: number) => (n < 0 ? t('bill.unlimited') : cfg.wan ? fmtWan(n) : String(n))
+    const big = { fontSize: 26, fontWeight: 700 as const }
+    const sub = { fontSize: 12, color: token.colorTextTertiary }
+    return (
+      <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 24px', marginBottom: 16 }}>
+        <div style={{ fontSize: 14, color: token.colorTextSecondary, marginBottom: 12 }}>{cfg.title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 64 }}>
+            <div>
+              <div style={big}>{cfg.noQuota ? '--' : show(avail)}</div>
+              <div style={sub}>{t('bill.avail')}({cfg.unit})</div>
+            </div>
+            <div>
+              <div style={big}>{cfg.noQuota ? '--' : show(unlimited ? -1 : total)}</div>
+              <div style={sub}>{t('bill.totalQty')}({cfg.unit})</div>
+            </div>
+          </div>
+          <Button onClick={cfg.onClick}>{cfg.buyLabel}</Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', gap: 24 }}>
       {modalCtx}
-      {/* 左:资源用量 */}
+      {/* 左:资源用量 + 扩展服务 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.overview')}</div>
+
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>{t('bill.resourceUsage')}</div>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {usage.map((u) => {
-            const buyable = u.resourceType === 'seat' || u.resourceType === 'customer'
-            return (
-              <div key={u.resourceType} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 20px' }}>
-                <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{resLabel(u.resourceType)}</div>
-                <div style={{ fontSize: 26, fontWeight: 700, margin: '10px 0 4px' }}>
-                  {u.used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {u.unlimited ? t('bill.unlimited') : u.limit}</span>
-                </div>
-                <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.usedTotal')}</div>
-                {buyable && (
-                  <Button size="small" style={{ marginTop: 14 }}
-                    onClick={() => onBuy(u.resourceType as 'seat' | 'customer')}>
-                    {u.resourceType === 'seat' ? t('bill.buySeats') : t('bill.buyCustomerQuota')}
-                  </Button>
-                )}
-              </div>
-            )
-          })}
+          {usageCard('seat', { buyable: true })}
+          {usageCard('article', {})}
+          {usageCard('site', {})}
         </div>
+
+        <div style={{ fontSize: 15, fontWeight: 600, margin: '28px 0 14px' }}>{t('bill.extServices')}</div>
+        {extCard({ type: 'translate_char', title: t('bill.translatePack'), unit: t('bill.unitChar'), buyLabel: t('bill.buyTranslate'), onClick: comingSoon, wan: true })}
+        {extCard({ type: 'ai_tokens', title: t('bill.tokensQuota'), unit: t('bill.unitTokens'), buyLabel: t('bill.buyTokens'), onClick: comingSoon, wan: true, noQuota: true })}
+        {extCard({ type: 'customer', title: t('bill.customerPack'), unit: t('bill.unitCustomer'), buyLabel: t('bill.buyCustomerQuota'), onClick: () => onBuy('customer') })}
       </div>
 
       {/* 右:渐变套餐卡 */}
