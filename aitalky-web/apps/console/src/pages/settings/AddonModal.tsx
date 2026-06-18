@@ -9,9 +9,12 @@ import {
   type CoinVO, type OrderVO, type RechargeAddressVO, type AddonQuoteVO,
 } from '../../api/billing'
 
+// 加购类型:席位(随订阅,按剩余周期折算)/ 永久包(客户配额/翻译字符/AI Tokens)
+export type AddonResourceType = 'seat' | 'customer' | 'translate_char' | 'ai_tokens'
+
 interface Props {
   open: boolean
-  resourceType: 'seat' | 'customer' | null  // 加购类型
+  resourceType: AddonResourceType | null
   onClose: () => void
   onSuccess: () => void  // 开通成功后刷新概览
 }
@@ -132,11 +135,14 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
   }
   const close = () => { stopAll(); onClose() }
 
+  // 配置态标题:按加购类型
+  const packTitle = resourceType === 'translate_char' ? t('bill.buyTranslate')
+    : resourceType === 'ai_tokens' ? t('bill.buyTokens') : t('bill.buyCustomerQuota')
   const title = paid
     ? t('bill.paySuccess')
     : order
       ? t('bill.payPending')
-      : isSeat ? t('bill.addSeats') : t('bill.buyCustomerQuota')
+      : isSeat ? t('bill.addSeats') : packTitle
 
   return (
     <Modal open={open} onCancel={close} footer={null} width={order && !paid ? 560 : 520} destroyOnClose title={title}>

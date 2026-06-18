@@ -47,7 +47,7 @@ export default function BillingOverview() {
   const [data, setData] = useState<BillingOverviewVO | null>(null)
   const [usage, setUsage] = useState<UsageVO[]>([])
   const [cfg, setCfg] = useState<PublicConfigVO | null>(null)
-  const [addonType, setAddonType] = useState<'seat' | 'customer' | null>(null)
+  const [addonType, setAddonType] = useState<'seat' | 'customer' | 'translate_char' | 'ai_tokens' | null>(null)
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)
 
   const reload = () => {
@@ -60,8 +60,9 @@ export default function BillingOverview() {
   const featLabel = (code: string) => { const k = `bill.feat.${code}`; const l = t(k); return l === k ? code : l }
   const resLabel = (type: string) => { const k = `bill.res.${type}`; const l = t(k); return l === k ? type : l }
 
-  const onBuy = async (type: 'seat' | 'customer') => {
-    if (!data?.subscribed || data.expired) { message.warning(t('bill.subscribeFirst')); return }
+  const onBuy = async (type: 'seat' | 'customer' | 'translate_char' | 'ai_tokens') => {
+    // 席位需有效订阅(随订阅到期);扩展包(客户/翻译/Tokens)为永久包,免订阅可购买
+    if (type === 'seat' && (!data?.subscribed || data.expired)) { message.warning(t('bill.subscribeFirst')); return }
     try {
       const pending = await getPendingOrder()
       if (pending) {
@@ -78,7 +79,6 @@ export default function BillingOverview() {
     } catch { /* 查询失败按无待支付处理 */ }
     setAddonType(type)
   }
-  const comingSoon = () => message.info(t('bill.comingSoon'))
 
   if (!data) return null
   const subscribed = data.subscribed
@@ -111,19 +111,14 @@ export default function BillingOverview() {
     )
   }
 
-  // 扩展服务=拓展包模型(不走套餐配额/无限):不买只有「参数默认值」,买了再加上加购量。
-  //  翻译/Tokens 功能未做→恒展示参数默认值;客户拓展包→真实计量(总量=默认值+加购,可用=总量-已用)。
+  // 扩展服务=永久加量包模型:总量=免费默认值+已购包(后端 /usage 已按此返回 customer/translate_char/ai_tokens)。
+  //  可用=总量-已用(翻译/Tokens 功能未做,已用恒 0;客户=真实客户数)。usage 缺失时回退 defaultVal。
   const extVals = (type: string, defaultVal: number, wan: boolean): { avail: string; total: string } => {
     const fmt = (n: number) => (wan ? fmtWan(n) : String(n))
-    if (type === 'customer') {
-      const u = usageMap.customer
-      const used = u ? u.used : 0
-      // 默认免费额度(100)兜底:未订阅时后端 usage.limit=0,对齐参考展示默认 100(订阅后= 默认+加购)
-      const total = Math.max(u ? u.limit : 0, defaultVal)
-      return { avail: fmt(Math.max(0, total - used)), total: fmt(total) }
-    }
-    const txt = fmt(defaultVal)                    // 翻译/Tokens:恒默认值
-    return { avail: txt, total: txt }
+    const u = usageMap[type]
+    const total = u ? u.limit : defaultVal
+    const used = u ? u.used : 0
+    return { avail: fmt(Math.max(0, total - used)), total: fmt(total) }
   }
 
   const extCard = (cfgItem: { type: string; title: string; unit: string; buyLabel: string; onClick: () => void; defaultVal: number; wan?: boolean }) => {
@@ -159,8 +154,8 @@ export default function BillingOverview() {
         </div>
 
         <div style={{ fontSize: 15, fontWeight: 600, margin: '28px 0 14px' }}>{t('bill.extServices')}</div>
-        {extCard({ type: 'translate_char', title: t('bill.translatePack'), unit: t('bill.unitChar'), buyLabel: t('bill.buyTranslate'), onClick: comingSoon, defaultVal: cfg?.defaultTranslateChar ?? 200, wan: true })}
-        {extCard({ type: 'ai_tokens', title: t('bill.tokensQuota'), unit: t('bill.unitTokens'), buyLabel: t('bill.buyTokens'), onClick: comingSoon, defaultVal: cfg?.defaultAiTokens ?? 4000, wan: true })}
+        {extCard({ type: 'translate_char', title: t('bill.translatePack'), unit: t('bill.unitChar'), buyLabel: t('bill.buyTranslate'), onClick: () => onBuy('translate_char'), defaultVal: cfg?.defaultTranslateChar ?? 200, wan: true })}
+        {extCard({ type: 'ai_tokens', title: t('bill.tokensQuota'), unit: t('bill.unitTokens'), buyLabel: t('bill.buyTokens'), onClick: () => onBuy('ai_tokens'), defaultVal: cfg?.defaultAiTokens ?? 4000, wan: true })}
         {extCard({ type: 'customer', title: t('bill.customerPack'), unit: t('bill.unitCustomer'), buyLabel: t('bill.buyCustomerQuota'), onClick: () => onBuy('customer'), defaultVal: cfg?.defaultCustomer ?? 100 })}
       </div>
 
