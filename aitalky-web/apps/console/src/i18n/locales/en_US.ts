@@ -559,7 +559,12 @@ export default {
     days: '{{n}} days',
     plan: { trial: 'Trial', basic: 'Basic', standard: 'Standard', pro: 'Pro', flagship: 'Flagship', custom: 'Custom' },
     res: { seat: 'Team seats', customer: 'Customer quota', translate_char: 'Translation chars' },
-    feat: { inbox: 'Inbox', messenger: 'Messenger', translate: 'Auto-translate', quickreply: 'Quick replies', group: 'Routing groups', blacklist: 'Blacklist' },
+    feat: {
+      inbox: 'Inbox', messenger: 'Messenger', translate: 'Auto-translate', quickreply: 'Quick replies', group: 'Routing groups', blacklist: 'Blacklist',
+      article: 'Public articles', site: 'App sites', flow: 'Smart flow', domain: 'Domain privatization', dedicated: 'Dedicated support',
+      ai_employee: 'Digital employee', insight: 'Customer insights', marketing: 'Auto marketing',
+      data_private: 'Private data', standalone: 'Standalone system', custom_domain: 'Custom domain', support_247: '24/7 support',
+    },
     orderNo: 'Order No.',
     orderType: 'Type',
     subResource: 'Resource',

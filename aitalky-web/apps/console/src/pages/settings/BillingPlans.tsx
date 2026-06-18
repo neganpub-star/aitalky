@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button, Modal, message, theme } from 'antd'
+import { Button, Modal, Tag, message, theme } from 'antd'
 import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { listPlans, getOverview, getPendingOrder, type PlanVO, type OrderVO } from '../../api/billing'
@@ -8,6 +8,14 @@ import PendingPayModal from './PendingPayModal'
 
 // 套餐档位顶部彩色条(对齐 aitalky:档位越高色越突出)
 const LEVEL_COLORS = ['#9aa0a6', '#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#8c6e4a']
+// 带配额数的功能(公网文章/应用站点):展示 [N] 或 :无限,数量取自套餐配额
+const QUOTA_FEATURES = ['article', 'site']
+// 功能徽章(对齐参考:数字员工=AI 紫,客户洞察/自动营销=New 橙)
+const FEATURE_BADGE: Record<string, { text: string; color: string }> = {
+  ai_employee: { text: 'AI', color: '#722ed1' },
+  insight: { text: 'New', color: '#fa8c16' },
+  marketing: { text: 'New', color: '#fa8c16' },
+}
 
 // 数据管理 → 服务订阅 → 套餐订阅:套餐卡片(对齐 aitalky img-64);只展示现有功能,下单弹窗见第③期
 export default function BillingPlans() {
@@ -22,7 +30,8 @@ export default function BillingPlans() {
   const loadCurrent = () =>
     getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
   useEffect(() => {
-    listPlans().then(setPlans).catch(() => undefined)
+    // 按档位升序(基础→标准→专业→旗舰→定制)
+    listPlans().then((ps) => setPlans([...ps].sort((a, b) => a.level - b.level))).catch(() => undefined)
     loadCurrent()
   }, [])
 
@@ -48,12 +57,18 @@ export default function BillingPlans() {
 
   // 套餐名按 code 走 i18n(后端 name 为中文,英文环境需本地化);无对应 key 回退后端 name
   const planName = (p: PlanVO) => { const k = `bill.plan.${p.code}`; const l = t(k); return l === k ? p.name : l }
-  // 席位数(套餐配额 seat);功能码→标签走 i18n(bill.feat.*),未知码原样
-  const seatOf = (p: PlanVO) => p.quotas.find((q) => q.resourceType === 'seat')
+  // 功能码→标签走 i18n(bill.feat.*),未知码原样
   const featLabel = (code: string) => {
     const k = `bill.feat.${code}`
     const label = t(k)
     return label === k ? code : label
+  }
+  // 带配额数的功能(公网文章/应用站点)后缀:[N] 或 :无限
+  const quotaSuffix = (p: PlanVO, code: string) => {
+    if (!QUOTA_FEATURES.includes(code)) return ''
+    const q = p.quotas.find((x) => x.resourceType === code)
+    if (!q) return ''
+    return q.isUnlimited ? `: ${t('bill.unlimited')}` : `[${q.amount}]`
   }
 
   return (
@@ -64,7 +79,6 @@ export default function BillingPlans() {
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id
           const color = LEVEL_COLORS[p.level] || token.colorPrimary
-          const seat = seatOf(p)
           return (
             <div key={p.id} className="plan-card" style={{
               position: 'relative', width: 300, minHeight: 560, borderRadius: 12, overflow: 'hidden',
@@ -103,19 +117,18 @@ export default function BillingPlans() {
                 </div>
                 {/* 套餐服务(列表左对齐) */}
                 <div style={{ marginTop: 24, fontSize: 13, color: token.colorTextTertiary }}>{t('bill.planService')}</div>
+                {/* 团队席位/翻译为单独购买,不在卡片功能项;公网文章/应用站点带配额数;数字员工/客户洞察/自动营销带徽章 */}
                 <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {seat && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
-                      <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
-                      {t('bill.res.seat')}: {seat.isUnlimited ? t('bill.unlimited') : seat.amount}
-                    </span>
-                  )}
-                  {p.features.map((f) => (
-                    <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
-                      <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
-                      {featLabel(f)}
-                    </span>
-                  ))}
+                  {p.features.map((f) => {
+                    const badge = FEATURE_BADGE[f]
+                    return (
+                      <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
+                        <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
+                        {featLabel(f)}{quotaSuffix(p, f)}
+                        {badge && <Tag color={badge.color} style={{ margin: 0, lineHeight: '16px', fontSize: 11, padding: '0 5px' }}>{badge.text}</Tag>}
+                      </span>
+                    )
+                  })}
                 </div>
               </div>
             </div>

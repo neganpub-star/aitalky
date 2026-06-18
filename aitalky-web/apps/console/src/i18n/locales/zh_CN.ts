@@ -573,7 +573,12 @@ export default {
     days: '{{n}}天',
     plan: { trial: '体验版', basic: '基础版', standard: '标准版', pro: '专业版', flagship: '旗舰版', custom: '定制版' },
     res: { seat: '团队席位', customer: '客户配额', translate_char: '翻译字符' },
-    feat: { inbox: '收件箱', messenger: '信使', translate: '自动翻译', quickreply: '快捷回复', group: '客服分组', blacklist: '黑名单' },
+    feat: {
+      inbox: '收件箱', messenger: '信使', translate: '自动翻译', quickreply: '快捷回复', group: '客服分组', blacklist: '黑名单',
+      article: '公网文章', site: '应用站点', flow: '智能流程', domain: '域名私有化', dedicated: '专属客服',
+      ai_employee: '数字员工', insight: '客户洞察', marketing: '自动营销',
+      data_private: '数据私有', standalone: '独立系统', custom_domain: '自定义域名', support_247: '7x24小时售后',
+    },
     orderNo: '订单编号',
     orderType: '订单类型',
     subResource: '订阅资源',
