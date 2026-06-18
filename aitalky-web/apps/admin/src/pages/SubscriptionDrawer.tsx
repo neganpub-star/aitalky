@@ -10,13 +10,13 @@ interface Props {
 }
 
 const p2 = (n: number) => String(n).padStart(2, '0')
-// Date → 'YYYY-MM-DDTHH:mm:ss'(本地时间,后端 LocalDateTime 解析)
+// Date → 'YYYY-MM-DD HH:mm:ss'(空格分隔,对齐后端统一 LocalDateTime 格式)
 function fmtLocal(d: Date) {
-  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())} ${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
 }
 function fmtDisplay(s: string | null) {
   if (!s) return '--'
-  return s.replace('T', ' ').slice(0, 16)
+  return s.slice(0, 16)
 }
 
 // 后管:查看项目订阅情况+资源用量 + 手动开通试用(选套餐/席位/到期时间)。
@@ -117,7 +117,7 @@ export default function SubscriptionDrawer({ project, onClose }: Props) {
                   style={{ width: '100%' }}
                   showTime={{ format: 'HH:mm' }}
                   format="YYYY-MM-DD HH:mm"
-                  onChange={(_, ds) => setExpire(ds ? String(ds).replace(' ', 'T') + ':00' : '')}
+                  onChange={(_, ds) => setExpire(ds ? `${String(ds)}:00` : '')}
                 />
                 <span style={{ color: '#999', fontSize: 12 }}>
                   {t('sub.expireWillBe')}: {expire ? fmtDisplay(expire) : '--'}
