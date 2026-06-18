@@ -103,8 +103,9 @@ export default function BillingOverview() {
           {used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {unlimited ? t('bill.unlimited') : total}</span>
         </div>
         <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.usedTotal')}</div>
-        {opts.buyable && subscribed && (
-          <Button type="primary" ghost style={{ marginTop: 14 }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
+        {/* 席位卡始终占位「购买席位」按钮(三卡等高);未订阅不能购买→隐藏但保留高度 */}
+        {opts.buyable && (
+          <Button type="primary" ghost style={{ marginTop: 14, visibility: subscribed ? 'visible' : 'hidden' }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
         )}
       </div>
     )
