@@ -138,7 +138,7 @@ export default function BillingOverview() {
             <div><div style={big}>{avail}</div><div style={sub}>{t('bill.avail')}({cfgItem.unit})</div></div>
             <div><div style={big}>{total}</div><div style={sub}>{t('bill.totalQty')}({cfgItem.unit})</div></div>
           </div>
-          <Button type="primary" ghost onClick={cfgItem.onClick}>{cfgItem.buyLabel}</Button>
+          <Button type="primary" ghost style={{ width: 130 }} onClick={cfgItem.onClick}>{cfgItem.buyLabel}</Button>
         </div>
       </div>
     )
