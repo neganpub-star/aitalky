@@ -126,6 +126,7 @@ export interface CreateOrderCmd {
   months: number
   seats: number
   currency: string  // 选定收款网络(USDT-TRC20/ERC20)
+  packs?: Record<string, number>  // 搭售永久加量包份数:{ translate_char, ai_tokens, customer }
 }
 
 // 计费单价(下单实时算合计)

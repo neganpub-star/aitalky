@@ -580,6 +580,7 @@ export default {
     buyTranslate: 'Buy translation',
     buyTokens: 'Buy AI Tokens',
     comingSoon: 'Coming soon',
+    choose: 'Select',
     feat: {
       inbox: 'Inbox', messenger: 'Messenger', translate: 'Auto-translate', quickreply: 'Quick replies', group: 'Routing groups', blacklist: 'Blacklist',
       article: 'Public articles', site: 'App sites', flow: 'Smart flow', domain: 'Domain privatization', dedicated: 'Dedicated support',

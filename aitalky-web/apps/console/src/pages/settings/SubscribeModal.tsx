@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, message, theme,
+  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, message, theme,
 } from 'antd'
 import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
-  listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder, getUsage,
+  listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder, getUsage, getAddonQuote,
   type PlanVO, type CoinVO, type OrderVO, type RechargeAddressVO,
 } from '../../api/billing'
+
+// 订阅单可搭售的永久加量包(对齐参考:翻译/AI Tokens/客户扩展)
+const PACK_DEFS = [
+  { type: 'translate_char', labelKey: 'bill.translatePack', unitKey: 'bill.unitChar', wan: true },
+  { type: 'ai_tokens', labelKey: 'bill.tokensQuota', unitKey: 'bill.unitTokens', wan: true },
+  { type: 'customer', labelKey: 'bill.customerPack', unitKey: 'bill.unitCustomer', wan: false },
+] as const
+// 数量按「万」精简展示(100万字符)
+const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000} 万` : String(n))
 
 interface Props {
   open: boolean
@@ -39,6 +48,9 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const [currency, setCurrency] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  // 搭售加量包:单价/规格(来自报价)+ 已选份数
+  const [packMeta, setPackMeta] = useState<Record<string, { price: number; spec: number }>>({})
+  const [packCounts, setPackCounts] = useState<Record<string, number>>({})
 
   // 待支付态
   const [order, setOrder] = useState<OrderVO | null>(null)
@@ -62,6 +74,13 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     setOrder(null)
     setAddr(null)
     setPaid(false)
+    setPackCounts({})
+    // 拉三个加量包报价(单价/每包规格),供搭售下拉与合计
+    PACK_DEFS.forEach((d) => {
+      getAddonQuote(d.type).then((q) => {
+        setPackMeta((m) => ({ ...m, [d.type]: { price: Number(q.unitPrice) || 0, spec: Number(q.packAmount) || 0 } }))
+      }).catch(() => undefined)
+    })
     listCoins().then((cs) => { setCoins(cs); setCurrency(cs[0]?.currency || '') }).catch(() => undefined)
     getPricing().then((p) => setSeatPrice(Number(p.seatMonthlyPrice))).catch(() => undefined)
     getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
@@ -82,8 +101,9 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   if (!plan) return null
 
   const planName = (() => { const k = `bill.plan.${plan.code}`; const l = t(k); return l === k ? plan.name : l })()
-  // 合计 = 套餐月价×月数 + 加购席位×席位月价×月数
-  const total = Number(plan.monthlyPrice) * months + addonSeats * seatPrice * months
+  // 合计 = 套餐月价×月数 + 加购席位×席位月价×月数 + 搭售加量包(一次性:份数×每包价)
+  const packsTotal = PACK_DEFS.reduce((sum, d) => sum + (packCounts[d.type] || 0) * (packMeta[d.type]?.price || 0), 0)
+  const total = Number(plan.monthlyPrice) * months + addonSeats * seatPrice * months + packsTotal
   const expireDate = (() => {
     const d = new Date(); d.setDate(d.getDate() + 1 + months * 30)
     const p = (n: number) => String(n).padStart(2, '0')
@@ -114,7 +134,9 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     if (!currency) { message.warning(t('bill.selectNetwork')); return }
     setSubmitting(true)
     try {
-      const o = await createOrder({ planId: plan.id, months, seats: addonSeats, currency })
+      const packs: Record<string, number> = {}
+      PACK_DEFS.forEach((d) => { if ((packCounts[d.type] || 0) > 0) packs[d.type] = packCounts[d.type] })
+      const o = await createOrder({ planId: plan.id, months, seats: addonSeats, currency, packs })
       const a = await getAddress(currency)
       setOrder(o); setAddr(a); startWatch(o)
       getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
@@ -181,6 +203,21 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
               <InputNumber min={baseSeat} max={9999} value={seatsTotal} style={{ width: 160 }}
                 onChange={(v) => setSeatsTotal(Number(v) || baseSeat)} />
             </FieldRow>
+            {/* 搭售加量包(对齐参考:翻译/AI Tokens/客户扩展,选份数,合计实时累加) */}
+            {PACK_DEFS.map((d) => {
+              const meta = packMeta[d.type]
+              return (
+                <FieldRow key={d.type} label={t(d.labelKey)} token={token}
+                  hint={meta ? `$${meta.price}/${fmtAmt(meta.spec, d.wan)}${t(d.unitKey)}` : undefined}>
+                  <Select style={{ width: 200 }} allowClear placeholder={t('bill.choose')}
+                    value={packCounts[d.type] || undefined}
+                    onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
+                    options={Array.from({ length: 10 }, (_, i) => i + 1).map((n) => ({
+                      value: n, label: `${fmtAmt(meta ? meta.spec * n : 0, d.wan)}${t(d.unitKey)}`,
+                    }))} />
+                </FieldRow>
+              )
+            })}
             <FieldRow label={t('bill.payMethod')} token={token}>
               <span style={{ color: token.colorSuccess, fontWeight: 600 }}>● {t('bill.payUsdt')}</span>
             </FieldRow>
