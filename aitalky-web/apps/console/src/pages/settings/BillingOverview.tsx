@@ -129,7 +129,7 @@ export default function BillingOverview() {
     const big = { fontSize: 26, fontWeight: 700 as const }
     const sub = { fontSize: 12, color: token.colorTextTertiary }
     return (
-      <div style={{ border: `1px solid ${token.colorBorder}`, borderRadius: 6, padding: '18px 24px', marginBottom: 16 }}>
+      <div style={{ border: `1px solid ${token.colorBorder}`, borderRadius: 6, padding: '28px 24px', marginBottom: 16 }}>
         <div style={{ fontSize: 14, color: token.colorTextSecondary, marginBottom: 12 }}>{cfgItem.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 64 }}>
@@ -150,7 +150,7 @@ export default function BillingOverview() {
         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.overview')}</div>
 
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>{t('bill.resourceUsage')}</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, alignItems: 'stretch' }}>
           {usageCard('seat', { buyable: true })}
           {usageCard('article', {})}
           {usageCard('site', {})}
@@ -163,7 +163,7 @@ export default function BillingOverview() {
       </div>
 
       {/* 右:套餐卡(对齐参考:灰底面板 + 项目头 + 白底卡[蓝渐变头 + 套餐服务圆点列表 + 续费按钮]) */}
-      <div style={{ width: 300, flexShrink: 0 }}>
+      <div style={{ width: 320, flexShrink: 0 }}>
         <div style={{ background: token.colorFillQuaternary, borderRadius: 12, padding: 16 }}>
           {/* 项目信息(LOGO + 名称 + 项目ID),深色文字在灰底上 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
