@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Modal, Tag, message, theme } from 'antd'
-import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
+import { ExclamationCircleFilled } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { listPlans, getOverview, getPendingOrder, getPublicConfig, type PlanVO, type OrderVO } from '../../api/billing'
 import SubscribeModal from './SubscribeModal'
@@ -144,7 +144,7 @@ export default function BillingPlans() {
                     const badge = FEATURE_BADGE[f]
                     return (
                       <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
-                        <CheckOutlined style={{ color: token.colorPrimary, fontSize: 12 }} />
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: token.colorPrimary, flexShrink: 0 }} />
                         {featLabel(f)}{quotaSuffix(p, f)}
                         {badge && <Tag color={badge.color} style={{ margin: 0, lineHeight: '16px', fontSize: 11, padding: '0 5px' }}>{badge.text}</Tag>}
                       </span>
