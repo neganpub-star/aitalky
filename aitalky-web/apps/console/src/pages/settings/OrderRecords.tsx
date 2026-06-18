@@ -25,6 +25,8 @@ const TYPE_KEY: Record<string, string> = {
 const PAGE_SIZE = 10
 // 时间精确到分(对齐现网 2026-06-17 14:35,去掉秒;后端格式 yyyy-MM-dd HH:mm:ss)
 const fmtMin = (s: string | null) => (s ? s.slice(0, 16) : '--')
+// 大数按「万」展示(翻译字符/AI Tokens;quantity 可能是 Long 序列化字符串需 Number)
+const fmtWan = (n: number) => { const v = Number(n) || 0; return v >= 10000 ? `${v / 10000}万` : String(v) }
 
 export default function OrderRecords() {
   const { t } = useTranslation()
@@ -89,8 +91,8 @@ export default function OrderRecords() {
   const resourceText = (r: OrderVO) => {
     if (r.type === 'addon_seat') return `${t('bill.res.seat')}: ${r.seats}`
     if (r.type === 'addon_customer') return `${t('bill.res.customer')}: ${r.quantity}`
-    if (r.type === 'addon_translate') return `${t('bill.res.translate_char')}: ${r.quantity}`
-    if (r.type === 'addon_tokens') return `${t('bill.res.ai_tokens')}: ${r.quantity}`
+    if (r.type === 'addon_translate') return `${t('bill.res.translate_char')}: ${fmtWan(r.quantity)}`
+    if (r.type === 'addon_tokens') return `${t('bill.res.ai_tokens')}: ${fmtWan(r.quantity)}`
     return (
       <span>
         {planLabel(r)}
@@ -114,8 +116,8 @@ export default function OrderRecords() {
         <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => setDetailOrder(r)}>{v}</Button>
       ),
     },
-    { title: t('bill.orderType'), dataIndex: 'type', width: 110, render: (v: string) => t(TYPE_KEY[v] || v) },
-    { title: t('bill.subResource'), width: 180, render: (_, r) => resourceText(r) },
+    { title: t('bill.orderType'), dataIndex: 'type', width: 150, ellipsis: true, render: (v: string) => t(TYPE_KEY[v] || v) },
+    { title: t('bill.subResource'), width: 200, ellipsis: true, render: (_, r) => resourceText(r) },
     { title: t('bill.subPeriod'), width: 100, render: (_, r) => periodText(r) },
     { title: t('bill.amount'), dataIndex: 'amount', width: 120, render: (v: number, r) => `${v} ${r.currency}` },
     {
