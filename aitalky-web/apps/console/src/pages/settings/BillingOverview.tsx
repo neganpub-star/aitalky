@@ -163,7 +163,7 @@ export default function BillingOverview() {
       </div>
 
       {/* 右:套餐卡(对齐参考:灰底面板 + 项目头 + 白底卡[蓝渐变头 + 套餐服务圆点列表 + 续费按钮]) */}
-      <div style={{ width: 320, flexShrink: 0 }}>
+      <div style={{ width: 360, flexShrink: 0 }}>
         <div style={{ background: token.colorFillQuaternary, borderRadius: 12, padding: 16 }}>
           {/* 项目信息(LOGO + 名称 + 项目ID),深色文字在灰底上 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
