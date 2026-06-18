@@ -23,6 +23,17 @@ public class ConfigController {
     public R<PublicConfigVO> publicConfig() {
         return R.ok(new PublicConfigVO(
                 configService.getValue("contact_telegram", ""),
-                configService.getInt("free_trial_days", 15)));
+                configService.getInt("free_trial_days", 15),
+                parseLong(configService.getValue("default_translate_char", "200"), 200),
+                parseLong(configService.getValue("default_ai_tokens", "4000"), 4000),
+                parseLong(configService.getValue("default_customer", "100"), 100)));
+    }
+
+    private static long parseLong(String v, long def) {
+        try {
+            return Long.parseLong(v.trim());
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 }

@@ -133,10 +133,13 @@ export interface PricingVO {
   seatMonthlyPrice: number  // 单席位月价
 }
 
-// 平台公共参数(客服 Telegram、免费体验天数)
+// 平台公共参数(客服 Telegram、免费体验天数、未订阅默认额度)
 export interface PublicConfigVO {
   contactTelegram: string
   freeTrialDays: number
+  defaultTranslateChar: number  // 未订阅默认翻译包(字符)
+  defaultAiTokens: number       // 未订阅默认 AI Tokens
+  defaultCustomer: number       // 未订阅默认客户配额
 }
 
 /** 平台公共参数(套餐订阅页免费体验横幅用) */

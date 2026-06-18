@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Avatar, Button, Empty, Modal, Tag, message, theme } from 'antd'
+import { Avatar, Button, Modal, Tag, message, theme } from 'antd'
 import { CheckOutlined, ExclamationCircleFilled } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  getOverview, getUsage, getPendingOrder,
-  type BillingOverviewVO, type UsageVO, type OrderVO,
+  getOverview, getUsage, getPendingOrder, getPublicConfig,
+  type BillingOverviewVO, type UsageVO, type OrderVO, type PublicConfigVO,
 } from '../../api/billing'
 import { useAppStore } from '../../store/useAppStore'
 import AddonModal from './AddonModal'
@@ -21,9 +21,9 @@ function fmtTime(s: string | null): string {
 // 字符/Tokens 大数按「万」展示(对齐现网 95.59 万)
 const fmtWan = (n: number) => (n >= 10000 ? `${(n / 10000).toFixed(2)} 万` : String(n))
 
-// 数据管理 → 服务订阅 → 概览(对齐现网 img.png):
-//  资源用量(团队席位[可购买]/公网文章/应用站点) + 扩展服务(翻译包/AI Tokens/客户拓展包) + 右侧渐变套餐卡。
-//  真实可购买:席位 + 客户配额;其余(公网文章/应用站点/翻译包/AI Tokens)功能未做,先占位展示,购买提示敬请期待。
+// 数据管理 → 服务订阅 → 概览(对齐现网):资源用量(团队席位/公网文章/应用站点) + 扩展服务(翻译包/AI Tokens/客户拓展包) + 右侧渐变卡。
+//  未订阅也展示:资源用量 0/0,扩展服务展示后管参数的默认免费额度,右卡「暂无订阅+立即订阅」。
+//  真实可购买:席位 + 客户配额;其余为占位(功能未做),购买提示敬请期待。
 export default function BillingOverview() {
   const { t } = useTranslation()
   const { token } = theme.useToken()
@@ -37,19 +37,20 @@ export default function BillingOverview() {
 
   const [data, setData] = useState<BillingOverviewVO | null>(null)
   const [usage, setUsage] = useState<UsageVO[]>([])
+  const [cfg, setCfg] = useState<PublicConfigVO | null>(null)
   const [addonType, setAddonType] = useState<'seat' | 'customer' | null>(null)
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)
 
   const reload = () => {
     getOverview().then(setData).catch(() => undefined)
     getUsage().then(setUsage).catch(() => undefined)
+    getPublicConfig().then(setCfg).catch(() => undefined)
   }
   useEffect(reload, [])
 
   const featLabel = (code: string) => { const k = `bill.feat.${code}`; const l = t(k); return l === k ? code : l }
   const resLabel = (type: string) => { const k = `bill.res.${type}`; const l = t(k); return l === k ? type : l }
 
-  // 加购前置:无有效订阅不能加购;已有待支付订单则提示"去处理",否则打开加购弹窗。
   const onBuy = async (type: 'seat' | 'customer') => {
     if (!data?.subscribed || data.expired) { message.warning(t('bill.subscribeFirst')); return }
     try {
@@ -71,18 +72,7 @@ export default function BillingOverview() {
   const comingSoon = () => message.info(t('bill.comingSoon'))
 
   if (!data) return null
-
-  // 未订阅:空态 + 去订阅
-  if (!data.subscribed) {
-    return (
-      <div>
-        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('bill.overview')}</div>
-        <Empty description={t('bill.notSubscribed')} style={{ paddingTop: 60 }}>
-          <Button type="primary" onClick={() => nav('/settings/billing/plans')}>{t('bill.goSubscribe')}</Button>
-        </Empty>
-      </div>
-    )
-  }
+  const subscribed = data.subscribed
 
   // 配额总量(套餐 quotas;amount 是 Long 序列化字符串,Number 强转) / 真实用量(usage)
   const quotaMap: Record<string, { amount: number; unlimited: boolean }> = {}
@@ -90,13 +80,13 @@ export default function BillingOverview() {
   const usageMap: Record<string, UsageVO> = {}
   usage.forEach((u) => { usageMap[u.resourceType] = u })
 
-  // 资源用量卡(已用/总量):团队席位真实计量可购买;公网文章/应用站点占位(功能未做,已用记 0)
+  // 资源用量卡(已用/总量):未订阅一律 0/0;订阅后席位真实计量可购买,公网文章/应用站点占位
   const usageCard = (type: string, opts: { buyable?: boolean }) => {
     const u = usageMap[type]
     const q = quotaMap[type]
-    const used = u ? u.used : 0
-    const unlimited = u ? u.unlimited : !!q?.unlimited
-    const total = u ? u.limit : (q?.amount ?? 0)
+    const used = subscribed ? (u ? u.used : 0) : 0
+    const unlimited = subscribed ? (u ? u.unlimited : !!q?.unlimited) : false
+    const total = subscribed ? (u ? u.limit : (q?.amount ?? 0)) : 0
     return (
       <div key={type} style={{ flex: '1 1 240px', minWidth: 220, border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 20px' }}>
         <div style={{ fontSize: 14, color: token.colorTextSecondary }}>{resLabel(type)}</div>
@@ -104,42 +94,39 @@ export default function BillingOverview() {
           {used} <span style={{ color: token.colorTextQuaternary, fontWeight: 400 }}>/ {unlimited ? t('bill.unlimited') : total}</span>
         </div>
         <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.usedTotal')}</div>
-        {opts.buyable && (
+        {opts.buyable && subscribed && (
           <Button size="small" style={{ marginTop: 14 }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
         )}
       </div>
     )
   }
 
-  // 扩展服务卡(可用/总量 + 购买):翻译包/AI Tokens 占位(敬请期待),客户拓展包真实加购
-  const extCard = (cfg: {
-    type: string; title: string; unit: string; buyLabel: string
-    onClick: () => void; wan?: boolean; noQuota?: boolean
-  }) => {
-    const u = usageMap[cfg.type]
-    const q = quotaMap[cfg.type]
+  // 扩展服务可用/总量文本:未订阅用参数默认值;订阅后翻译走套餐配额、客户走真实用量、Tokens 占位
+  const extVals = (type: string, defaultVal: number, wan: boolean): { avail: string; total: string } => {
+    const fmt = (n: number) => (n < 0 ? t('bill.unlimited') : wan ? fmtWan(n) : String(n))
+    if (!subscribed) { const txt = fmt(defaultVal); return { avail: txt, total: txt } }
+    const u = usageMap[type]
+    const q = quotaMap[type]
+    if (!u && !q) return { avail: '--', total: '--' }   // 订阅后无该配额(如 AI Tokens)
     const unlimited = u ? u.unlimited : !!q?.unlimited
     const total = u ? u.limit : (q?.amount ?? 0)
     const used = u ? u.used : 0
-    const avail = unlimited ? -1 : Math.max(0, total - used)
-    const show = (n: number) => (n < 0 ? t('bill.unlimited') : cfg.wan ? fmtWan(n) : String(n))
+    return { avail: fmt(unlimited ? -1 : Math.max(0, total - used)), total: fmt(unlimited ? -1 : total) }
+  }
+
+  const extCard = (cfgItem: { type: string; title: string; unit: string; buyLabel: string; onClick: () => void; defaultVal: number; wan?: boolean }) => {
+    const { avail, total } = extVals(cfgItem.type, cfgItem.defaultVal, !!cfgItem.wan)
     const big = { fontSize: 26, fontWeight: 700 as const }
     const sub = { fontSize: 12, color: token.colorTextTertiary }
     return (
       <div style={{ border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 10, padding: '18px 24px', marginBottom: 16 }}>
-        <div style={{ fontSize: 14, color: token.colorTextSecondary, marginBottom: 12 }}>{cfg.title}</div>
+        <div style={{ fontSize: 14, color: token.colorTextSecondary, marginBottom: 12 }}>{cfgItem.title}</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 64 }}>
-            <div>
-              <div style={big}>{cfg.noQuota ? '--' : show(avail)}</div>
-              <div style={sub}>{t('bill.avail')}({cfg.unit})</div>
-            </div>
-            <div>
-              <div style={big}>{cfg.noQuota ? '--' : show(unlimited ? -1 : total)}</div>
-              <div style={sub}>{t('bill.totalQty')}({cfg.unit})</div>
-            </div>
+            <div><div style={big}>{avail}</div><div style={sub}>{t('bill.avail')}({cfgItem.unit})</div></div>
+            <div><div style={big}>{total}</div><div style={sub}>{t('bill.totalQty')}({cfgItem.unit})</div></div>
           </div>
-          <Button onClick={cfg.onClick}>{cfg.buyLabel}</Button>
+          <Button onClick={cfgItem.onClick}>{cfgItem.buyLabel}</Button>
         </div>
       </div>
     )
@@ -160,12 +147,12 @@ export default function BillingOverview() {
         </div>
 
         <div style={{ fontSize: 15, fontWeight: 600, margin: '28px 0 14px' }}>{t('bill.extServices')}</div>
-        {extCard({ type: 'translate_char', title: t('bill.translatePack'), unit: t('bill.unitChar'), buyLabel: t('bill.buyTranslate'), onClick: comingSoon, wan: true })}
-        {extCard({ type: 'ai_tokens', title: t('bill.tokensQuota'), unit: t('bill.unitTokens'), buyLabel: t('bill.buyTokens'), onClick: comingSoon, wan: true, noQuota: true })}
-        {extCard({ type: 'customer', title: t('bill.customerPack'), unit: t('bill.unitCustomer'), buyLabel: t('bill.buyCustomerQuota'), onClick: () => onBuy('customer') })}
+        {extCard({ type: 'translate_char', title: t('bill.translatePack'), unit: t('bill.unitChar'), buyLabel: t('bill.buyTranslate'), onClick: comingSoon, defaultVal: cfg?.defaultTranslateChar ?? 200, wan: true })}
+        {extCard({ type: 'ai_tokens', title: t('bill.tokensQuota'), unit: t('bill.unitTokens'), buyLabel: t('bill.buyTokens'), onClick: comingSoon, defaultVal: cfg?.defaultAiTokens ?? 4000, wan: true })}
+        {extCard({ type: 'customer', title: t('bill.customerPack'), unit: t('bill.unitCustomer'), buyLabel: t('bill.buyCustomerQuota'), onClick: () => onBuy('customer'), defaultVal: cfg?.defaultCustomer ?? 100 })}
       </div>
 
-      {/* 右:渐变套餐卡 */}
+      {/* 右:渐变卡(订阅信息 / 未订阅引导) */}
       <div style={{ width: 300, flexShrink: 0 }}>
         <div style={{
           borderRadius: 14, padding: 22, color: '#fff',
@@ -183,29 +170,42 @@ export default function BillingOverview() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 20, fontWeight: 700 }}>
-              {data.planCode && t(`bill.plan.${data.planCode}`) !== `bill.plan.${data.planCode}` ? t(`bill.plan.${data.planCode}`) : data.planName}
-            </span>
-            {data.expired
-              ? <Tag color="error" style={{ margin: 0 }}>{t('bill.expired')}</Tag>
-              : <Tag color="success" style={{ margin: 0 }}>{t('bill.subscribing')}</Tag>}
-          </div>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
-            {t('bill.expireTime')}: {fmtTime(data.expireTime)}
-          </div>
-          <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 12px' }}>{t('bill.planService')}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {data.features.map((f) => (
-              <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                <CheckOutlined style={{ fontSize: 12 }} />{featLabel(f)}
-              </span>
-            ))}
-          </div>
-          <Button block style={{ marginTop: 22, background: '#fff', color: '#1d4ed8', fontWeight: 600, border: 'none' }}
-            onClick={() => nav('/settings/billing/plans')}>
-            {t('bill.renewUpgrade')}
-          </Button>
+          {subscribed ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20, fontWeight: 700 }}>
+                  {data.planCode && t(`bill.plan.${data.planCode}`) !== `bill.plan.${data.planCode}` ? t(`bill.plan.${data.planCode}`) : data.planName}
+                </span>
+                {data.expired
+                  ? <Tag color="error" style={{ margin: 0 }}>{t('bill.expired')}</Tag>
+                  : <Tag color="success" style={{ margin: 0 }}>{t('bill.subscribing')}</Tag>}
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.85, marginTop: 10 }}>
+                {t('bill.expireTime')}: {fmtTime(data.expireTime)}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, margin: '20px 0 12px' }}>{t('bill.planService')}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+                {data.features.map((f) => (
+                  <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                    <CheckOutlined style={{ fontSize: 12 }} />{featLabel(f)}
+                  </span>
+                ))}
+              </div>
+              <Button block style={{ marginTop: 22, background: '#fff', color: '#1d4ed8', fontWeight: 600, border: 'none' }}
+                onClick={() => nav('/settings/billing/plans')}>
+                {t('bill.renewUpgrade')}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{t('bill.noSubTitle')}</div>
+              <div style={{ fontSize: 13, opacity: 0.9, margin: '14px 0 110px', lineHeight: 1.6 }}>{t('bill.noSubDesc')}</div>
+              <Button block style={{ background: '#fff', color: '#1d4ed8', fontWeight: 600, border: 'none' }}
+                onClick={() => nav('/settings/billing/plans')}>
+                {t('bill.subscribeNow')}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
