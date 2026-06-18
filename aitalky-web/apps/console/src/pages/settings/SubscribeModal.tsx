@@ -169,7 +169,8 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const title = paid ? t('bill.paySuccess') : order ? t('bill.payPending') : t('bill.subscribeTitle')
 
   return (
-    <Modal open={open} onCancel={close} footer={null} width={order && !paid ? 560 : 720} destroyOnClose title={title}>
+    <Modal open={open} onCancel={close} footer={null} width={order && !paid ? 560 : 720} destroyOnClose
+      title={paid || order ? title : undefined}>
       {paid ? (
         // 开通成功
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -200,6 +201,8 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
+            {/* 标题放右侧表单区顶部(对齐参考:左侧灰面板从顶端独立开始) */}
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 18 }}>{t('bill.subscribeTitle')}</div>
             <FieldRow label={t('bill.subPeriod')} token={token}>
               <Stepper value={months} min={minMonths} max={120} onChange={setMonths} />
             </FieldRow>
@@ -300,8 +303,8 @@ function Stepper({ value, min, max, onChange }: {
   return (
     <Space.Compact style={{ width: CTRL_W }}>
       <Button style={{ width: 36, flexShrink: 0 }} icon={<MinusOutlined />} disabled={value <= min} onClick={() => onChange(clamp(value - 1))} />
-      <InputNumber min={min} max={max} value={value} controls={false}
-        style={{ flex: 1, width: '100%', textAlign: 'center' }}
+      <InputNumber min={min} max={max} value={value} controls={false} className="sub-stepper-num"
+        style={{ flex: 1, width: '100%' }}
         onChange={(v) => onChange(clamp(Number(v) || min))} />
       <Button style={{ width: 36, flexShrink: 0 }} icon={<PlusOutlined />} disabled={value >= max} onClick={() => onChange(clamp(value + 1))} />
     </Space.Compact>

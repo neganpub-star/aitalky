@@ -39,3 +39,8 @@ body {
   cursor: pointer;
   max-width: 100%;
 }
+
+/* 订阅弹窗步进器:数字居中(InputNumber 内部 input) */
+.sub-stepper-num .ant-input-number-input {
+  text-align: center;
+}
