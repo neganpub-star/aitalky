@@ -24,13 +24,18 @@ export default function BillingPlans() {
   const [modal, modalCtx] = Modal.useModal()
   const [plans, setPlans] = useState<PlanVO[]>([])
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null)
+  const [currentLevel, setCurrentLevel] = useState<number | null>(null)  // 当前订阅档位(有效订阅时):低于此档不可订(只能续费/升级)
   const [subPlan, setSubPlan] = useState<PlanVO | null>(null)  // 下单弹窗当前套餐
   const [payOrder, setPayOrder] = useState<OrderVO | null>(null)  // 待处理的已有待支付订单
   const [tgUrl, setTgUrl] = useState('')        // 客服 Telegram(后管参数管理配)
   const [trialDays, setTrialDays] = useState(15) // 免费体验天数
 
   const loadCurrent = () =>
-    getOverview().then((o) => setCurrentPlanId(o.subscribed ? o.planId : null)).catch(() => undefined)
+    getOverview().then((o) => {
+      const active = o.subscribed && !o.expired
+      setCurrentPlanId(active ? o.planId : null)
+      setCurrentLevel(active ? o.planLevel : null)
+    }).catch(() => undefined)
   useEffect(() => {
     // 按档位升序(基础→标准→专业→旗舰→定制)
     listPlans().then((ps) => setPlans([...ps].sort((a, b) => a.level - b.level))).catch(() => undefined)
@@ -99,6 +104,8 @@ export default function BillingPlans() {
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginTop: 80 }}>
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id
+          // 比当前订阅档位低的套餐不可订(只能续费当前/升级更高档);定制版始终可联系客服
+          const isLower = currentLevel != null && !p.isCustom && p.level < currentLevel
           const color = LEVEL_COLORS[p.level] || token.colorPrimary
           return (
             <div key={p.id} className="plan-card" style={{
@@ -132,8 +139,9 @@ export default function BillingPlans() {
                   </div>
                   {/* 订阅/续费按钮(下单弹窗第③期;本期占位提示) */}
                   <Button size="large" type={isCurrent ? 'primary' : 'default'} block
+                    disabled={isLower}
                     onClick={() => onSubscribe(p)}>
-                    {p.isCustom ? t('bill.customPrice') : isCurrent ? t('bill.renewUpgrade') : t('bill.subscribe')}
+                    {p.isCustom ? t('bill.contactService') : isCurrent ? t('bill.renewUpgrade') : t('bill.subscribe')}
                   </Button>
                 </div>
                 {/* 套餐服务(列表左对齐) */}

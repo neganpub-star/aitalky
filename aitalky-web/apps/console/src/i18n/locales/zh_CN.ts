@@ -560,6 +560,7 @@ export default {
     custom: '定制版',
     customDeploy: '私有化部署',
     customPrice: '费用另议',
+    contactService: '联系客服',
     notSubscribed: '当前项目未订阅套餐',
     goSubscribe: '前往订阅',
     noSubTitle: '暂无订阅',

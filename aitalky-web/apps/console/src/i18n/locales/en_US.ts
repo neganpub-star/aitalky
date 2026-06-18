@@ -546,6 +546,7 @@ export default {
     custom: 'Custom',
     customDeploy: 'On-premise',
     customPrice: 'Contact us',
+    contactService: 'Contact us',
     notSubscribed: 'No active subscription',
     goSubscribe: 'Subscribe now',
     noSubTitle: 'No subscription',
