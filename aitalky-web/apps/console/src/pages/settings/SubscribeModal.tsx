@@ -169,7 +169,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const title = paid ? t('bill.paySuccess') : order ? t('bill.payPending') : t('bill.subscribeTitle')
 
   return (
-    <Modal open={open} onCancel={close} footer={null} width={order && !paid ? 560 : 720} destroyOnClose
+    <Modal open={open} onCancel={close} footer={null} width={order && !paid ? 560 : 800} destroyOnClose
       title={paid || order ? title : undefined}>
       {paid ? (
         // 开通成功
