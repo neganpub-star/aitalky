@@ -104,7 +104,7 @@ export default function BillingOverview() {
         </div>
         <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{t('bill.usedTotal')}</div>
         {opts.buyable && subscribed && (
-          <Button size="small" style={{ marginTop: 14 }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
+          <Button type="primary" ghost style={{ marginTop: 14 }} onClick={() => onBuy('seat')}>{t('bill.buySeats')}</Button>
         )}
       </div>
     )
@@ -136,7 +136,7 @@ export default function BillingOverview() {
             <div><div style={big}>{avail}</div><div style={sub}>{t('bill.avail')}({cfgItem.unit})</div></div>
             <div><div style={big}>{total}</div><div style={sub}>{t('bill.totalQty')}({cfgItem.unit})</div></div>
           </div>
-          <Button onClick={cfgItem.onClick}>{cfgItem.buyLabel}</Button>
+          <Button type="primary" ghost onClick={cfgItem.onClick}>{cfgItem.buyLabel}</Button>
         </div>
       </div>
     )
