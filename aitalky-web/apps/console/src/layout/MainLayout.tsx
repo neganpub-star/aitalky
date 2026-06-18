@@ -15,6 +15,7 @@ import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
 import { wsClient } from '../ws/client'
 import { getPendingInvites, getProfile, updateWorkStatus, type PendingInviteVO } from '../api/account'
+import { getOverview } from '../api/billing'
 import { fetchLanguages } from '../api/language'
 import { getConversationCounts } from '../api/conversation'
 import { setLanguageDict } from '../constants/languages'
@@ -85,6 +86,20 @@ export default function MainLayout() {
   useEffect(() => {
     getPendingInvites().then(setPendingInvites).catch(() => {})
   }, [])
+
+  // 订阅门禁:项目无有效订阅(未订阅/已到期)时,工作台功能区被遮罩挡住,引导前往订阅。
+  // null=加载中(不闪烁);设置页可正常进(用于订阅),头像菜单始终可点。
+  const [subActive, setSubActive] = useState<boolean | null>(null)
+  const [subExpired, setSubExpired] = useState(false)
+  const isSettingsRoute = loc.pathname.startsWith('/settings')
+  // 进入非设置路由时刷新订阅状态(从订阅页订阅成功返回即解除门禁)
+  useEffect(() => {
+    if (isSettingsRoute) return
+    getOverview()
+      .then((o) => { setSubActive(o.subscribed && !o.expired); setSubExpired(o.expired) })
+      .catch(() => setSubActive(true)) // 查询失败不误挡,放行
+  }, [isSettingsRoute])
+  const gateBlocked = subActive === false && !isSettingsRoute
 
   // 切换工作状态:乐观更新 + 落库;失败回滚
   const changeWork = (on: boolean) => {
@@ -272,8 +287,45 @@ export default function MainLayout() {
         </div>
       </div>
 
-      <div style={styles.content}>
+      <div style={{ ...styles.content, position: 'relative' }}>
         <Outlet />
+        {/* 订阅门禁遮罩:仅盖内容区(图标栏/头像在遮罩外仍可点);设置页不挡(可去订阅) */}
+        {gateBlocked && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            background: token.colorBgLayout,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{
+              display: 'flex', width: 640, maxWidth: '90%', borderRadius: 16, overflow: 'hidden',
+              boxShadow: token.boxShadowSecondary, background: token.colorBgContainer,
+            }}>
+              {/* 左:插画块 */}
+              <div style={{
+                width: 320, background: 'linear-gradient(135deg, #e8f0ff 0%, #d6e6ff 100%)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32,
+              }}>
+                <InboxOutlined style={{ fontSize: 96, color: '#9cc0ff' }} />
+              </div>
+              {/* 右:文案 + 前往订阅 */}
+              <div style={{ flex: 1, padding: '48px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.5, color: token.colorText, whiteSpace: 'pre-line' }}>
+                  {subExpired ? t('bill.gateExpiredTitle') : t('bill.gateTitle')}
+                </div>
+                <button onClick={() => nav('/settings/billing/plans')} style={{
+                  marginTop: 28, alignSelf: 'flex-start', border: 'none', cursor: 'pointer',
+                  background: token.colorPrimary, color: '#fff', fontSize: 15, fontWeight: 500,
+                  padding: '10px 28px', borderRadius: 8,
+                }}>
+                  {t('bill.goSubscribe')}
+                </button>
+                <div style={{ marginTop: 18, fontSize: 13, color: token.colorTextTertiary }}>
+                  {t('bill.gateDesc')}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
