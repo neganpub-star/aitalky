@@ -32,6 +32,8 @@ public class BilOrder extends BaseEntity {
     private Integer seats;
     /** 客户配额加购:新增配额总数(套餐/席位单为0) */
     private Integer quantity;
+    /** 订阅/续费单搭售的加量包(resourceType:包数,逗号分隔;独立单/无搭售为空),核销时一并发放 */
+    private String addonPacks;
     /** 席位加购计价周期=下单时剩余天数(套餐/客户单为0) */
     private Integer periodDays;
     private BigDecimal amount;

@@ -37,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -112,7 +113,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
         BigDecimal monthly = plan.monthlyPrice().add(seatUnit.multiply(BigDecimal.valueOf(seats)));
-        BigDecimal amount = monthly.multiply(BigDecimal.valueOf(months));
+        // 合计 = (套餐+席位)×月数 + 搭售加量包(一次性);包份数序列化留待核销发放
+        String addonPacks = buildAddonPacks(cmd.packs());
+        BigDecimal amount = monthly.multiply(BigDecimal.valueOf(months)).add(addonPacksAmount(cmd.packs()));
 
         String payCurrency = requireCurrency(cmd.currency());
         String type = decideType(projectId, plan.id());
@@ -129,6 +132,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             order.setMonths(months);
             order.setSeats(seats);
             order.setQuantity(0);
+            order.setAddonPacks(addonPacks);
             order.setPeriodDays(0);
             order.setAmount(amount);
             order.setCurrency("USDT");
@@ -292,6 +296,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     private void activateSubscription(BilOrder order) {
         Long projectId = order.getProjectId();
         String type = order.getType();
+        // 订阅/续费/升级单搭售的永久加量包(若有)先发放(与订阅状态无关)
+        grantBundledPacks(projectId, order);
         // 加购:只加配额、不改套餐/到期日
         if (type != null && type.startsWith("addon_")) {
             if ("addon_seat".equals(type)) {
@@ -412,6 +418,73 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 .orElse(BigDecimal.ZERO);
     }
 
+    /** 搭售加量包合计金额 = Σ 每包价 × 包数;校验类型/上架 */
+    private BigDecimal addonPacksAmount(Map<String, Integer> packs) {
+        if (packs == null || packs.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (Map.Entry<String, Integer> e : packs.entrySet()) {
+            int cnt = e.getValue() == null ? 0 : e.getValue();
+            if (cnt <= 0) {
+                continue;
+            }
+            if (!PACK_TYPES.contains(e.getKey())) {
+                throw new BizException(ResultCode.PARAM_INVALID);
+            }
+            AddonVO pack = packOf(e.getKey());
+            if (pack == null) {
+                throw new BizException(ResultCode.BILLING_ADDON_UNAVAILABLE);
+            }
+            sum = sum.add(pack.price().multiply(BigDecimal.valueOf(cnt)));
+        }
+        return sum;
+    }
+
+    /** 搭售加量包序列化 resourceType:包数,逗号分隔;无则 null */
+    private String buildAddonPacks(Map<String, Integer> packs) {
+        if (packs == null || packs.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Integer> e : packs.entrySet()) {
+            int cnt = e.getValue() == null ? 0 : e.getValue();
+            if (cnt <= 0) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append(e.getKey()).append(":").append(cnt);
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
+
+    /** 发放订阅/续费单搭售的加量包(永久,核销内调) */
+    private void grantBundledPacks(Long projectId, BilOrder order) {
+        String packs = order.getAddonPacks();
+        if (packs == null || packs.isBlank()) {
+            return;
+        }
+        for (String seg : packs.split(",")) {
+            String[] kv = seg.split(":");
+            if (kv.length != 2) {
+                continue;
+            }
+            String resourceType = kv[0].trim();
+            int cnt;
+            try {
+                cnt = Integer.parseInt(kv[1].trim());
+            } catch (NumberFormatException ex) {
+                continue;
+            }
+            AddonVO pack = packOf(resourceType);
+            if (pack != null && cnt > 0) {
+                quotaService.grantPack(projectId, resourceType, pack.specAmount() * (long) cnt);
+            }
+        }
+    }
+
     /** 指定资源类型上架的加量包(取第一条);无返回 null */
     private AddonVO packOf(String resourceType) {
         return addonService.list().stream()
@@ -501,7 +574,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
                 String.valueOf(o.getSeats()), String.valueOf(o.getPlanId()),
                 String.valueOf(o.getType()), String.valueOf(o.getResourceType()),
                 String.valueOf(o.getQuantity()), String.valueOf(o.getPeriodDays()),
-                String.valueOf(o.getPayCurrency()));
+                String.valueOf(o.getPayCurrency()), String.valueOf(o.getAddonPacks()));
         return HmacUtil.hmacSha256Hex(properties.signKey(), data);
     }
 
@@ -512,7 +585,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     private OrderVO toVO(BilOrder o) {
         return new OrderVO(o.getId(), o.getOrderNo(), o.getType(), o.getResourceType(), o.getPlanId(), o.getPlanName(),
-                o.getMonths(), o.getSeats(), o.getQuantity(), o.getPeriodDays(), o.getAmount(), o.getCurrency(), o.getPayCurrency(), o.getStatus(),
+                o.getMonths(), o.getSeats(), o.getQuantity(), o.getAddonPacks(), o.getPeriodDays(), o.getAmount(), o.getCurrency(), o.getPayCurrency(), o.getStatus(),
                 o.getExpireTime(), o.getPaidTime(), o.getCreateTime());
     }
 }
