@@ -16,6 +16,8 @@ const PACK_DEFS = [
   { type: 'ai_tokens', labelKey: 'bill.tokensPackName', perKey: 'bill.perTokens', unitKey: 'bill.unitTokens', wan: true },
   { type: 'customer', labelKey: 'bill.customerPackName', perKey: 'bill.perCustomer', unitKey: 'bill.unitCustomer', wan: false },
 ] as const
+// 配置态右侧控件统一宽度(步进器/下拉等宽,对齐参考)
+const CTRL_W = 200
 // 数量按「万」精简展示(100万字符,无空格对齐参考)
 const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000}万` : String(n))
 // 加量包可选档位(包数倍数,对齐参考:100万/200万/500万/1000万/5000万)
@@ -184,9 +186,13 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 13 }}>
               {plan.features.map((f) => {
                 const k = `bill.feat.${f}`; const l = t(k)
+                // 带配额数的功能(公网文章/应用站点)拼上数量 [N](对齐参考)
+                const q = ['article', 'site'].includes(f) ? plan.quotas.find((x) => x.resourceType === f) : undefined
+                const sfx = q ? `[${q.isUnlimited === 1 ? t('bill.unlimited') : Number(q.amount)}]` : ''
                 return (
                   <span key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CheckCircleFilled style={{ color: token.colorPrimary, fontSize: 12 }} />{l === k ? f : l}
+                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: token.colorPrimary, flexShrink: 0 }} />
+                    {l === k ? f : l}{sfx}
                   </span>
                 )
               })}
@@ -210,12 +216,15 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
               return (
                 <FieldRow key={d.type} label={t(d.labelKey)} token={token}
                   hint={meta ? `$${meta.price}/${t(d.perKey)}` : undefined}>
-                  <Select style={{ width: 200 }} allowClear placeholder={t('bill.choose')}
-                    value={packCounts[d.type] || undefined}
-                    onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
-                    options={PACK_MULTIPLES.map((n) => ({
-                      value: n, label: `${fmtAmt(meta ? meta.spec * n : 0, d.wan)}${t(d.unitKey)}`,
-                    }))} />
+                  {/* 左对齐容器:抵消 FieldRow 右列的 textAlign:right,让「请选择」靠左(对齐参考) */}
+                  <div style={{ textAlign: 'left' }}>
+                    <Select style={{ width: CTRL_W }} allowClear placeholder={t('bill.choose')}
+                      value={packCounts[d.type] || undefined}
+                      onChange={(v) => setPackCounts((c) => ({ ...c, [d.type]: Number(v) || 0 }))}
+                      options={PACK_MULTIPLES.map((n) => ({
+                        value: n, label: `${fmtAmt(meta ? meta.spec * n : 0, d.wan)}${t(d.unitKey)}`,
+                      }))} />
+                  </div>
                 </FieldRow>
               )
             })}
@@ -289,12 +298,12 @@ function Stepper({ value, min, max, onChange }: {
 }) {
   const clamp = (v: number) => Math.min(max, Math.max(min, v))
   return (
-    <Space.Compact>
-      <Button icon={<MinusOutlined />} disabled={value <= min} onClick={() => onChange(clamp(value - 1))} />
+    <Space.Compact style={{ width: CTRL_W }}>
+      <Button style={{ width: 36, flexShrink: 0 }} icon={<MinusOutlined />} disabled={value <= min} onClick={() => onChange(clamp(value - 1))} />
       <InputNumber min={min} max={max} value={value} controls={false}
-        style={{ width: 72, textAlign: 'center' }}
+        style={{ flex: 1, width: '100%', textAlign: 'center' }}
         onChange={(v) => onChange(clamp(Number(v) || min))} />
-      <Button icon={<PlusOutlined />} disabled={value >= max} onClick={() => onChange(clamp(value + 1))} />
+      <Button style={{ width: 36, flexShrink: 0 }} icon={<PlusOutlined />} disabled={value >= max} onClick={() => onChange(clamp(value + 1))} />
     </Space.Compact>
   )
 }
