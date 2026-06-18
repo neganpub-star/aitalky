@@ -15,6 +15,8 @@ public record AdminProjectVO(
         Integer isPrivate,
         Integer status,
         Integer memberCount,
+        String planName,        // 当前订阅套餐名(无订阅=null)
+        Boolean subExpired,     // 订阅是否已过期(无订阅=null)
         LocalDateTime createTime
 ) {
 }

@@ -46,6 +46,12 @@ export default function Projects() {
       ),
     },
     { title: t('projects.owner'), dataIndex: 'ownerEmail', render: (v) => v || '-' },
+    {
+      title: t('projects.plan'), dataIndex: 'planName', width: 120,
+      render: (v: string | null, r) => (v
+        ? <Tag color={r.subExpired ? 'error' : 'blue'}>{v}{r.subExpired ? `(${t('projects.expired')})` : ''}</Tag>
+        : <span style={{ color: '#999' }}>{t('projects.noPlan')}</span>),
+    },
     { title: t('projects.members'), dataIndex: 'memberCount', width: 90 },
     { title: t('projects.site'), dataIndex: 'site', width: 80, render: (v) => v || '-' },
     {

@@ -1,5 +1,7 @@
 package com.aitalky.identity.service.impl;
 
+import com.aitalky.billing.entity.BilSubscription;
+import com.aitalky.billing.service.BillingService;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
@@ -43,6 +45,7 @@ public class AdminViewServiceImpl implements AdminViewService {
     private final IdProjectMapper projectMapper;
     private final IdMemberMapper memberMapper;
     private final IdRoleMapper roleMapper;
+    private final BillingService billingService;
 
     @Override
     public PageResult<AdminAccountVO> pageAccounts(AdminAccountQuery q) {
@@ -111,11 +114,19 @@ public class AdminViewServiceImpl implements AdminViewService {
         List<IdProject> records = page.getRecords();
         Map<Long, String> ownerEmailMap = batchAccountEmail(records.stream().map(IdProject::getOwnerAccountId).toList());
         Map<Long, Long> memberCountMap = batchMemberCount(records.stream().map(IdProject::getId).toList());
-        List<AdminProjectVO> vos = records.stream().map(p -> new AdminProjectVO(
-                p.getId(), p.getName(), p.getAppId(), p.getOwnerAccountId(),
-                ownerEmailMap.get(p.getOwnerAccountId()), p.getSite(), p.getIsPrivate(), p.getStatus(),
-                memberCountMap.getOrDefault(p.getId(), 0L).intValue(), p.getCreateTime()
-        )).toList();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        List<AdminProjectVO> vos = records.stream().map(p -> {
+            // 当前订阅套餐名 + 是否过期(无订阅则均为 null)
+            BilSubscription sub = billingService.getSubscription(p.getId());
+            String planName = sub == null ? null : sub.getPlanName();
+            Boolean expired = sub == null ? null
+                    : (sub.getStatus() != null && sub.getStatus() != 1)
+                      || (sub.getExpireTime() != null && sub.getExpireTime().isBefore(now));
+            return new AdminProjectVO(
+                    p.getId(), p.getName(), p.getAppId(), p.getOwnerAccountId(),
+                    ownerEmailMap.get(p.getOwnerAccountId()), p.getSite(), p.getIsPrivate(), p.getStatus(),
+                    memberCountMap.getOrDefault(p.getId(), 0L).intValue(), planName, expired, p.getCreateTime());
+        }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
     }
 

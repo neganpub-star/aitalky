@@ -64,6 +64,8 @@ export interface AdminProjectVO {
   isPrivate?: number
   status: number
   memberCount: number
+  planName?: string | null   // 当前订阅套餐名(无订阅=null)
+  subExpired?: boolean | null // 订阅是否已过期
   createTime?: string
 }
 
