@@ -5,7 +5,7 @@ import {
 import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
-  listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
+  listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder, getUsage,
   type PlanVO, type CoinVO, type OrderVO, type RechargeAddressVO,
 } from '../../api/billing'
 
@@ -65,6 +65,11 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
     listCoins().then((cs) => { setCoins(cs); setCurrency(cs[0]?.currency || '') }).catch(() => undefined)
     getPricing().then((p) => setSeatPrice(Number(p.seatMonthlyPrice))).catch(() => undefined)
     getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
+    // 续费/升级:默认带出当前总席位(套餐自带+已加购),避免续费时把加购席位丢掉(对齐参考)
+    getUsage().then((us) => {
+      const seat = us.find((u) => u.resourceType === 'seat')
+      if (seat && !seat.unlimited && seat.limit > baseSeat) setSeatsTotal(seat.limit)
+    }).catch(() => undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, plan?.id])
 
