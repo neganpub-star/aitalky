@@ -68,6 +68,10 @@ export default {
     roles: '角色管理',
     group: '平台管理',
     group2: '运营配置',
+    gOps: '运营管理',
+    gCatalog: '订阅配置',
+    gSystem: '系统设置',
+    gAccess: '权限管理',
   },
   orders: {
     orderNo: '订单编号',

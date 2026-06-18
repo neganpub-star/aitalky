@@ -68,6 +68,10 @@ export default {
     roles: 'Roles',
     group: 'Platform',
     group2: 'Operations',
+    gOps: 'Operations',
+    gCatalog: 'Subscription',
+    gSystem: 'System',
+    gAccess: 'Access',
   },
   orders: {
     orderNo: 'Order No.',

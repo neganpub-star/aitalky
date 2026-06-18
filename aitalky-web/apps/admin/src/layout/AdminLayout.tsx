@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Layout, Menu, Avatar, Dropdown, Breadcrumb, Tooltip, theme } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   DashboardOutlined, UserOutlined, ProjectOutlined, GiftOutlined,
   AppstoreOutlined, FileTextOutlined, TranslationOutlined,
@@ -50,26 +51,42 @@ export default function AdminLayout() {
     root.style.setProperty('--row-hover', token.colorFillSecondary)
   }, [token.colorBgLayout, token.colorFillAlter, token.colorFillSecondary])
 
-  // 菜单项(perm 为空=始终显示)
+  // 菜单项(perm 为空=始终显示;group 为空=顶层不分组)
   const allItems = useMemo(() => [
-    { key: '/dashboard', icon: <DashboardOutlined />, label: t('nav.dashboard'), perm: '' },
-    { key: '/users', icon: <UserOutlined />, label: t('nav.users'), perm: 'users' },
-    { key: '/projects', icon: <ProjectOutlined />, label: t('nav.projects'), perm: 'tenants' },
-    { key: '/plans', icon: <GiftOutlined />, label: t('nav.plans'), perm: 'plans' },
-    { key: '/addons', icon: <AppstoreOutlined />, label: t('nav.addons'), perm: 'addons' },
-    { key: '/orders', icon: <ProfileOutlined />, label: t('nav.orders'), perm: 'orders' },
-    { key: '/coins', icon: <WalletOutlined />, label: t('nav.coins'), perm: 'orders' },
-    { key: '/configs', icon: <ControlOutlined />, label: t('nav.params'), perm: 'config' },
-    { key: '/agreements', icon: <FileTextOutlined />, label: t('nav.agreements'), perm: 'agreements' },
-    { key: '/languages', icon: <TranslationOutlined />, label: t('nav.languages'), perm: 'dict' },
-    { key: '/admins', icon: <TeamOutlined />, label: t('nav.admins'), perm: 'admins' },
-    { key: '/roles', icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: 'roles' },
+    { key: '/dashboard', icon: <DashboardOutlined />, label: t('nav.dashboard'), perm: '', group: '' },
+    { key: '/users', icon: <UserOutlined />, label: t('nav.users'), perm: 'users', group: 'ops' },
+    { key: '/projects', icon: <ProjectOutlined />, label: t('nav.projects'), perm: 'tenants', group: 'ops' },
+    { key: '/orders', icon: <ProfileOutlined />, label: t('nav.orders'), perm: 'orders', group: 'ops' },
+    { key: '/plans', icon: <GiftOutlined />, label: t('nav.plans'), perm: 'plans', group: 'catalog' },
+    { key: '/addons', icon: <AppstoreOutlined />, label: t('nav.addons'), perm: 'addons', group: 'catalog' },
+    { key: '/coins', icon: <WalletOutlined />, label: t('nav.coins'), perm: 'orders', group: 'catalog' },
+    { key: '/configs', icon: <ControlOutlined />, label: t('nav.params'), perm: 'config', group: 'system' },
+    { key: '/agreements', icon: <FileTextOutlined />, label: t('nav.agreements'), perm: 'agreements', group: 'system' },
+    { key: '/languages', icon: <TranslationOutlined />, label: t('nav.languages'), perm: 'dict', group: 'system' },
+    { key: '/admins', icon: <TeamOutlined />, label: t('nav.admins'), perm: 'admins', group: 'access' },
+    { key: '/roles', icon: <SafetyCertificateOutlined />, label: t('nav.roles'), perm: 'roles', group: 'access' },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [lang])
-  const items = useMemo(
-    () => allItems.filter((i) => !i.perm || permissions.includes(i.perm)).map(({ key, icon, label }) => ({ key, icon, label })),
-    [allItems, permissions],
-  )
+  // 分组定义(顺序即菜单顺序);父级图标复用已导入图标
+  const groupDefs = useMemo(() => [
+    { key: 'g-ops', icon: <ProjectOutlined />, label: t('nav.gOps'), group: 'ops' },
+    { key: 'g-catalog', icon: <GiftOutlined />, label: t('nav.gCatalog'), group: 'catalog' },
+    { key: 'g-system', icon: <ControlOutlined />, label: t('nav.gSystem'), group: 'system' },
+    { key: 'g-access', icon: <SafetyCertificateOutlined />, label: t('nav.gAccess'), group: 'access' },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [lang])
+  // 构建分组菜单:顶层项(group='')直出,其余按分组折叠为子菜单
+  const items = useMemo(() => {
+    const has = (i: { perm: string }) => !i.perm || permissions.includes(i.perm)
+    const toItem = ({ key, icon, label }: { key: string; icon: JSX.Element; label: string }) => ({ key, icon, label })
+    const result: NonNullable<MenuProps['items']> = []
+    allItems.filter((i) => i.group === '' && has(i)).forEach((i) => result.push(toItem(i)))
+    groupDefs.forEach((gr) => {
+      const children = allItems.filter((i) => i.group === gr.group && has(i)).map(toItem)
+      if (children.length) result.push({ key: gr.key, icon: gr.icon, label: gr.label, children })
+    })
+    return result
+  }, [allItems, groupDefs, permissions])
   const titleOf = (key: string) => allItems.find((i) => i.key === key)?.label || key
 
   // 当前激活菜单 key(最长前缀匹配)
@@ -139,6 +156,7 @@ export default function AdminLayout() {
           theme={dark ? 'dark' : 'light'}
           style={{ background: siderBg, borderInlineEnd: 'none', height: 'calc(100% - 56px)', overflowY: 'auto' }}
           selectedKeys={[activeKey]}
+          defaultOpenKeys={['g-ops', 'g-catalog', 'g-system', 'g-access']}
           items={items}
           onClick={({ key }) => nav(key)}
         />
