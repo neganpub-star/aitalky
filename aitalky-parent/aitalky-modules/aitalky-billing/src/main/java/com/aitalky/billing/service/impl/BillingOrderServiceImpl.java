@@ -265,6 +265,12 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         if (order == null || order.getStatus() == null || order.getStatus() != 0) {
             throw new BizException(ResultCode.BILLING_ORDER_NOT_PAYABLE);
         }
+        // 核销前校验订单签名:防数据库被直接篡改金额/资源(签名覆盖 amount/seats/quantity/addonPacks 等关键字段)
+        if (!orderSign(order).equals(order.getSign())) {
+            log.error("订单签名校验失败,疑似篡改,拒绝核销, projectId={}, orderNo={}, amount={}",
+                    projectId, order.getOrderNo(), order.getAmount());
+            throw new BizException(ResultCode.BILLING_ORDER_NOT_PAYABLE);
+        }
         BigDecimal amount = order.getAmount();
         // 余额核销(amount>0 才扣;0 元单直接开通)
         if (amount.signum() > 0) {
