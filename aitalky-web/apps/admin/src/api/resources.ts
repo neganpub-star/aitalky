@@ -135,8 +135,11 @@ export function deleteCoin(id: string) {
 export function getProjectSubscription(projectId: string) {
   return client.get<unknown, ProjectSubscriptionVO>(`/admin/projects/${projectId}/subscription`)
 }
-export function grantSubscription(projectId: string, body: { planId: string; seats: number; expireTime: string }) {
+export function grantSubscription(projectId: string, body: { planId: string; seats: number; extraCustomers: number; expireTime: string }) {
   return client.post<unknown, void>(`/admin/projects/${projectId}/subscription`, body)
+}
+export function cancelSubscription(projectId: string) {
+  return client.post<unknown, void>(`/admin/projects/${projectId}/subscription/cancel`)
 }
 
 // ===== 参数管理 =====

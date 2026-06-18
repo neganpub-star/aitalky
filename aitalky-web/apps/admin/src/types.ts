@@ -118,6 +118,7 @@ export interface ProjectSubscriptionVO {
   expireTime: string | null
   expired: boolean
   seats: number
+  extraCustomers: number
   seatUsed: number
   seatTotal: number      // -1 = 无限
   customerUsed: number
