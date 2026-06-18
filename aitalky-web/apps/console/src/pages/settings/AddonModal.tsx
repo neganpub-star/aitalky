@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, message, theme,
+  Modal, InputNumber, Radio, Checkbox, Button, QRCode, Typography, Divider, Spin, Select, message, theme,
 } from 'antd'
 import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
@@ -8,6 +8,15 @@ import {
   listCoins, getAddonQuote, createAddonOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
   type CoinVO, type OrderVO, type RechargeAddressVO, type AddonQuoteVO,
 } from '../../api/billing'
+
+// 永久加量包档位倍数(对齐参考下拉:×1/2/5/10/50)+ 各类型单位
+const PACK_MULTIPLES = [1, 2, 5, 10, 50]
+const PACK_UNIT: Record<string, { unitKey: string; titleKey: string; wan: boolean }> = {
+  translate_char: { unitKey: 'bill.unitChar', titleKey: 'bill.translatePack', wan: true },
+  ai_tokens: { unitKey: 'bill.unitTokens', titleKey: 'bill.tokensPackName', wan: true },
+  customer: { unitKey: 'bill.unitCustomer', titleKey: 'bill.customerPackName', wan: false },
+}
+const fmtAmt = (n: number, wan: boolean) => (wan && n >= 10000 ? `${n / 10000}万` : String(n))
 
 // 加购类型:席位(随订阅,按剩余周期折算)/ 永久包(客户配额/翻译字符/AI Tokens)
 export type AddonResourceType = 'seat' | 'customer' | 'translate_char' | 'ai_tokens'
@@ -88,7 +97,6 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
     }
     return quote.unitPrice * qty
   })()
-  const quotaAdded = quote ? quote.packAmount * qty : 0  // 客户配额新增数量
 
   const startWatch = (o: OrderVO) => {
     stopAll()
@@ -153,14 +161,14 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
           <Button type="primary" style={{ marginTop: 24 }} onClick={close}>{t('bill.ok')}</Button>
         </div>
       ) : !order ? (
-        // ===== 配置态(对齐现网 img_1) =====
+        // ===== 配置态:席位=数量+周期/到期;扩展包=规格下拉(对齐参考) =====
         <div>
-          <FieldRow label={isSeat ? t('bill.subSeats') : t('bill.buyQty')} token={token}>
-            <InputNumber min={1} max={9999} value={qty} style={{ width: 160 }}
-              onChange={(v) => setQty(Number(v) || 1)} />
-          </FieldRow>
           {isSeat ? (
             <>
+              <FieldRow label={t('bill.subSeats')} token={token}>
+                <InputNumber min={1} max={9999} value={qty} style={{ width: 200 }}
+                  onChange={(v) => setQty(Number(v) || 1)} />
+              </FieldRow>
               <FieldRow label={t('bill.subPeriod')} token={token}>
                 <span>{quote ? t('bill.days', { n: quote.remainingDays || 0 }) : '--'}</span>
               </FieldRow>
@@ -169,8 +177,17 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
               </FieldRow>
             </>
           ) : (
-            <FieldRow label={t('bill.quotaAdded')} token={token}>
-              <span>{quotaAdded}</span>
+            <FieldRow label={t(PACK_UNIT[resourceType]?.titleKey || 'bill.buyQty')} token={token}>
+              {/* 扩展包按规格档位下拉选择(份数=倍数),合计=单价×份数 */}
+              <div style={{ textAlign: 'left' }}>
+                <Select style={{ width: 200 }} value={qty}
+                  onChange={(v) => setQty(Number(v) || 1)}
+                  options={PACK_MULTIPLES.map((n) => {
+                    const m = PACK_UNIT[resourceType]
+                    const spec = quote ? quote.packAmount * n : 0
+                    return { value: n, label: `${fmtAmt(spec, m?.wan ?? true)}${t(m?.unitKey || 'bill.unitChar')}` }
+                  })} />
+              </div>
             </FieldRow>
           )}
           <FieldRow label={t('bill.payMethod')} token={token}>
