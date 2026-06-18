@@ -2,7 +2,8 @@ import client from './client'
 import { encryptPassword } from './crypto'
 import type {
   AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminOrderVO, AdminProjectVO,
-  AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, PageResult, PlanVO, RoleVO,
+  AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, PageResult, PlanVO,
+  ProjectSubscriptionVO, RoleVO,
 } from '../types'
 
 // ===== 用户 =====
@@ -128,6 +129,14 @@ export function setCoinStatus(id: string, status: number) {
 }
 export function deleteCoin(id: string) {
   return client.delete<unknown, void>(`/admin/coins/${id}`)
+}
+
+// ===== 项目订阅(查看 + 手动开通试用) =====
+export function getProjectSubscription(projectId: string) {
+  return client.get<unknown, ProjectSubscriptionVO>(`/admin/projects/${projectId}/subscription`)
+}
+export function grantSubscription(projectId: string, body: { planId: string; seats: number; expireTime: string }) {
+  return client.post<unknown, void>(`/admin/projects/${projectId}/subscription`, body)
 }
 
 // ===== 参数管理 =====

@@ -109,6 +109,23 @@ export interface ConfigVO {
   status: number
 }
 
+export interface ProjectSubscriptionVO {
+  subscribed: boolean
+  planId: string | null
+  planCode: string | null
+  planName: string | null
+  status: number | null
+  expireTime: string | null
+  expired: boolean
+  seats: number
+  seatUsed: number
+  seatTotal: number      // -1 = 无限
+  customerUsed: number
+  customerTotal: number  // -1 = 无限
+  quotas: { resourceType: string; amount: number; isUnlimited: number }[]
+  freeTrialDays: number
+}
+
 export interface AgreementVO {
   id: string
   type: string
