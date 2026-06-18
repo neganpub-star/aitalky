@@ -107,7 +107,8 @@ export default function BillingOverview() {
     if (!subscribed) { const txt = fmt(defaultVal); return { avail: txt, total: txt } }
     const u = usageMap[type]
     const q = quotaMap[type]
-    if (!u && !q) return { avail: '--', total: '--' }   // 订阅后无该配额(如 AI Tokens)
+    // 订阅后套餐也无此配额(如 AI Tokens,功能未做):回退参数默认值,不显示 '--'
+    if (!u && !q) { const txt = fmt(defaultVal); return { avail: txt, total: txt } }
     const unlimited = u ? u.unlimited : !!q?.unlimited
     const total = u ? u.limit : (q?.amount ?? 0)
     const used = u ? u.used : 0
