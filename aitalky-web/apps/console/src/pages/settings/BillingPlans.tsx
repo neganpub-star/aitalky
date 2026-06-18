@@ -101,7 +101,7 @@ export default function BillingPlans() {
           </a>
         </div>
       )}
-      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'center', marginTop: 80 }}>
+      <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', justifyContent: 'flex-start', alignItems: 'stretch', marginTop: 80 }}>
         {plans.map((p) => {
           const isCurrent = currentPlanId === p.id
           // 比当前订阅档位低的套餐不可订(只能续费当前/升级更高档);定制版始终可联系客服
