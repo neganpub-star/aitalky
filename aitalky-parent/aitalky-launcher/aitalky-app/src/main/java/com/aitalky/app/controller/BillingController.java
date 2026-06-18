@@ -13,16 +13,17 @@ import com.aitalky.billing.service.dto.CreateOrderCmd;
 import com.aitalky.billing.service.dto.OrderQuery;
 import com.aitalky.billing.service.dto.OrderVO;
 import com.aitalky.billing.service.dto.PricingVO;
+import com.aitalky.billing.service.dto.QuotaLimit;
 import com.aitalky.billing.service.dto.RechargeAddressVO;
 import com.aitalky.billing.service.dto.UsageVO;
 import com.aitalky.billing.service.dto.WalletVO;
+import com.aitalky.billing.service.QuotaService;
 import org.springframework.format.annotation.DateTimeFormat;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.R;
 import com.aitalky.customer.service.CustomerService;
 import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.identity.service.MemberService;
-import com.aitalky.platform.dto.PlanQuotaVO;
 import com.aitalky.platform.dto.PlanVO;
 import com.aitalky.platform.service.PlanService;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +55,7 @@ public class BillingController {
     private final BillingOrderService orderService;
     private final MemberService memberService;
     private final CustomerService customerService;
-    private final com.aitalky.platform.service.ConfigService configService;
+    private final QuotaService quotaService;
 
     /** 上架套餐列表(含配额/功能;对齐套餐订阅页卡片) */
     @GetMapping("/plans")
@@ -166,37 +167,24 @@ public class BillingController {
     }
 
     /**
-     * 资源用量(席位/客户 已用 vs 总量)。已用=真实计量(启用成员数/客户数)。
-     * <p>席位=套餐 seat 配额 + 加购席位(套餐驱动)。
-     * <p>客户配额=「默认值(参数 default_customer)+ 加购客户配额」(拓展包模型:不买只有默认值,不走套餐无限)。
+     * 资源用量(已用 vs 总量),limit 统一走 {@link QuotaService}。
+     * <p>席位=套餐 seat 配额 + 加购席位(随订阅);客户/翻译/Tokens=免费默认值 + 已购加量包(永久包)。
+     * <p>已用:席位=启用成员数、客户=客户数;翻译/Tokens 功能未做,已用计 0。
      */
     @GetMapping("/usage")
     public R<List<UsageVO>> usage() {
         Long projectId = TenantContext.getProjectId();
-        long seatUsed = memberService.countActiveMembers(projectId);
-        long customerUsed = customerService.countByProject(projectId);
-
-        long seatLimit = 0;
-        boolean seatUnlimited = false;
-        int extraCustomers = 0;
-        BilSubscription sub = billingService.getSubscription(projectId);
-        if (sub != null) {
-            PlanVO plan = planService.get(sub.getPlanId());
-            int extraSeats = sub.getSeats() == null ? 0 : sub.getSeats();
-            extraCustomers = sub.getExtraCustomers() == null ? 0 : sub.getExtraCustomers();
-            for (PlanQuotaVO q : (plan == null ? List.<PlanQuotaVO>of() : plan.quotas())) {
-                if ("seat".equals(q.resourceType())) {
-                    seatUnlimited = q.isUnlimited() != null && q.isUnlimited() == 1;
-                    seatLimit = (q.amount() == null ? 0 : q.amount()) + extraSeats; // 套餐席位 + 加购席位
-                }
-            }
-        }
-        // 客户配额=默认值(参数)+ 加购客户配额(拓展包模型);未订阅项目 extraCustomers=0,只有默认值
-        long customerLimit = configService.getInt("default_customer", 100) + extraCustomers;
-
         List<UsageVO> list = new ArrayList<>();
-        list.add(new UsageVO("seat", seatUsed, seatLimit, seatUnlimited));
-        list.add(new UsageVO("customer", customerUsed, customerLimit, false));
+        list.add(usageOf(projectId, "seat", memberService.countActiveMembers(projectId)));
+        list.add(usageOf(projectId, "customer", customerService.countByProject(projectId)));
+        list.add(usageOf(projectId, "translate_char", 0));
+        list.add(usageOf(projectId, "ai_tokens", 0));
         return R.ok(list);
+    }
+
+    /** 按资源类型组装用量:limit 走 QuotaService,used 由各自计量传入 */
+    private UsageVO usageOf(Long projectId, String resourceType, long used) {
+        QuotaLimit l = quotaService.limit(projectId, resourceType);
+        return new UsageVO(resourceType, used, l.limit(), l.unlimited());
     }
 }
