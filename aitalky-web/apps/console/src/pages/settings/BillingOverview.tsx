@@ -116,8 +116,9 @@ export default function BillingOverview() {
     const fmt = (n: number) => (wan ? fmtWan(n) : String(n))
     if (type === 'customer') {
       const u = usageMap.customer
-      const total = u ? u.limit : defaultVal     // 后端 usage 给「默认值+加购」
       const used = u ? u.used : 0
+      // 默认免费额度(100)兜底:未订阅时后端 usage.limit=0,对齐参考展示默认 100(订阅后= 默认+加购)
+      const total = Math.max(u ? u.limit : 0, defaultVal)
       return { avail: fmt(Math.max(0, total - used)), total: fmt(total) }
     }
     const txt = fmt(defaultVal)                    // 翻译/Tokens:恒默认值
