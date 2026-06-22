@@ -6,7 +6,7 @@ import {
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
-  FileSearchOutlined,
+  FileSearchOutlined, UpOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -110,14 +110,6 @@ function fmtMsgTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
-// 完整日期时间(聊天记录搜索命中项):YYYY-MM-DD HH:mm
-function fmtFullTime(ms: number): string {
-  const d = new Date(ms)
-  if (Number.isNaN(d.getTime())) return ''
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
-}
-
 // 客户源语言代码 → 展示名(对齐 aitalky)
 function langLabel(code: string | null): string {
   if (!code) return '-'
@@ -177,7 +169,8 @@ export default function Inbox() {
   const [chatSearchKw, setChatSearchKw] = useState('')
   const [chatSearchResults, setChatSearchResults] = useState<MessageVO[]>([])
   const [chatSearching, setChatSearching] = useState(false)
-  const [highlightSeq, setHighlightSeq] = useState<number | null>(null)
+  const [chatMatchIdx, setChatMatchIdx] = useState(-1)             // 当前命中条在 chatSearchResults(升序)中的下标
+  const [highlightSeq, setHighlightSeq] = useState<number | null>(null) // 常驻高亮的命中消息 seq
   const [reachedTop, setReachedTop] = useState(false)              // 抽屉历史是否已到顶(显示「加载完成」)
   const drawerScrollRef = useRef<HTMLDivElement>(null)             // 聊天记录抽屉的滚动容器
 
@@ -550,7 +543,7 @@ export default function Inbox() {
       setEditField(null)
       setDetail(null)
       setMessages([])
-      setChatSearchOpen(false); setChatSearchKw(''); setChatSearchResults([]) // 切会话关掉聊天记录搜索
+      setChatSearchOpen(false); setChatSearchKw(''); setChatSearchResults([]); setChatMatchIdx(-1); setHighlightSeq(null) // 切会话关掉聊天记录搜索
       setCustomerReadSeq(0)
       localMaxSeqRef.current = 0
       hasMoreRef.current = true       // 切会话重置历史翻页
@@ -599,9 +592,9 @@ export default function Inbox() {
   // 命中点击:打开该会话并退出搜索
   const openFromSearch = (c: ConversationVO) => { closeSearch(); selectConversation(c) }
 
-  // ===== 会话内聊天记录搜索(独立「聊天记录」抽屉:盖住聊天区,自渲染历史+顶部搜索+命中下拉) =====
-  const openChatSearch = () => { setChatSearchOpen(true); setChatSearchKw(''); setChatSearchResults([]) }
-  const closeChatSearch = () => { setChatSearchOpen(false); setChatSearchKw(''); setChatSearchResults([]) }
+  // ===== 会话内「聊天记录」抽屉:页内查找(关键词不清空+命中常驻高亮+▲▼上下跳) =====
+  const openChatSearch = () => { setChatSearchOpen(true); setChatSearchKw(''); setChatSearchResults([]); setChatMatchIdx(-1); setHighlightSeq(null) }
+  const closeChatSearch = () => { setChatSearchOpen(false); setChatSearchKw(''); setChatSearchResults([]); setChatMatchIdx(-1); setHighlightSeq(null) }
 
   // 抽屉打开:滚到底显示最新(与主聊天区一致),用户上滑再逐页加载更早
   useEffect(() => {
@@ -642,35 +635,18 @@ export default function Inbox() {
     if (el.scrollTop < 40 && hasMoreRef.current && !loadingMoreRef.current) loadMoreInDrawer()
   }, [loadMoreInDrawer])
 
-  // 关键词变化 → 防抖 300ms 实时搜当前会话(空词清空,不请求)
-  useEffect(() => {
-    if (!chatSearchOpen) return
-    const kw = chatSearchKw.trim()
-    const cid = selectedId
-    if (!kw || !cid) { setChatSearchResults([]); setChatSearching(false); return }
-    setChatSearching(true)
-    const timer = window.setTimeout(async () => {
-      try {
-        const r = await searchMessagesInConversation(cid, kw)
-        setChatSearchResults(r)
-      } finally {
-        setChatSearching(false)
-      }
-    }, 300)
-    return () => window.clearTimeout(timer)
-  }, [chatSearchKw, chatSearchOpen, selectedId])
-
-  // 命中点击:收起下拉(抽屉保留)→ 确保该消息已加载(必要时循环翻页)→ 在抽屉内滚动定位并短暂高亮
-  const jumpToMessage = useCallback(async (target: MessageVO) => {
-    const seq = target.seq
+  // 跳到第 idx 条命中:确保已加载(必要时循环翻页)→ 设为当前命中(常驻高亮)→ 抽屉内滚动定位
+  const jumpToMatch = useCallback(async (results: MessageVO[], idx: number) => {
+    if (idx < 0 || idx >= results.length) return
     const cid = selectedId
     if (!cid) return
-    setChatSearchKw(''); setChatSearchResults([]) // 收起命中下拉,保持抽屉打开
+    setChatMatchIdx(idx)
+    const seq = results[idx].seq
     // 若不在当前已加载范围:循环向上翻页(loadBefore)直到加载到该 seq 或到顶。
-    // 用本地 loaded 累积(不依赖 state 异步刷新),防重复拉同一页死循环;guard 兜底 30 页。
+    // 用本地 loaded 累积(不依赖 state 异步刷新),防重复拉同一页死循环;guard 兜底 50 页。
     let loaded = messagesRef.current
     let guard = 0
-    while (!loaded.some((m) => m.seq === seq) && hasMoreRef.current && guard < 30) {
+    while (!loaded.some((m) => m.seq === seq) && hasMoreRef.current && guard < 50) {
       const oldest = loaded[0]?.seq
       if (oldest == null) break
       const older = await loadBeforeMessages(cid, oldest)
@@ -680,16 +656,41 @@ export default function Inbox() {
       setMessages(loaded)
       guard++
     }
-    // 等 DOM 渲染后在抽屉容器内滚动定位 + 短暂高亮(1.8s)。用 data-seq 作用域查询,避开主聊天区同 seq 重复
+    setHighlightSeq(seq) // 常驻高亮(不自动清除,直到换条/换词/关闭)
+    // 等 DOM 渲染后在抽屉容器内滚动定位。用 data-seq 作用域查询,避开主聊天区同 seq 重复
     window.setTimeout(() => {
       const el = drawerScrollRef.current?.querySelector(`[data-seq="${seq}"]`)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        setHighlightSeq(seq)
-        window.setTimeout(() => setHighlightSeq((s) => (s === seq ? null : s)), 1800)
-      }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 80)
   }, [selectedId])
+
+  // 关键词变化 → 防抖 300ms 实时搜当前会话;有命中默认跳到最新一条(最靠近底部)
+  useEffect(() => {
+    if (!chatSearchOpen) return
+    const kw = chatSearchKw.trim()
+    const cid = selectedId
+    if (!kw || !cid) { setChatSearchResults([]); setChatMatchIdx(-1); setHighlightSeq(null); setChatSearching(false); return }
+    setChatSearching(true)
+    const timer = window.setTimeout(async () => {
+      try {
+        const r = await searchMessagesInConversation(cid, kw)
+        const asc = [...r].sort((a, b) => a.seq - b.seq) // 升序:下标小=更早(在上),便于 ▲▼ 上下跳
+        setChatSearchResults(asc)
+        if (asc.length > 0) {
+          jumpToMatch(asc, asc.length - 1) // 默认定位最新一条命中
+        } else {
+          setChatMatchIdx(-1); setHighlightSeq(null)
+        }
+      } finally {
+        setChatSearching(false)
+      }
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [chatSearchKw, chatSearchOpen, selectedId, jumpToMatch])
+
+  // ▲ 上一条(更早) / ▼ 下一条(更新)
+  const gotoPrevMatch = () => { if (chatMatchIdx > 0) jumpToMatch(chatSearchResults, chatMatchIdx - 1) }
+  const gotoNextMatch = () => { if (chatMatchIdx < chatSearchResults.length - 1) jumpToMatch(chatSearchResults, chatMatchIdx + 1) }
 
   // 离开收件箱时退订当前会话
   useEffect(() => {
@@ -1746,18 +1747,29 @@ export default function Inbox() {
           position: 'absolute', top: 0, bottom: 0, right: 300, left: (collapsed ? 0 : 224) + 300,
           zIndex: 12, display: 'flex', flexDirection: 'column', background: token.colorBgContainer,
         }}>
-          {/* 顶部搜索条:标题 + 输入框 + 关闭 */}
-          <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px', borderBottom: splitBorder }}>
+          {/* 顶部搜索条:标题 + 输入框 + 计数/▲▼上下跳 + 关闭(页内查找,关键词不清空) */}
+          <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', borderBottom: splitBorder }}>
             <span style={{ ...styles.colTitle, flexShrink: 0 }}>{t('inbox.chatSearchTitle')}</span>
             <Input
-              autoFocus allowClear
+              autoFocus
               value={chatSearchKw}
               onChange={(e) => setChatSearchKw(e.target.value)}
+              onPressEnter={gotoPrevMatch}
               placeholder={t('inbox.chatSearchPh')}
               prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
               style={{ flex: 1 }}
             />
-            <Button onClick={closeChatSearch}>{t('inbox.chatSearchClose')}</Button>
+            {/* 命中计数 + 上一条/下一条(更早 ▲ / 更新 ▼) */}
+            {chatSearchKw.trim() && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, color: token.colorTextSecondary, fontSize: 13 }}>
+                {chatSearching
+                  ? <Spin size="small" />
+                  : <span style={{ minWidth: 40, textAlign: 'center' }}>{`${chatSearchResults.length ? chatMatchIdx + 1 : 0}/${chatSearchResults.length}`}</span>}
+                <Button type="text" size="small" icon={<UpOutlined />} disabled={chatMatchIdx <= 0} onClick={gotoPrevMatch} title={t('inbox.chatPrevMatch')} />
+                <Button type="text" size="small" icon={<DownOutlined />} disabled={chatMatchIdx < 0 || chatMatchIdx >= chatSearchResults.length - 1} onClick={gotoNextMatch} title={t('inbox.chatNextMatch')} />
+              </span>
+            )}
+            <Button onClick={closeChatSearch} style={{ flexShrink: 0 }}>{t('inbox.chatSearchClose')}</Button>
           </div>
           {/* 抽屉内历史消息(自渲染,上滑逐页加载;到顶显示「加载完成」) */}
           <div ref={drawerScrollRef} onScroll={onDrawerScroll} style={{ flex: 1, overflow: 'auto', padding: '20px 24px', position: 'relative' }}>
@@ -1769,33 +1781,6 @@ export default function Inbox() {
               <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40, color: token.colorTextTertiary }}>{t('inbox.noMessages')}</div>
             ) : messages.map(renderMessage)}
           </div>
-          {/* 命中结果下拉:浮在搜索条下方,半透明遮罩压暗历史(点空白收起) */}
-          {chatSearchKw.trim() && (
-            <>
-              <div onClick={() => { setChatSearchKw(''); setChatSearchResults([]) }}
-                style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.06)', zIndex: 1 }} />
-              <div style={{ position: 'absolute', top: 64, left: 24, right: 24, maxWidth: 760, margin: '0 auto', zIndex: 2, background: token.colorBgElevated, borderRadius: 8, boxShadow: token.boxShadowSecondary, maxHeight: '72vh', overflow: 'auto' }}>
-                {chatSearching ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spin /></div>
-                ) : chatSearchResults.length === 0 ? (
-                  <div style={{ padding: 24 }}><Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.chatSearchEmpty')} /></div>
-                ) : (
-                  chatSearchResults.map((m) => (
-                    <div key={m.msgId} className="at-row" onClick={() => jumpToMessage(m)}
-                      style={{ padding: '12px 16px', cursor: 'pointer', borderBottom: `0.5px solid ${token.colorSplit}` }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: token.colorTextTertiary }}>
-                          {m.senderType === 'agent' ? (m.senderName || t('inbox.chatLabelMember')) : t('inbox.chatLabelCustomer')}
-                        </span>
-                        <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtFullTime(m.timestamp)}</span>
-                      </div>
-                      <div style={{ fontSize: 14, color: token.colorText, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{m.content}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
         </div>
       )}
 

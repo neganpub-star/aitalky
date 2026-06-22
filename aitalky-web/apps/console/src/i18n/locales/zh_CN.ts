@@ -762,6 +762,8 @@ export default {
     chatLabelMember: '成员消息',
     chatLabelCustomer: '客户消息',
     historyLoaded: '加载完成',
+    chatPrevMatch: '上一条',
+    chatNextMatch: '下一条',
     inProgress: '进行中',
     closed: '已结束',
     noOngoing: '暂无进行中会话',

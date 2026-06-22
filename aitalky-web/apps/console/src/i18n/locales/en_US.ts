@@ -746,6 +746,8 @@ export default {
     chatLabelMember: 'Member message',
     chatLabelCustomer: 'Customer message',
     historyLoaded: 'All loaded',
+    chatPrevMatch: 'Previous',
+    chatNextMatch: 'Next',
     inProgress: 'Open',
     closed: 'Closed',
     noOngoing: 'No open conversations',
