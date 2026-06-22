@@ -178,6 +178,8 @@ export default function Inbox() {
   const [chatSearchResults, setChatSearchResults] = useState<MessageVO[]>([])
   const [chatSearching, setChatSearching] = useState(false)
   const [highlightSeq, setHighlightSeq] = useState<number | null>(null)
+  const [reachedTop, setReachedTop] = useState(false)              // 抽屉历史是否已到顶(显示「加载完成」)
+  const drawerScrollRef = useRef<HTMLDivElement>(null)             // 聊天记录抽屉的滚动容器
 
   const [list, setList] = useState<ConversationVO[]>([])
   const [total, setTotal] = useState(0)
@@ -498,7 +500,7 @@ export default function Inbox() {
     const prevTop = el.scrollTop
     try {
       const older = await loadBeforeMessages(cid, oldest)
-      if (older.length < 50) hasMoreRef.current = false
+      if (older.length < 50) { hasMoreRef.current = false; setReachedTop(true) }
       if (older.length > 0) {
         stickRef.current = false // 翻历史不黏底
         setMessages((prev) => mergeMessages(prev, older))
@@ -553,6 +555,7 @@ export default function Inbox() {
       localMaxSeqRef.current = 0
       hasMoreRef.current = true       // 切会话重置历史翻页
       loadingMoreRef.current = false
+      setReachedTop(false)
       wsClient.subscribe(conv.id)
       // 本地先清未读(后端拉消息时也会 resetUnread)
       setList((prev) => prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)))
@@ -566,6 +569,7 @@ export default function Inbox() {
         // localMaxSeq = 首屏最新 seq(实时补漏基准);首屏不足 50 条说明没有更早历史
         localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
         hasMoreRef.current = msgs.length >= 50
+        setReachedTop(msgs.length < 50)
         // 打开会话已清该会话未读 → 刷新分类未读数,我的/未分配红点跟着消
         refreshCountsRef.current()
       } finally {
@@ -595,9 +599,48 @@ export default function Inbox() {
   // 命中点击:打开该会话并退出搜索
   const openFromSearch = (c: ConversationVO) => { closeSearch(); selectConversation(c) }
 
-  // ===== 会话内聊天记录搜索(聊天区头部右上) =====
+  // ===== 会话内聊天记录搜索(独立「聊天记录」抽屉:盖住聊天区,自渲染历史+顶部搜索+命中下拉) =====
   const openChatSearch = () => { setChatSearchOpen(true); setChatSearchKw(''); setChatSearchResults([]) }
   const closeChatSearch = () => { setChatSearchOpen(false); setChatSearchKw(''); setChatSearchResults([]) }
+
+  // 抽屉打开:滚到底显示最新(与主聊天区一致),用户上滑再逐页加载更早
+  useEffect(() => {
+    if (!chatSearchOpen) return
+    requestAnimationFrame(() => { const el = drawerScrollRef.current; if (el) el.scrollTop = el.scrollHeight })
+  }, [chatSearchOpen])
+
+  // 抽屉历史向上翻页:取最早 seq 之前 50 条,前插并保持滚动位置(与 loadMore 同逻辑,作用于抽屉容器)
+  const loadMoreInDrawer = useCallback(async () => {
+    const el = drawerScrollRef.current
+    if (!el || loadingMoreRef.current || !hasMoreRef.current) return
+    const cid = selectedId
+    const oldest = messagesRef.current[0]?.seq
+    if (!cid || oldest == null) return
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+    const prevHeight = el.scrollHeight
+    const prevTop = el.scrollTop
+    try {
+      const older = await loadBeforeMessages(cid, oldest)
+      if (older.length < 50) { hasMoreRef.current = false; setReachedTop(true) }
+      if (older.length > 0) {
+        setMessages((prev) => mergeMessages(prev, older))
+        requestAnimationFrame(() => {
+          const e2 = drawerScrollRef.current
+          if (e2) e2.scrollTop = prevTop + (e2.scrollHeight - prevHeight)
+        })
+      }
+    } catch { /* 网络失败忽略,下次滚动再试 */ } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [selectedId])
+
+  const onDrawerScroll = useCallback(() => {
+    const el = drawerScrollRef.current
+    if (!el) return
+    if (el.scrollTop < 40 && hasMoreRef.current && !loadingMoreRef.current) loadMoreInDrawer()
+  }, [loadMoreInDrawer])
 
   // 关键词变化 → 防抖 300ms 实时搜当前会话(空词清空,不请求)
   useEffect(() => {
@@ -617,12 +660,12 @@ export default function Inbox() {
     return () => window.clearTimeout(timer)
   }, [chatSearchKw, chatSearchOpen, selectedId])
 
-  // 命中点击:退出搜索 → 确保该消息已加载(必要时循环向上翻页)→ 滚动定位并短暂高亮
+  // 命中点击:收起下拉(抽屉保留)→ 确保该消息已加载(必要时循环翻页)→ 在抽屉内滚动定位并短暂高亮
   const jumpToMessage = useCallback(async (target: MessageVO) => {
     const seq = target.seq
     const cid = selectedId
     if (!cid) return
-    closeChatSearch()
+    setChatSearchKw(''); setChatSearchResults([]) // 收起命中下拉,保持抽屉打开
     // 若不在当前已加载范围:循环向上翻页(loadBefore)直到加载到该 seq 或到顶。
     // 用本地 loaded 累积(不依赖 state 异步刷新),防重复拉同一页死循环;guard 兜底 30 页。
     let loaded = messagesRef.current
@@ -631,16 +674,15 @@ export default function Inbox() {
       const oldest = loaded[0]?.seq
       if (oldest == null) break
       const older = await loadBeforeMessages(cid, oldest)
-      if (older.length < 50) hasMoreRef.current = false
+      if (older.length < 50) { hasMoreRef.current = false; setReachedTop(true) }
       if (older.length === 0) break
       loaded = mergeMessages(loaded, older)
       setMessages(loaded)
-      stickRef.current = false // 翻历史不黏底
       guard++
     }
-    // 等 DOM 渲染后滚动定位 + 短暂高亮(1.8s)
+    // 等 DOM 渲染后在抽屉容器内滚动定位 + 短暂高亮(1.8s)。用 data-seq 作用域查询,避开主聊天区同 seq 重复
     window.setTimeout(() => {
-      const el = document.getElementById(`msg-${seq}`)
+      const el = drawerScrollRef.current?.querySelector(`[data-seq="${seq}"]`)
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         setHighlightSeq(seq)
@@ -991,7 +1033,7 @@ export default function Inbox() {
           : st === 'timeout' ? t('inbox.sys.timeout')
             : m.content
       return (
-        <div key={m.msgId} id={`msg-${m.seq}`} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
+        <div key={m.msgId} data-seq={m.seq} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
           <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{text}</span>
         </div>
       )
@@ -1005,7 +1047,7 @@ export default function Inbox() {
           ? t('inbox.retractedByYou')
           : t('inbox.retractedByAgent')
       return (
-        <div key={m.msgId} id={`msg-${m.seq}`} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
+        <div key={m.msgId} data-seq={m.seq} style={{ textAlign: 'center', margin: '2px 0 16px' }}>
           <span style={{ fontSize: 12, color: token.colorTextTertiary, background: token.colorFillTertiary, padding: '3px 12px', borderRadius: 6 }}>{txt}</span>
         </div>
       )
@@ -1034,7 +1076,7 @@ export default function Inbox() {
       </div>
     )
     return (
-      <div key={m.msgId} id={`msg-${m.seq}`}
+      <div key={m.msgId} data-seq={m.seq}
         style={{
           display: 'flex', flexDirection: mine ? 'row-reverse' : 'row', gap: 8, marginBottom: 16,
           // 搜索命中跳转:短暂高亮(box-shadow 同色光晕,不挤占布局)
@@ -1697,14 +1739,15 @@ export default function Inbox() {
         </div>
       )}
 
-      {/* 会话内聊天记录搜索:覆盖会话列表+聊天区(保留详情面板),实时搜命中下拉,点击跳转高亮 */}
+      {/* 会话内「聊天记录」抽屉:仅盖住聊天区(保留会话列表+详情面板),自渲染历史(上滑逐页加载),
+          顶部搜索框实时搜,命中下拉浮层;点命中在抽屉内滚动定位高亮(对齐参考) */}
       {chatSearchOpen && selectedId && detail && (
         <div style={{
-          position: 'absolute', top: 0, bottom: 0, right: 300, left: collapsed ? 0 : 224,
-          zIndex: 12, display: 'flex', flexDirection: 'column',
+          position: 'absolute', top: 0, bottom: 0, right: 300, left: (collapsed ? 0 : 224) + 300,
+          zIndex: 12, display: 'flex', flexDirection: 'column', background: token.colorBgContainer,
         }}>
           {/* 顶部搜索条:标题 + 输入框 + 关闭 */}
-          <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px', borderBottom: splitBorder, background: token.colorBgContainer }}>
+          <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px', borderBottom: splitBorder }}>
             <span style={{ ...styles.colTitle, flexShrink: 0 }}>{t('inbox.chatSearchTitle')}</span>
             <Input
               autoFocus allowClear
@@ -1716,11 +1759,22 @@ export default function Inbox() {
             />
             <Button onClick={closeChatSearch}>{t('inbox.chatSearchClose')}</Button>
           </div>
-          {/* 半透明遮罩(点空白关闭) + 命中结果浮层 */}
-          <div style={{ flex: 1, position: 'relative', background: 'rgba(0,0,0,0.04)' }} onClick={closeChatSearch}>
-            {chatSearchKw.trim() && (
-              <div onClick={(e) => e.stopPropagation()}
-                style={{ position: 'absolute', top: 0, left: 24, right: 24, maxWidth: 760, margin: '0 auto', background: token.colorBgElevated, borderRadius: 8, boxShadow: token.boxShadowSecondary, maxHeight: '72vh', overflow: 'auto' }}>
+          {/* 抽屉内历史消息(自渲染,上滑逐页加载;到顶显示「加载完成」) */}
+          <div ref={drawerScrollRef} onScroll={onDrawerScroll} style={{ flex: 1, overflow: 'auto', padding: '20px 24px', position: 'relative' }}>
+            {loadingMore && <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 12px' }}><Spin size="small" /></div>}
+            {reachedTop && !loadingMore && messages.length > 0 && (
+              <div style={{ textAlign: 'center', padding: '4px 0 12px', fontSize: 12, color: token.colorTextTertiary }}>{t('inbox.historyLoaded')}</div>
+            )}
+            {messages.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40, color: token.colorTextTertiary }}>{t('inbox.noMessages')}</div>
+            ) : messages.map(renderMessage)}
+          </div>
+          {/* 命中结果下拉:浮在搜索条下方,半透明遮罩压暗历史(点空白收起) */}
+          {chatSearchKw.trim() && (
+            <>
+              <div onClick={() => { setChatSearchKw(''); setChatSearchResults([]) }}
+                style={{ position: 'absolute', top: 56, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.06)', zIndex: 1 }} />
+              <div style={{ position: 'absolute', top: 64, left: 24, right: 24, maxWidth: 760, margin: '0 auto', zIndex: 2, background: token.colorBgElevated, borderRadius: 8, boxShadow: token.boxShadowSecondary, maxHeight: '72vh', overflow: 'auto' }}>
                 {chatSearching ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spin /></div>
                 ) : chatSearchResults.length === 0 ? (
@@ -1740,8 +1794,8 @@ export default function Inbox() {
                   ))
                 )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       )}
 
