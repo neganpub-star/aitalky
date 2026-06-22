@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,6 +41,17 @@ public class MinioService {
     private static final long IMAGE_MAX = 10L * 1024 * 1024;
     private static final long DOC_MAX = 20L * 1024 * 1024;   // 文档/视频暂定 20MB,后续按需调整
     private static final long VIDEO_MAX = 20L * 1024 * 1024;
+
+    /**
+     * 扩展名 → content-type 映射(安全关键):存储用的 content-type <b>按校验后的扩展名推断,绝不信客户端</b>。
+     * 否则攻击者可上传 .png 但把 content-type 设成 text/html,桶匿名只读原样返回 → MinIO 域名下存储型 XSS。
+     * 不在表内的(已通过白名单的文档/压缩包等)统一回退 application/octet-stream(浏览器下载而非渲染)。
+     */
+    private static final Map<String, String> CONTENT_TYPES = Map.ofEntries(
+            Map.entry("jpg", "image/jpeg"), Map.entry("jpeg", "image/jpeg"), Map.entry("png", "image/png"),
+            Map.entry("gif", "image/gif"), Map.entry("webp", "image/webp"), Map.entry("bmp", "image/bmp"),
+            Map.entry("mp4", "video/mp4"), Map.entry("webm", "video/webm"), Map.entry("mov", "video/quicktime"),
+            Map.entry("pdf", "application/pdf"), Map.entry("txt", "text/plain"), Map.entry("csv", "text/csv"));
 
     private static final DateTimeFormatter DATE_DIR = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
@@ -98,7 +110,9 @@ public class MinioService {
         if (file.getSize() > limit) {
             throw new BizException(ResultCode.PARAM_INVALID);
         }
-        String contentType = file.getContentType() == null ? "application/octet-stream" : file.getContentType();
+        // 按校验后的扩展名推断 content-type(不信客户端 file.getContentType(),防 text/html 存储型 XSS);
+        // 未映射的(文档/压缩包)回退 octet-stream → 浏览器下载而非内联渲染
+        String contentType = CONTENT_TYPES.getOrDefault(ext, "application/octet-stream");
         String objectKey = buildObjectKey(file.getOriginalFilename());
         try (InputStream in = file.getInputStream()) {
             client.putObject(PutObjectArgs.builder()
