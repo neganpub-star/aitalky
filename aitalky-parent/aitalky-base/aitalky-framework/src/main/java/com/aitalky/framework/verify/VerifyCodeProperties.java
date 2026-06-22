@@ -11,6 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param sendIntervalSeconds  同一邮箱+场景的发送最小间隔(秒,防刷)
  * @param codeLength           验证码位数
  * @param from                 发件邮箱(展示用)
+ * @param maxAttempts          同一邮箱+场景连续输错的最大次数,达到即临时锁定(防暴力枚举)
+ * @param lockMinutes          触发锁定后的锁定时长(分钟)
  */
 @ConfigurationProperties(prefix = "aitalky.verify-code")
 public record VerifyCodeProperties(
@@ -19,7 +21,9 @@ public record VerifyCodeProperties(
         int ttlMinutes,
         int sendIntervalSeconds,
         int codeLength,
-        String from
+        String from,
+        int maxAttempts,
+        int lockMinutes
 ) {
     public VerifyCodeProperties {
         if (ttlMinutes <= 0) {
@@ -30,6 +34,12 @@ public record VerifyCodeProperties(
         }
         if (codeLength <= 0) {
             codeLength = 6;
+        }
+        if (maxAttempts <= 0) {
+            maxAttempts = 5;
+        }
+        if (lockMinutes <= 0) {
+            lockMinutes = 10;
         }
     }
 }

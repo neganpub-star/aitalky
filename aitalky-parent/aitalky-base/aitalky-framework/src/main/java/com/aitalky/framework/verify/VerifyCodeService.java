@@ -56,21 +56,49 @@ public class VerifyCodeService {
 
     /**
      * 校验验证码:万能码优先;否则比对 Redis 中的真实码(一次性,校验通过即失效)。
+     * <p><b>防暴力枚举</b>:同一邮箱+场景连续输错达 {@code maxAttempts} 次即临时锁定 {@code lockMinutes} 分钟,
+     * 锁定期间一律返回 {@link ResultCode#VERIFY_CODE_LOCKED};校验通过则清零失败计数。
      * 校验失败抛 {@link BizException}。
      */
     public void verify(VerifyScene scene, String email, String code) {
+        // 锁定优先:被锁期间不消耗也不比对,直接拒绝(避免锁后仍可继续枚举)
+        if (redisson.getBucket(lockKey(scene, email)).isExists()) {
+            throw new BizException(ResultCode.VERIFY_CODE_LOCKED);
+        }
         if (code == null || code.isBlank()) {
             throw new BizException(ResultCode.VERIFY_CODE_ERROR);
         }
         if (props.masterEnabled() && code.equals(props.masterCode())) {
-            return; // 万能码直接通过
+            return; // 万能码直接通过(不计入失败次数)
         }
         RBucket<String> bucket = redisson.getBucket(codeKey(scene, email));
         String real = bucket.get();
         if (real == null || !real.equals(code)) {
+            recordFailureAndMaybeLock(scene, email);
             throw new BizException(ResultCode.VERIFY_CODE_ERROR);
         }
-        bucket.delete(); // 一次性使用
+        bucket.delete();                              // 一次性使用
+        redisson.getBucket(failKey(scene, email)).delete(); // 校验通过清零失败计数
+    }
+
+    /**
+     * 记一次校验失败:失败计数 +1(计数窗口 = 锁定时长);达到上限则置锁定标记并清掉真实码,
+     * 后续即便有真实码也被锁定拦截,杜绝继续枚举。
+     */
+    private void recordFailureAndMaybeLock(VerifyScene scene, String email) {
+        var counter = redisson.getAtomicLong(failKey(scene, email));
+        long fails = counter.incrementAndGet();
+        if (fails == 1L) {
+            // 首次失败才设置过期,使计数窗口与锁定时长一致(避免每次失败都续期导致永不重置)
+            counter.expire(Duration.ofMinutes(props.lockMinutes()));
+        }
+        if (fails >= props.maxAttempts()) {
+            redisson.getBucket(lockKey(scene, email)).set("1", props.lockMinutes(), TimeUnit.MINUTES);
+            redisson.getBucket(codeKey(scene, email)).delete(); // 锁定即作废当前真实码
+            counter.delete();
+            log.warn("验证码连续输错达上限已锁定 scene={}, email={}, lockMinutes={}", scene, email, props.lockMinutes());
+            throw new BizException(ResultCode.VERIFY_CODE_LOCKED);
+        }
     }
 
     private void sendMail(String email, VerifyScene scene, String code) {
@@ -106,5 +134,15 @@ public class VerifyCodeService {
 
     private String limitKey(VerifyScene scene, String email) {
         return "verify:limit:" + scene.name().toLowerCase() + ":" + email;
+    }
+
+    /** 失败计数 key(连续输错次数) */
+    private String failKey(VerifyScene scene, String email) {
+        return "verify:fail:" + scene.name().toLowerCase() + ":" + email;
+    }
+
+    /** 锁定标记 key(存在即处于锁定期) */
+    private String lockKey(VerifyScene scene, String email) {
+        return "verify:lock:" + scene.name().toLowerCase() + ":" + email;
     }
 }

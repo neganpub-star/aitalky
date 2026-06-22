@@ -98,6 +98,8 @@ public enum ResultCode {
     BILLING_HAS_PENDING_ORDER(1060, "billing.has.pending.order"),
     /** 资源配额不足(席位/客户配额等已达上限,需升级套餐或加购) */
     RESOURCE_QUOTA_EXCEEDED(1061, "billing.resource.quota.exceeded"),
+    /** 验证码连续输错次数过多,已临时锁定(防暴力枚举) */
+    VERIFY_CODE_LOCKED(1062, "verify.code.locked"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
