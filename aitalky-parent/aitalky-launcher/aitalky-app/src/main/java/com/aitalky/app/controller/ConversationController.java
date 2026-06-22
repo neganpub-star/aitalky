@@ -143,6 +143,14 @@ public class ConversationController {
         return R.ok(list.stream().map(PublicMessengerController::toVO).toList());
     }
 
+    /** 会话内聊天记录搜索:按内容搜当前会话的文本消息(可见、非内部、非系统),seq 倒序,最多 50 条 */
+    @GetMapping("/{id}/messages/search")
+    public R<List<MessageVO>> searchMessages(@PathVariable Long id, @RequestParam String keyword) {
+        conversationService.getById(id); // 校验会话存在 + 租户隔离
+        return R.ok(messageService.searchInConversation(id, keyword, 50)
+                .stream().map(PublicMessengerController::toVO).toList());
+    }
+
     /** 坐席回复(代发归属=真实发送成员;未分配 / 已结束被重新发起 则分配给当前坐席) */
     @PostMapping("/{id}/messages")
     public R<MessageVO> reply(@PathVariable Long id, @Valid @RequestBody AgentReplyReq req) {

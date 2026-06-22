@@ -116,6 +116,24 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public List<Message> searchInConversation(Long conversationId, String keyword, int limit) {
+        if (!StringUtils.hasText(keyword)) {
+            return List.of();
+        }
+        // 只搜本会话内的「文本消息」:可见、非内部、非系统;限 type=text 避免命中图片/文件的 URL content。
+        // 关键词按字面量匹配(转义正则特殊字符,防注入/异常),seq 倒序=最新在前(对齐参考)。
+        Query q = new Query(Criteria.where("conversationId").is(conversationId)
+                .and("type").is("text")
+                .and("content").regex(Pattern.quote(keyword), "i")
+                .and("isVisible").ne(false)
+                .and("internal").ne(true)
+                .and("senderType").ne("system"));
+        q.with(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "seq"))
+                .limit(limit);
+        return mongoTemplate.find(q, Message.class);
+    }
+
+    @Override
     public Message retract(Long conversationId, Long msgId, String operatorType, Long operatorId) {
         Message m = messageRepository.findByConversationIdAndMsgId(conversationId, msgId)
                 .orElseThrow(() -> new BizException(ResultCode.MESSAGE_NOT_FOUND));

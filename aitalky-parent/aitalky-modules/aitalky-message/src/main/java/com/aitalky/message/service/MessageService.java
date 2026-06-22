@@ -34,6 +34,13 @@ public interface MessageService {
     List<Long> mentionedConversationIds(Long projectId, Long memberId, int limit);
 
     /**
+     * 会话内聊天记录搜索:在单条会话内按内容匹配命中的文本消息。
+     * 仅可见(未撤回)、非内部、非系统消息;按 seq 倒序(最新在前),最多 limit 条。
+     * @param keyword 关键词(按字面量匹配,自动转义正则特殊字符)
+     */
+    List<Message> searchInConversation(Long conversationId, String keyword, int limit);
+
+    /**
      * 撤回消息:校验"本人发送"+ 时限(默认2分钟),置 isVisible=false(幂等)。
      * @param operatorType 发起方类型 agent/customer;operatorId 对应 memberId/customerId
      * @return 撤回后的消息(isVisible=false),供上层推 WS
