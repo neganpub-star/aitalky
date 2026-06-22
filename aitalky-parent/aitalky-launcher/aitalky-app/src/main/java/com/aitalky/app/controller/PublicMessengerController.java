@@ -236,19 +236,22 @@ public class PublicMessengerController {
         return R.ok();
     }
 
-    /** 客户拉消息(客户令牌):afterSeq 增量;不传则取最近 50 条。客户看不到内部消息 */
+    /** 客户拉消息(客户令牌):beforeSeq 历史翻页 / afterSeq 增量;都不传取最近 50 条。客户看不到内部消息 */
     @GetMapping("/messages")
     public R<List<MessageVO>> messages(@RequestHeader("Authorization") String auth,
                                        @RequestParam Long conversationId,
-                                       @RequestParam(required = false) Long afterSeq) {
+                                       @RequestParam(required = false) Long afterSeq,
+                                       @RequestParam(required = false) Long beforeSeq) {
         var principal = customerTokenService.parse(auth);
         CnvConversation conv = conversationService.getById(conversationId);
         if (!conv.getCustomerId().equals(principal.customerId()) || !conv.getProjectId().equals(principal.projectId())) {
             throw new BizException(ResultCode.FORBIDDEN);
         }
-        List<Message> list = afterSeq == null
-                ? messageService.loadLatest(conversationId, 50)
-                : messageService.sync(conversationId, afterSeq);
+        List<Message> list = beforeSeq != null
+                ? messageService.loadBefore(conversationId, beforeSeq, 50)
+                : (afterSeq == null
+                    ? messageService.loadLatest(conversationId, 50)
+                    : messageService.sync(conversationId, afterSeq));
         return R.ok(list.stream()
                 .filter(m -> !Boolean.TRUE.equals(m.getInternal()))   // 客户不可见内部消息
                 .map(PublicMessengerController::toVO).toList());

@@ -76,6 +76,16 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    public List<Message> loadBefore(Long conversationId, long beforeSeq, int limit) {
+        // 历史翻页:倒序取 seq<beforeSeq 的最近 limit 条,再反转为升序(显示用)
+        List<Message> desc = messageRepository.findByConversationIdAndSeqLessThanOrderBySeqDesc(
+                conversationId, beforeSeq, PageRequest.of(0, limit));
+        List<Message> asc = new ArrayList<>(desc);
+        java.util.Collections.reverse(asc);
+        return asc;
+    }
+
+    @Override
     public List<Long> searchConversationIds(Long projectId, String keyword, int limit) {
         if (!StringUtils.hasText(keyword)) {
             return List.of();

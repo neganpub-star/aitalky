@@ -17,6 +17,9 @@ public interface MessageService {
     /** 增量同步/补拉:seq 之后的消息(升序) */
     List<Message> sync(Long conversationId, long afterSeq);
 
+    /** 历史向上翻页:seq < beforeSeq 的最近 limit 条(返回按 seq 升序) */
+    List<Message> loadBefore(Long conversationId, long beforeSeq, int limit);
+
     /**
      * 按内容搜索命中的会话id(去重)。仅本项目、可见(未撤回)、非内部消息。
      * @param keyword 关键词(按字面量匹配,自动转义特殊字符)

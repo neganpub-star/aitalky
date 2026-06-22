@@ -126,14 +126,20 @@ public class ConversationController {
         return R.ok();
     }
 
-    /** 会话消息(afterSeq 增量;不传取最近 50 条);打开即清未读。坐席可见内部消息 */
+    /** 会话消息(beforeSeq 历史翻页 / afterSeq 增量;都不传取最近 50 条)。坐席可见内部消息 */
     @GetMapping("/{id}/messages")
-    public R<List<MessageVO>> messages(@PathVariable Long id, @RequestParam(required = false) Long afterSeq) {
+    public R<List<MessageVO>> messages(@PathVariable Long id,
+                                       @RequestParam(required = false) Long afterSeq,
+                                       @RequestParam(required = false) Long beforeSeq) {
         conversationService.getById(id);
-        conversationService.resetUnread(id);
-        List<Message> list = afterSeq == null
-                ? messageService.loadLatest(id, 50)
-                : messageService.sync(id, afterSeq);
+        List<Message> list;
+        if (beforeSeq != null) {
+            // 历史向上翻页:不清未读(只看更早消息)
+            list = messageService.loadBefore(id, beforeSeq, 50);
+        } else {
+            conversationService.resetUnread(id); // 首屏/增量:打开即清未读
+            list = afterSeq == null ? messageService.loadLatest(id, 50) : messageService.sync(id, afterSeq);
+        }
         return R.ok(list.stream().map(PublicMessengerController::toVO).toList());
     }
 
