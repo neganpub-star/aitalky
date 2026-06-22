@@ -67,6 +67,14 @@ export async function loadBeforeMessages(id: string, beforeSeq: number) {
   return list.map(normMessage)
 }
 
+/** 会话内聊天记录搜索:按内容搜当前会话文本消息(seq 倒序,最多 50 条) */
+export async function searchMessagesInConversation(id: string, keyword: string) {
+  const list = await client.get<unknown, MessageVO[]>(`/conversations/${id}/messages/search`, {
+    params: { keyword },
+  })
+  return list.map(normMessage)
+}
+
 /** 坐席回复。internal=true 为内部消息(客户不可见) */
 export async function replyConversation(
   id: string,
