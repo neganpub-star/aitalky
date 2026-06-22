@@ -10,6 +10,8 @@ interface Props {
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   toast: string | null
+  loadingMore: boolean
+  onLoadMore: () => Promise<number>  // 历史翻页:前插更早消息,返回新增条数
   onSend: (text: string) => void
   onSendFile: (file: File) => void
   onResend: (localId: string) => void
@@ -71,7 +73,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, toast, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
@@ -101,10 +103,23 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
   const settledRef = useRef(false)
   const scrollToBottom = (smooth: boolean) =>
     endRef.current?.scrollIntoView(smooth ? { behavior: 'smooth' } : undefined)
-  // 列表滚动:据距底距离更新粘底标记(阈值 80px,容忍抖动)
+  const loadingMoreLocalRef = useRef(false)
+  // 列表滚动:据距底距离更新粘底标记(阈值 80px);接近顶部(<40px)触发历史翻页并保持滚动位置
   const onListScroll = () => {
     const el = listRef.current
-    if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (!el) return
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    if (el.scrollTop < 40 && !loadingMoreLocalRef.current) {
+      loadingMoreLocalRef.current = true
+      const prevH = el.scrollHeight
+      stickRef.current = false // 翻历史不粘底
+      onLoadMore().then((added) => {
+        if (added > 0) requestAnimationFrame(() => {
+          const e2 = listRef.current
+          if (e2) e2.scrollTop = e2.scrollHeight - prevH // 视口停在原来那条
+        })
+      }).finally(() => { loadingMoreLocalRef.current = false })
+    }
   }
   // 图片/视频异步加载完成会撑高内容:粘底时重新跳到底,修复"进会话不在最底部"
   const onMediaLoad = () => {
@@ -219,6 +234,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
       )}
 
       <div className="msg-list" ref={listRef} onScroll={onListScroll} onClick={() => menuFor && setMenuFor(null)}>
+        {loadingMore && <div className="msg-load-more">···</div>}
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
           const initial = (m.senderName || 'S').charAt(0).toUpperCase()

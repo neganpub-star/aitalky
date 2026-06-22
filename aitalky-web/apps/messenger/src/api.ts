@@ -102,3 +102,11 @@ export async function syncMessages(conversationId: string, afterSeq?: number): P
   })
   return list.map(normMessage)
 }
+
+/** 历史向上翻页:取 seq < beforeSeq 的最近 50 条(升序) */
+export async function loadBeforeMessages(conversationId: string, beforeSeq: number): Promise<MessageVO[]> {
+  const list = await client.get<unknown, MessageVO[]>('/messages', {
+    params: { conversationId, beforeSeq },
+  })
+  return list.map(normMessage)
+}

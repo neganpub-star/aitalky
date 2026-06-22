@@ -261,6 +261,14 @@ body {
   /* iMessage 风:聊天区白底,衬出浅灰坐席气泡 + 蓝色客户气泡 */
   background: #fff;
 }
+/* 历史翻页加载提示(顶部) */
+.msg-load-more {
+  text-align: center;
+  color: #bbb;
+  font-size: 18px;
+  letter-spacing: 2px;
+  padding: 2px 0 8px;
+}
 .msg-row {
   display: flex;
   gap: 8px;

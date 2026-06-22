@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { setLang, t } from './i18n'
-import { getAgent, init, retractMessage, sendMessage, sendRead, sendTyping, setOnUnauthorized, setToken, syncMessages, uploadFile } from './api'
+import { getAgent, init, loadBeforeMessages, retractMessage, sendMessage, sendRead, sendTyping, setOnUnauthorized, setToken, syncMessages, uploadFile } from './api'
 import { messengerWs, type WsStatus } from './ws'
 import { ensureNotifyPermission, playBeep, setTitleUnread, showPopup, unlockAudio } from './notify'
 import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, PendingMsg } from './types'
@@ -79,6 +79,12 @@ export default function App() {
   const localMaxSeqRef = useRef(0)
   const syncingRef = useRef(false)
   const convIdRef = useRef<string>('')
+  // 历史向上翻页
+  const [loadingMore, setLoadingMore] = useState(false)
+  const hasMoreRef = useRef(true)
+  const loadingMoreRef = useRef(false)
+  const messagesRef = useRef<MessageVO[]>([])
+  useEffect(() => { messagesRef.current = messages }, [messages])
   // typing:节流发送时间戳 + 显示自动清除定时器 + sysMsgTyping 开关(避免 WS 监听依赖 data 重订阅)
   const lastTypingRef = useRef(0)
   const typingClearRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -123,6 +129,28 @@ export default function App() {
   }, [applyIncoming])
   const syncRef = useRef(syncNow)
   syncRef.current = syncNow
+
+  // 历史向上翻页:取当前最早 seq 之前的 50 条,前插;返回新增条数(供 Chat 补偿滚动位置)
+  const loadMore = useCallback(async (): Promise<number> => {
+    const cid = convIdRef.current
+    const oldest = messagesRef.current[0]?.seq
+    if (!cid || oldest == null || loadingMoreRef.current || !hasMoreRef.current) return 0
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+    try {
+      const older = await loadBeforeMessages(cid, oldest)
+      if (older.length < 50) hasMoreRef.current = false
+      if (older.length > 0) setMessages((prev) => mergeMessages(prev, older))
+      return older.length
+    } catch {
+      return 0
+    } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [])
+  const loadMoreRef = useRef(loadMore)
+  loadMoreRef.current = loadMore
 
   // 已读上报(静默,无 UI):仅"在聊天界面 + 标签页可见"时,把当前已读位推给后端(坐席端显示"已读")
   const reportReadRef = useRef<() => void>(() => {})
@@ -182,6 +210,8 @@ export default function App() {
       const sorted = mergeMessages([], history)
       setMessages(sorted)
       localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
+      hasMoreRef.current = history.length >= 50  // 首屏不足 50 说明没有更早历史
+      loadingMoreRef.current = false
       // 历史视为已读:首次进聊天不显未读分割线(只标"离开后新来的")
       lastReadSeqRef.current = localMaxSeqRef.current
     } catch {
@@ -370,6 +400,8 @@ export default function App() {
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       toast={toast}
+      loadingMore={loadingMore}
+      onLoadMore={() => loadMoreRef.current()}
       onSend={onSend}
       onSendFile={onSendFile}
       onResend={onResend}
