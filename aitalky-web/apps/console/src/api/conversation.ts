@@ -59,6 +59,14 @@ export async function listMessages(id: string, afterSeq?: number) {
   return list.map(normMessage)
 }
 
+/** 历史向上翻页:取 seq < beforeSeq 的最近 50 条(升序);不清未读 */
+export async function loadBeforeMessages(id: string, beforeSeq: number) {
+  const list = await client.get<unknown, MessageVO[]>(`/conversations/${id}/messages`, {
+    params: { beforeSeq },
+  })
+  return list.map(normMessage)
+}
+
 /** 坐席回复。internal=true 为内部消息(客户不可见) */
 export async function replyConversation(
   id: string,

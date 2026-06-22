@@ -14,7 +14,7 @@ import { playBeep, unlockAudio } from '../notify'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
   assignConversation, claimConversation, closeConversation, getConversation, getConversationCounts,
-  listConversations, listMessages, replyConversation, retractConversationMessage,
+  listConversations, listMessages, loadBeforeMessages, replyConversation, retractConversationMessage,
   searchConversations, sendConversationTyping, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
@@ -172,6 +172,9 @@ export default function Inbox() {
   const [detail, setDetail] = useState<ConversationDetailVO | null>(null)
   const [messages, setMessages] = useState<MessageVO[]>([])
   const [loadingMsgs, setLoadingMsgs] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false) // 历史翻页加载中(顶部 spinner)
+  const hasMoreRef = useRef(true)        // 是否还有更早历史(首屏/翻页返回<50 即到顶)
+  const loadingMoreRef = useRef(false)   // 历史翻页防重入
 
   const [replyTab, setReplyTab] = useState<'reply' | 'internal'>('reply')
   const [input, setInput] = useState('')
@@ -466,11 +469,42 @@ export default function Inbox() {
     ro.observe(content)
     return () => ro.disconnect()
   }, [selectedId, bottomNow])
-  // 监听用户滚动:接近底部(<60px)= 黏底,否则取消黏底
+  // 历史向上翻页:取当前最早 seq 之前的 50 条,前插并保持滚动位置(用户看的那条不跳)
+  const loadMore = useCallback(async () => {
+    const el = msgScrollRef.current
+    if (!el || loadingMoreRef.current || !hasMoreRef.current) return
+    const cid = selectedId
+    const oldest = messages[0]?.seq
+    if (!cid || oldest == null) return
+    loadingMoreRef.current = true
+    setLoadingMore(true)
+    const prevHeight = el.scrollHeight
+    const prevTop = el.scrollTop
+    try {
+      const older = await loadBeforeMessages(cid, oldest)
+      if (older.length < 50) hasMoreRef.current = false
+      if (older.length > 0) {
+        stickRef.current = false // 翻历史不黏底
+        setMessages((prev) => mergeMessages(prev, older))
+        // 下一帧 DOM 撑高后补偿 scrollTop,视口停在原来那条消息
+        requestAnimationFrame(() => {
+          const e2 = msgScrollRef.current
+          if (e2) e2.scrollTop = prevTop + (e2.scrollHeight - prevHeight)
+        })
+      }
+    } catch { /* 网络失败忽略,下次滚动再试 */ } finally {
+      loadingMoreRef.current = false
+      setLoadingMore(false)
+    }
+  }, [selectedId, messages])
+
+  // 监听用户滚动:接近底部(<60px)= 黏底,否则取消黏底;接近顶部(<40px)触发历史翻页
   const onMsgScroll = useCallback(() => {
     const el = msgScrollRef.current
-    if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
-  }, [])
+    if (!el) return
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60
+    if (el.scrollTop < 40 && hasMoreRef.current && !loadingMoreRef.current) loadMore()
+  }, [loadMore])
 
   // 当前列表镜像(WS 处理器判断"未知会话"用)
   useEffect(() => { listRef.current = list }, [list])
@@ -497,6 +531,8 @@ export default function Inbox() {
       setMessages([])
       setCustomerReadSeq(0)
       localMaxSeqRef.current = 0
+      hasMoreRef.current = true       // 切会话重置历史翻页
+      loadingMoreRef.current = false
       wsClient.subscribe(conv.id)
       // 本地先清未读(后端拉消息时也会 resetUnread)
       setList((prev) => prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)))
@@ -507,8 +543,9 @@ export default function Inbox() {
         setCustomerReadSeq(d.customerReadSeq ?? 0)
         const sorted = mergeMessages([], msgs)
         setMessages(sorted)
-        // localMaxSeq = 首屏最新 seq;首屏只取最近 50 条,更早的是历史(翻页另说),不影响实时补漏基准
+        // localMaxSeq = 首屏最新 seq(实时补漏基准);首屏不足 50 条说明没有更早历史
         localMaxSeqRef.current = sorted.reduce((m, x) => Math.max(m, x.seq), 0)
+        hasMoreRef.current = msgs.length >= 50
         // 打开会话已清该会话未读 → 刷新分类未读数,我的/未分配红点跟着消
         refreshCountsRef.current()
       } finally {
@@ -1180,6 +1217,8 @@ export default function Inbox() {
 
             <div ref={msgScrollRef} onScroll={onMsgScroll} style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
               <div ref={msgContentRef}>
+                {/* 历史翻页加载中(顶部) */}
+                {loadingMore && <div style={{ display: 'flex', justifyContent: 'center', padding: '4px 0 12px' }}><Spin size="small" /></div>}
                 {loadingMsgs ? (
                   <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 40 }}><Spin /></div>
                 ) : messages.length === 0 && currentPending.length === 0 ? (
