@@ -1751,7 +1751,7 @@ export default function Inbox() {
           <div style={{ height: 56, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px', borderBottom: splitBorder }}>
             <span style={{ ...styles.colTitle, flexShrink: 0 }}>{t('inbox.chatSearchTitle')}</span>
             <Input
-              autoFocus
+              autoFocus allowClear
               value={chatSearchKw}
               onChange={(e) => setChatSearchKw(e.target.value)}
               onPressEnter={gotoPrevMatch}
