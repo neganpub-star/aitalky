@@ -1154,6 +1154,9 @@ export default function Inbox() {
       )
     }
     const internal = !!m.internal
+    // B 坐席消息已自动翻译:主气泡显示发出去的译文,下方副气泡显示原文(对齐参考)
+    const agentTranslated = mine && !internal && m.type === 'text' && !!m.translations && Object.keys(m.translations).length > 0
+    const agentSentText = agentTranslated ? (Object.values(m.translations!)[0] || m.content) : m.content
     // 对方气泡:暗色用中灰、浅色用浅灰(都比各自背景明显;原 colorBgContainer 白贴白/黑贴黑都看不清)
     // 坐席自己消息:浅蓝底+深字(原纯蓝底导致蓝色链接看不清);对方:浅灰底。内部消息:暖黄。
     const bubbleBg = internal ? (isDark ? '#5c4b1f' : '#fff7e6') : mine ? (isDark ? '#2b3a55' : '#e7ecff') : (isDark ? '#3a3b42' : '#eceef2')
@@ -1240,7 +1243,7 @@ export default function Inbox() {
               <div style={{ padding: '8px 13px', borderRadius: 8, [mine ? 'borderTopRightRadius' : 'borderTopLeftRadius']: 2, background: bubbleBg, color: bubbleColor, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', border: internal ? `1px solid ${token.colorWarningBorder}` : 'none', boxShadow: 'none' }}>
                 {/* 链接仅对坐席消息解析:客户没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */}
                 {internal ? renderRichText(m.content, linkColor, true)
-                  : mine ? renderRichText(m.content, linkColor) : m.content}
+                  : mine ? renderRichText(agentSentText, linkColor) : m.content}
               </div>
             )}
             {toolbar}
@@ -1254,12 +1257,12 @@ export default function Inbox() {
               </div>
             </div>
           )}
-          {/* B 坐席消息已自动翻译发出:主气泡=原文(坐席打的),下方显示实际发给客户的译文(坐席确认发送内容) */}
-          {mine && !internal && m.type === 'text' && m.translations && Object.keys(m.translations).length > 0 && (
-            <div style={{ marginTop: 4, padding: '8px 13px', borderRadius: 8, borderTopRightRadius: 2, background: isDark ? '#2b3a55' : '#e7ecff', color: token.colorText, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: 'flex-end' }}>
-              {Object.values(m.translations)[0]}
+          {/* B 坐席消息:主气泡=发送出去的译文,此处下方副气泡=坐席输入的原文,标「✓ 原文」(对齐参考) */}
+          {agentTranslated && (
+            <div style={{ marginTop: 4, padding: '8px 13px', borderRadius: 8, borderTopRightRadius: 2, background: isDark ? '#33343b' : '#f2f4f7', color: token.colorText, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: 'flex-end' }}>
+              {m.content}
               <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
-                <CheckCircleOutlined /> {t('inbox.sentTranslation')}
+                <CheckCircleOutlined /> {t('inbox.original')}
               </div>
             </div>
           )}
