@@ -113,6 +113,11 @@ export function updateCustomerLanguage(id: string, lang: string) {
   return client.put<unknown, void>(`/conversations/${id}/customer-language`, null, { params: { lang } })
 }
 
+/** 语种识别:识别某条客户消息语种并回填客户源语言,返回 aitalky 语言码(null=无法识别) */
+export function detectMessageLang(id: string, msgId: string) {
+  return client.post<unknown, string | null>(`/conversations/${id}/messages/${msgId}/detect-lang`)
+}
+
 /** 更新客户联系方式/邮箱(详情面板编辑) */
 export function updateCustomerContact(id: string, contact: string, email: string) {
   return client.put<unknown, void>(`/conversations/${id}/customer`, { contact, email })

@@ -6,7 +6,7 @@ import {
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
-  FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined,
+  FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined, GlobalOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -18,7 +18,7 @@ import {
   assignConversation, claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, loadBeforeMessages, replyConversation, retractConversationMessage,
   searchConversations, searchMessagesInConversation, sendConversationTyping, translateMessage,
-  setTranslateSetting, translateText, updateCustomerLanguage, updateCustomerContact,
+  setTranslateSetting, translateText, updateCustomerLanguage, detectMessageLang, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { pageMembers } from '../api/member'
@@ -912,6 +912,22 @@ export default function Inbox() {
     setDetail({ ...detail, agentAutoTranslate: on ? 1 : 0 })
     setTranslateSetting(selectedId, { agentAutoTranslate: on ? 1 : 0 }).catch(() => {})
   }
+  // 语种识别(hover 客户消息):本地识别该条语种 → 回填客户源语言 + 提示结果
+  const onDetectLang = async (msgId: string) => {
+    if (!selectedId) return
+    try {
+      const lang = await detectMessageLang(selectedId, msgId)
+      if (lang) {
+        setDetail((d) => (d ? { ...d, sourceLanguage: lang } : d))
+        message.success(t('inbox.detectedAs', { lang: langLabel(lang, transLang) }))
+      } else {
+        message.info(t('inbox.detectFail'))
+      }
+    } catch {
+      // 异常由全局拦截器提示
+    }
+  }
+
   // B 客户源语言(底部下拉=坐席消息翻译目标语言)
   const changeCustLang = (v: string) => {
     if (!selectedId || !detail) return
@@ -1138,6 +1154,11 @@ export default function Inbox() {
         {!mine && m.type === 'text' && (
           <Tooltip title={t('inbox.translate')}>
             <TranslationOutlined style={{ ...iconStyle, color: translatingId === m.msgId ? token.colorPrimary : iconStyle.color }} onClick={() => onTranslate(m.msgId)} />
+          </Tooltip>
+        )}
+        {!mine && m.type === 'text' && (
+          <Tooltip title={t('inbox.detectLang')}>
+            <GlobalOutlined style={iconStyle} onClick={() => onDetectLang(m.msgId)} />
           </Tooltip>
         )}
         {retractable && (
