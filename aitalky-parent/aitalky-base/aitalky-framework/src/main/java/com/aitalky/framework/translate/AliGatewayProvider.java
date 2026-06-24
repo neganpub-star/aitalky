@@ -24,10 +24,18 @@ import java.util.Map;
 @Component
 public class AliGatewayProvider implements TranslateProvider {
 
-    /** aitalky 标准语言码 → 阿里云机翻语言码;未命中按 '_' 前段兜底(zh_CN→zh) */
-    private static final Map<String, String> LANG = Map.of(
-            "zh_CN", "zh", "zh_TW", "zh-tw", "en_US", "en", "en", "en",
-            "ja_JP", "ja", "ko_KR", "ko", "fr_FR", "fr", "de_DE", "de", "es_ES", "es");
+    /**
+     * aitalky 标准语言码 → 阿里云机翻语言码。覆盖平台语种字典 pf_language 全集(18 种)。
+     * 多数 = '_' 前段(vi_VN→vi),但繁体特殊(zh-tw),故显式列全;未命中仍按 '_' 前段兜底。
+     */
+    private static final Map<String, String> LANG = Map.ofEntries(
+            Map.entry("zh_CN", "zh"), Map.entry("zh_TW", "zh-tw"), Map.entry("en_US", "en"),
+            Map.entry("vi_VN", "vi"), Map.entry("my_MM", "my"), Map.entry("de_DE", "de"),
+            Map.entry("it_IT", "it"), Map.entry("pt_PT", "pt"), Map.entry("ja_JP", "ja"),
+            Map.entry("ko_KR", "ko"), Map.entry("id_ID", "id"), Map.entry("ru_RU", "ru"),
+            Map.entry("th_TH", "th"), Map.entry("lo_LA", "lo"), Map.entry("fr_FR", "fr"),
+            Map.entry("ms_MY", "ms"), Map.entry("es_ES", "es"), Map.entry("tr_TR", "tr"),
+            Map.entry("en", "en"));
 
     private final TranslateProperties props;
     private final ObjectMapper objectMapper = new ObjectMapper();

@@ -11,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
 import { useAppStore } from '../store/useAppStore'
+import { allLanguages, langLabel } from '../constants/languages'
 import { playBeep, unlockAudio } from '../notify'
 import { wsClient, type WsStatus } from '../ws/client'
 import {
@@ -111,19 +112,6 @@ function fmtMsgTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
-// 翻译可选语言(下拉用):值=aitalky 语言码,后端映射成引擎码
-const LANG_OPTIONS = [
-  { value: 'zh_CN', label: '简体中文' }, { value: 'zh_TW', label: '繁體中文' },
-  { value: 'en_US', label: 'English' }, { value: 'ja_JP', label: '日本語' },
-  { value: 'ko_KR', label: '한국어' },
-]
-
-// 客户源语言代码 → 展示名(对齐 aitalky)
-function langLabel(code: string | null): string {
-  if (!code) return '-'
-  const map: Record<string, string> = { zh_CN: '简体中文', zh_TW: '繁體中文', en_US: 'English', en: 'English', ja_JP: '日本語', ko_KR: '한국어' }
-  return map[code] || code
-}
 
 // 可撤回时限:与后端一致(2分钟)
 const RETRACT_WINDOW_MS = 2 * 60 * 1000
@@ -192,6 +180,8 @@ export default function Inbox() {
   const [detail, setDetail] = useState<ConversationDetailVO | null>(null)
   // A 客户消息翻译目标语言:会话设置 translateTo 优先,未设回退坐席界面语言
   const custTransTo = detail?.translateTo || transLang
+  // 翻译语种下拉:用平台语种字典全集(pf_language,与常规设置同源),label 按坐席界面语言
+  const langOptions = allLanguages().map((d) => ({ value: d.code, label: langLabel(d.code, transLang) }))
   const [messages, setMessages] = useState<MessageVO[]>([])
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false) // 历史翻页加载中(顶部 spinner)
@@ -1442,7 +1432,7 @@ export default function Inbox() {
               <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
                 padding: '7px 16px', background: isDark ? '#1f2a3d' : '#eef4ff', borderBottom: splitBorder, fontSize: 13, color: token.colorTextSecondary }}>
                 <span>{t('inbox.transTo')}</span>
-                <Select size="small" variant="borderless" value={custTransTo} options={LANG_OPTIONS}
+                <Select size="small" variant="borderless" value={custTransTo} options={langOptions}
                   onChange={changeCustTransTo} style={{ minWidth: 88 }} popupMatchSelectWidth={false} />
                 <a onClick={toggleCustAuto} style={{ marginLeft: 4 }}>
                   {detail.autoTranslate === 1 ? t('inbox.closeTranslate') : t('inbox.openTranslate')}
@@ -1496,7 +1486,7 @@ export default function Inbox() {
                   <span>{t('inbox.autoTranslate')}</span>
                   <Switch size="small" checked={detail.agentAutoTranslate === 1} onChange={toggleAgentAuto} />
                   <span style={{ color: token.colorTextTertiary }}>{t('inbox.customerLang')}</span>
-                  <Select size="small" variant="borderless" value={detail.sourceLanguage || undefined} options={LANG_OPTIONS}
+                  <Select size="small" variant="borderless" value={detail.sourceLanguage || undefined} options={langOptions}
                     onChange={changeCustLang} style={{ minWidth: 88 }} popupMatchSelectWidth={false} placeholder="-" />
                 </div>
               </div>
@@ -1511,7 +1501,7 @@ export default function Inbox() {
                 onKeyDown={onInputKeyDown}
                 placeholder={replyTab === 'reply'
                   ? (detail?.agentAutoTranslate === 1 && detail.sourceLanguage
-                      ? t('inbox.sendAsLang', { lang: langLabel(detail.sourceLanguage) })
+                      ? t('inbox.sendAsLang', { lang: langLabel(detail.sourceLanguage, transLang) })
                       : t('inbox.replyPlaceholder'))
                   : t('inbox.internalPlaceholder')}
                 autoSize={{ minRows: 5, maxRows: 10 }}
@@ -1679,7 +1669,7 @@ export default function Inbox() {
             [t('inbox.detail.convId'), detail.id],
             [t('inbox.detail.ip'), detail.ip || t('inbox.detail.empty')],
             [t('inbox.detail.location'), detail.location || t('inbox.detail.empty')],
-            [t('inbox.detail.language'), langLabel(detail.sourceLanguage)],
+            [t('inbox.detail.language'), detail.sourceLanguage ? langLabel(detail.sourceLanguage, transLang) : t('inbox.detail.empty')],
             [t('inbox.detail.assignee'), detail.assigneeName
               || (detail.assigneeMemberId === myMemberId ? t('inbox.mine') : null)
               || t('inbox.detail.unassigned')],
