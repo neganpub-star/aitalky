@@ -12,8 +12,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param apiBaseUrl ipapi 基址(以 / 结尾,后面直接拼 IP);免费版仅支持 http
  * @param lang       归属地语言。系统中英双语、location 是落库快照,统一存英文地名(国际通用,
  *                   中英界面均可读),避免存死中文后英文坐席看到中文。zh-CN/ja 等会按 CJK 风格拼接
- * @param timeoutMs  单次解析超时(毫秒),避免外网慢拖住异步线程
- * @param cacheDays  解析结果缓存天数(含失败负缓存,防同 IP 重复打 API 触发限速)
+ * @param timeoutMs     单次解析超时(毫秒),避免外网慢拖住异步线程
+ * @param cacheDays     解析结果缓存天数(含失败负缓存,防同 IP 重复打 API 触发限速)
+ * @param devFallbackIp 开发期回退 IP:本地直连只能拿到回环/内网 IP(无归属地),配此公网 IP 后
+ *                      遇私网/回环改用它解析,本地也能看到「所在地」效果。<b>生产务必留空</b>(留空则私网照常跳过)
  */
 @ConfigurationProperties(prefix = "aitalky.geoip")
 public record GeoIpProperties(
@@ -22,7 +24,8 @@ public record GeoIpProperties(
         String apiBaseUrl,
         String lang,
         int timeoutMs,
-        int cacheDays
+        int cacheDays,
+        String devFallbackIp
 ) {
     public GeoIpProperties {
         if (provider == null || provider.isBlank()) {

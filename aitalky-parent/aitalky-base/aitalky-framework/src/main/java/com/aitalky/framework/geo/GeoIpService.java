@@ -58,17 +58,33 @@ public class GeoIpService {
      * 关闭/私网 IP/解析失败均静默跳过。
      */
     public void resolveAsync(String ip, Consumer<String> onResolved) {
-        if (!props.enabled() || !isPublicIp(ip)) {
+        if (!props.enabled()) {
+            return;
+        }
+        String target = effectiveIp(ip); // 私网/回环遇开发回退 IP 时替换;否则 null 跳过
+        if (target == null) {
             return;
         }
         pool.execute(() -> {
             try {
-                resolve(ip).ifPresent(onResolved);
+                resolve(target).ifPresent(onResolved);
             } catch (Exception e) {
                 // 归属地解析失败不影响业务,仅告警
-                log.warn("IP 归属地解析失败 ip={}, 原因={}", ip, e.getMessage());
+                log.warn("IP 归属地解析失败 ip={}, 原因={}", target, e.getMessage());
             }
         });
+    }
+
+    /**
+     * 实际用于解析的 IP:公网原样返回;私网/回环时——配了开发回退 IP(dev-fallback-ip)则用它
+     * (本地也能看到所在地效果),否则返回 null(跳过解析)。生产 dev-fallback-ip 留空即恒跳过私网。
+     */
+    private String effectiveIp(String ip) {
+        if (isPublicIp(ip)) {
+            return ip;
+        }
+        String fb = props.devFallbackIp();
+        return (fb != null && !fb.isBlank() && isPublicIp(fb.trim())) ? fb.trim() : null;
     }
 
     /**
