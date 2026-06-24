@@ -176,7 +176,9 @@ public class BillingController {
         Long projectId = TenantContext.getProjectId();
         List<UsageVO> list = new ArrayList<>();
         list.add(usageOf(projectId, "seat", memberService.countActiveMembers(projectId)));
-        list.add(usageOf(projectId, "customer", customerService.countByProject(projectId)));
+        // 客户配额=主动营销/客户洞察资源(消费端=洞察采集「渠道×客户」,尚未做),客服会话不消费它,
+        // 故 used=0(原 countByProject 是客服客户数,语义错;等客户洞察模块再接真实采集量)
+        list.add(usageOf(projectId, "customer", 0));
         list.add(usageOf(projectId, "translate_char", quotaService.used(projectId, "translate_char")));
         list.add(usageOf(projectId, "ai_tokens", quotaService.used(projectId, "ai_tokens")));
         return R.ok(list);
