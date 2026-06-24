@@ -49,6 +49,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CusCustomerMapper customerMapper;
     private final SnowflakeIdGenerator idGenerator;
     private final DistributedLockTemplate lockTemplate;
+    private final com.aitalky.framework.storage.AvatarPool avatarPool;
 
     @Override
     public CusCustomer resolveOrCreate(Long projectId, String externalUserId, String visitorId, String lang) {
@@ -76,7 +77,7 @@ public class CustomerServiceImpl implements CustomerService {
             c.setVisitorId(visitorId);
             c.setType(isUser ? 2 : 1);
             c.setName(randomName());
-            c.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + c.getId());
+            c.setAvatar(avatarPool.urlFor(c.getId())); // 内置 Memoji 默认头像(按 id 取模),去 DiceBear 外网依赖
             c.setSourceLanguage(lang);
             customerMapper.insert(c);
             log.info("创建客户 customerId={}, projectId={}, type={}", c.getId(), projectId, c.getType());

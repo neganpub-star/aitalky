@@ -5,17 +5,21 @@ import com.aitalky.common.exception.BizException;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import io.minio.ListObjectsArgs;
 import io.minio.PutObjectArgs;
 import io.minio.SetBucketPolicyArgs;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -75,6 +79,7 @@ public class MinioService {
                     .credentials(props.accessKey(), props.secretKey())
                     .build();
             ensureBucket();
+            seedDefaultAvatars();
             log.info("MinIO 初始化完成, endpoint={}, bucket={}", props.endpoint(), props.bucket());
         } catch (Exception e) {
             // 初始化失败(如服务未启动)不阻断应用启动,调用上传时再报错
@@ -143,6 +148,50 @@ public class MinioService {
                 "Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/*"]}]}""".formatted(props.bucket());
         client.setBucketPolicy(SetBucketPolicyArgs.builder().bucket(props.bucket()).config(policy).build());
         log.info("MinIO 桶 {} 已设为匿名只读", props.bucket());
+    }
+
+    /**
+     * 启动时把内置默认头像(classpath:default-avatars/avatar_*.png)seed 到 MinIO {@code avatars/} 前缀。
+     * <p><b>差量 seed</b>:先列出 MinIO 已有头像,只上传本地有而 MinIO 缺的——
+     * 平时启动差集为空(仅 1 次 list,快);<b>后续在 default-avatars/ 加新头像图、重启即自动只传新增的</b>
+     * (无需手动清桶/全量重传)。MinIO 未就绪/无内置资源静默跳过,不阻断启动。
+     */
+    private void seedDefaultAvatars() {
+        try {
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath:default-avatars/avatar_*.png");
+            if (resources.length == 0) {
+                return; // 无内置头像资源(如 framework 单测环境),跳过
+            }
+            // 列出 MinIO 已有头像 key,只传缺失的(差量)
+            Set<String> existing = new HashSet<>();
+            for (var res : client.listObjects(ListObjectsArgs.builder()
+                    .bucket(props.bucket()).prefix("avatars/").build())) {
+                existing.add(res.get().objectName());
+            }
+            int n = 0;
+            for (Resource r : resources) {
+                String name = r.getFilename();
+                if (name == null || existing.contains("avatars/" + name)) {
+                    continue; // 已存在则跳过(差量)
+                }
+                try (InputStream in = r.getInputStream()) {
+                    client.putObject(PutObjectArgs.builder()
+                            .bucket(props.bucket())
+                            .object("avatars/" + name)
+                            .stream(in, r.contentLength(), -1)
+                            .contentType("image/png")
+                            .build());
+                    n++;
+                }
+            }
+            if (n > 0) {
+                log.info("默认头像 seed 完成, 新增 count={}", n);
+            }
+        } catch (Exception e) {
+            // seed 失败不阻断启动(资源缺失/MinIO 异常);下次启动重试
+            log.warn("默认头像 seed 跳过/失败: {}", e.getMessage());
+        }
     }
 
     /** 取小写扩展名(无则空串),用于白名单判类 */

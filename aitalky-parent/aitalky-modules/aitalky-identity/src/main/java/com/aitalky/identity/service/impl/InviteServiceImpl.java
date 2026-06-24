@@ -32,7 +32,6 @@ import com.aitalky.identity.mapper.IdProjectMapper;
 import com.aitalky.identity.mapper.IdRoleMapper;
 import com.aitalky.identity.service.InviteService;
 import com.aitalky.identity.service.ProjectService;
-import com.aitalky.identity.support.DefaultAvatar;
 import com.baomidou.mybatisplus.core.plugins.IgnoreStrategy;
 import com.baomidou.mybatisplus.core.plugins.InterceptorIgnoreHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -76,6 +75,7 @@ public class InviteServiceImpl implements InviteService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final Pattern EMAIL_RE = Pattern.compile("^[\\w.+-]+@[\\w-]+(\\.[\\w-]+)+$");
 
+    private final com.aitalky.framework.storage.AvatarPool avatarPool;
     private final IdInviteMapper inviteMapper;
     private final IdInviteLinkMapper linkMapper;
     private final IdMemberMapper memberMapper;
@@ -92,12 +92,14 @@ public class InviteServiceImpl implements InviteService {
     @Value("${aitalky.invite.console-base-url:http://localhost:5173}")
     private String consoleBaseUrl;
 
-    public InviteServiceImpl(IdInviteMapper inviteMapper, IdInviteLinkMapper linkMapper,
+    public InviteServiceImpl(com.aitalky.framework.storage.AvatarPool avatarPool,
+                             IdInviteMapper inviteMapper, IdInviteLinkMapper linkMapper,
                              IdMemberMapper memberMapper, IdRoleMapper roleMapper,
                              IdProjectMapper projectMapper, IdAccountMapper accountMapper,
                              ProjectService projectService, SnowflakeIdGenerator idGenerator,
                              VerifyCodeProperties mailProps, ObjectProvider<JavaMailSender> mailSenderProvider,
                              QuotaService quotaService) {
+        this.avatarPool = avatarPool;
         this.inviteMapper = inviteMapper;
         this.linkMapper = linkMapper;
         this.memberMapper = memberMapper;
@@ -508,7 +510,7 @@ public class InviteServiceImpl implements InviteService {
         // 死行仍占键,直接 insert 会撞唯一键。先探测(含软删)旧行,有则复活而非新插。
         Long existingId = memberMapper.findAnyMemberId(projectId, accountId);
         if (existingId != null) {
-            memberMapper.reviveMember(existingId, roleId, nickname, DefaultAvatar.urlFor(existingId));
+            memberMapper.reviveMember(existingId, roleId, nickname, avatarPool.urlFor(existingId));
             return existingId;
         }
         IdMember member = new IdMember();
@@ -517,7 +519,7 @@ public class InviteServiceImpl implements InviteService {
         member.setAccountId(accountId);
         member.setRoleId(roleId);
         member.setNickname(nickname);
-        member.setAvatar(DefaultAvatar.urlFor(member.getId())); // 默认头像(对齐参考)
+        member.setAvatar(avatarPool.urlFor(member.getId())); // 默认头像(内置 Memoji 池)
         member.setStatus(1);
         member.setOnlineStatus(0);
         member.setWorkStatus(1); // 默认在线(对齐参考:开关默认开,参与自动分配)
