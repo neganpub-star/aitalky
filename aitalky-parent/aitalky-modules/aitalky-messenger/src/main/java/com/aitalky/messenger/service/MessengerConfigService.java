@@ -21,6 +21,12 @@ public interface MessengerConfigService {
      */
     MessengerPublicVO getPublicConfig(Long projectId, String lang);
 
+    /**
+     * 信使端消息查看时间(天数):客户侧只展示该天数内的历史消息,更早的自动隐藏(坐席仍看全量)。
+     * @return 配置的天数;0 表示无限制(不隐藏)。无配置同样返回 0。
+     */
+    int getRetentionDays(Long projectId);
+
     /** 当前项目启用语种(默认语种排前);无配置返回 简体中文+英文 */
     List<MessengerLanguageVO> listLanguages();
 

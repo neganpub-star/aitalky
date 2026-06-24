@@ -268,8 +268,12 @@ public class PublicMessengerController {
                 : (afterSeq == null
                     ? messageService.loadLatest(conversationId, 50)
                     : messageService.sync(conversationId, afterSeq));
+        // 信使消息查看时间:配置 N 天则只展示 N 天内的历史给客户,更早的自动隐藏(0=无限制;坐席侧不受此限)
+        int retentionDays = messengerConfigService.getRetentionDays(conv.getProjectId());
+        long cutoffMs = retentionDays > 0 ? System.currentTimeMillis() - retentionDays * 86_400_000L : 0L;
         return R.ok(list.stream()
                 .filter(m -> !Boolean.TRUE.equals(m.getInternal()))   // 客户不可见内部消息
+                .filter(m -> cutoffMs == 0L || (m.getTimestamp() != null && m.getTimestamp() >= cutoffMs)) // 超过查看时间的历史隐藏
                 .map(PublicMessengerController::toVO).toList());
     }
 

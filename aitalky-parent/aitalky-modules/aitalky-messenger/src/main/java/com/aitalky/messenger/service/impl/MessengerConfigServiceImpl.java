@@ -217,6 +217,18 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
                 useLang); // 最终生效语言,信使端据此选系统提示文案语言
     }
 
+    @Override
+    public int getRetentionDays(Long projectId) {
+        if (projectId == null) {
+            return 0;
+        }
+        // 只取天数一个字段;无配置/未设置(null)→ 0=无限制
+        MseMessenger m = messengerMapper.selectOne(Wrappers.<MseMessenger>lambdaQuery()
+                .select(MseMessenger::getMessageRetentionDays)
+                .eq(MseMessenger::getProjectId, projectId).last("limit 1"));
+        return m == null ? 0 : Math.max(0, Optional.ofNullable(m.getMessageRetentionDays()).orElse(0));
+    }
+
     /** 开关默认开:仅当显式存为 false 才关(null/未配置→开,与后管 getConfig 默认一致) */
     private static boolean onByDefault(Boolean v) {
         return !Boolean.FALSE.equals(v);
