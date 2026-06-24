@@ -1114,7 +1114,7 @@ export default function Inbox() {
           <span style={{ fontSize: 12, color: token.colorTextTertiary }}>{fmtListTime(c.lastMessageAt)}</span>
           {(c.lastSenderAvatar || c.lastSenderName) && (
             <Avatar size={20} src={c.lastSenderAvatar || undefined}
-              style={{ fontSize: 10, background: token.colorFillSecondary, color: token.colorTextSecondary }}>
+              style={{ fontSize: 10, background: c.lastSenderAvatar ? token.colorFill : token.colorPrimary, color: '#fff', border: `1px solid ${token.colorBorderSecondary}`, flexShrink: 0 }}>
               {(c.lastSenderName || 'U').charAt(0).toUpperCase()}
             </Avatar>
           )}
