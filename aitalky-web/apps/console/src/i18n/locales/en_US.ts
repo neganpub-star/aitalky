@@ -796,6 +796,7 @@ export default {
     closeTranslate: 'Disable translation',
     translated: 'Translated',
     original: 'Original',
+    sentTranslation: 'Sent (translated)',
     sendAsLang: 'Message will be sent in "{{lang}}"',
     pickCustomerLang: 'Please select customer language first',
     detectLang: 'Detect language',

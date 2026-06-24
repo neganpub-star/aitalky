@@ -77,6 +77,13 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
   const [input, setInput] = useState('')
   // 客户语言:坐席消息自动翻译后,客户端按此语言取译文显示(= init 生效语言 = 客户源语言)
   const myLang = data.config?.lang || ''
+  // 坐席消息显示文本:有译文优先显示译文(B 方向翻成客户语言)。优先按本端语言取,
+  // 取不到则取任意译文(坐席译文专为本客户翻,只会有一个目标语言;避免坐席改"客户源语言"后键不匹配漏显)
+  const agentText = (m: MessageVO) => {
+    const tr = m.translations
+    if (tr) return tr[myLang] || Object.values(tr)[0] || m.content
+    return m.content
+  }
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
@@ -296,7 +303,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                     </div>
                   ) : (
                     /* 链接仅对客服消息解析:客户自己没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */
-                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.translations?.[myLang] || m.content, setWebview)}</div>
+                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(agentText(m), setWebview)}</div>
                   )}
                   {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(菜单右对齐 ··· 浮出,不带三角) */}
                   {mine && (

@@ -892,19 +892,37 @@ export default function Inbox() {
     }
   }, [selectedId, transLang, detail])
 
-  // A 客户消息自动翻译开关(顶部条):开启时确保目标语言落库(默认坐席界面语言)
+  // 批量翻译当前已加载、未翻的客户文本消息到 to(开启翻译/切目标语言时调,对齐参考"开启即显示历史译文")。
+  // 逐条翻译并即时渲染;命中缓存后端不扣费;切会话或出错(如配额不足)即停,避免继续刷错。
+  const translateLoaded = async (to: string) => {
+    const sid = selectedId
+    if (!sid) return
+    const targets = messages.filter((m) => m.senderType === 'customer' && m.type === 'text' && m.isVisible !== false && !m.translations?.[to])
+    for (const tm of targets) {
+      if (selectedRef.current !== sid) break
+      try {
+        const text = await translateMessage(sid, tm.msgId, to)
+        setMessages((prev) => prev.map((x) => (x.msgId === tm.msgId ? { ...x, translations: { ...(x.translations || {}), [to]: text } } : x)))
+      } catch {
+        break
+      }
+    }
+  }
+  // A 客户消息自动翻译开关(顶部条):开启时确保目标语言落库,并立即翻译当前可见历史消息
   const toggleCustAuto = () => {
     if (!selectedId || !detail) return
     const next = detail.autoTranslate === 1 ? 0 : 1
     const to = detail.translateTo || transLang
     setDetail({ ...detail, autoTranslate: next, translateTo: to })
     setTranslateSetting(selectedId, { autoTranslate: next, translateTo: to }).catch(() => {})
+    if (next === 1) translateLoaded(to)
   }
-  // A 客户消息翻译目标语言(顶部下拉)
+  // A 客户消息翻译目标语言(顶部下拉):切语言后,若已开启翻译,按新语言重翻当前可见消息
   const changeCustTransTo = (v: string) => {
     if (!selectedId || !detail) return
     setDetail({ ...detail, translateTo: v })
     setTranslateSetting(selectedId, { translateTo: v }).catch(() => {})
+    if (detail.autoTranslate === 1) translateLoaded(v)
   }
   // B 坐席消息自动翻译开关(底部)
   const toggleAgentAuto = (on: boolean) => {
@@ -1236,10 +1254,13 @@ export default function Inbox() {
               </div>
             </div>
           )}
-          {/* B 坐席消息原文标记:已翻译发出(客户看译文,坐席看原文),标「✓ 原文」 */}
+          {/* B 坐席消息已自动翻译发出:主气泡=原文(坐席打的),下方显示实际发给客户的译文(坐席确认发送内容) */}
           {mine && !internal && m.type === 'text' && m.translations && Object.keys(m.translations).length > 0 && (
-            <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3, alignSelf: 'flex-end' }}>
-              <CheckCircleOutlined /> {t('inbox.original')}
+            <div style={{ marginTop: 4, padding: '8px 13px', borderRadius: 8, borderTopRightRadius: 2, background: isDark ? '#2b3a55' : '#e7ecff', color: token.colorText, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: 'flex-end' }}>
+              {Object.values(m.translations)[0]}
+              <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'flex-end' }}>
+                <CheckCircleOutlined /> {t('inbox.sentTranslation')}
+              </div>
             </div>
           )}
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>

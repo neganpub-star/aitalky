@@ -812,6 +812,7 @@ export default {
     closeTranslate: '关闭翻译',
     translated: '已翻译',
     original: '原文',
+    sentTranslation: '已发送译文',
     sendAsLang: '消息会以"{{lang}}"的内容发送',
     pickCustomerLang: '请先选择客户源语言',
     detectLang: '语种识别',
