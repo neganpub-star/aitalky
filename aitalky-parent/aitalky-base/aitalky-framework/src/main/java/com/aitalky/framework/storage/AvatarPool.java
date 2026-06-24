@@ -25,7 +25,13 @@ public class AvatarPool {
      * 拼接同 MinioService:{@code endpoint/bucket/avatars/avatar_{idx}.png}。
      */
     public String urlFor(long seed) {
-        int idx = Math.floorMod(seed, COUNT);
+        // 雪花 id 低位结构化(时间戳左移+机器位+递增序列),直接 % 易周期性碰撞(相近 id 撞同图);
+        // 先用 splitmix64 finalizer 充分打散 bits 再取模,使不同会话头像尽量分散
+        long z = seed;
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        z = z ^ (z >>> 31);
+        int idx = Math.floorMod(z, COUNT);
         String ep = props.endpoint() == null ? "" : props.endpoint();
         String base = ep.endsWith("/") ? ep.substring(0, ep.length() - 1) : ep;
         return base + "/" + props.bucket() + "/avatars/avatar_" + idx + ".png";
