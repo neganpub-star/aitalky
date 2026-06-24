@@ -816,6 +816,8 @@ export default {
     sentTranslation: '已发送译文',
     sendAsLang: '消息会以"{{lang}}"的内容发送',
     pickCustomerLang: '请先选择客户源语言',
+    agentTransHint: '开启后,您发送的消息会自动翻译为「客户源语言」再发给客户,客户看到译文、您仍看到原文',
+    pickLang: '选择语言',
     detectLang: '语种识别',
     detectedAs: '已识别为{{lang}},并设为客户源语言',
     detectFail: '无法识别该消息的语种',

@@ -1533,12 +1533,21 @@ export default function Inbox() {
                   ))}
                 </div>
                 {/* B 坐席消息翻译:自动翻译开关 + 客户源语言(=译成什么语言发给客户) */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: token.colorTextSecondary }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: token.colorTextSecondary }}>
                   <span>{t('inbox.autoTranslate')}</span>
                   <Switch size="small" checked={detail.agentAutoTranslate === 1} onChange={toggleAgentAuto} />
-                  <span style={{ color: token.colorTextTertiary }}>{t('inbox.customerLang')}</span>
-                  <Select size="small" variant="borderless" value={detail.sourceLanguage || undefined} options={langOptions}
-                    onChange={changeCustLang} style={{ minWidth: 88 }} popupMatchSelectWidth={false} placeholder="-" />
+                  <Tooltip title={t('inbox.agentTransHint')}>
+                    <QuestionCircleOutlined style={{ color: token.colorTextQuaternary, fontSize: 13, cursor: 'help' }} />
+                  </Tooltip>
+                  <span style={{ color: token.colorTextTertiary, marginLeft: 4 }}>{t('inbox.customerLang')}</span>
+                  {/* 客户源语言:蓝色文字链接,点击弹语言菜单(与顶部条统一样式) */}
+                  <Dropdown trigger={['click']} placement="top"
+                    menu={{ selectable: true, selectedKeys: detail.sourceLanguage ? [detail.sourceLanguage] : [],
+                      items: langOptions.map((o) => ({ key: o.value, label: o.label, onClick: () => changeCustLang(o.value) })) }}>
+                    <a style={{ color: token.colorPrimary, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                      {detail.sourceLanguage ? langLabel(detail.sourceLanguage, transLang) : t('inbox.pickLang')}<DownOutlined style={{ fontSize: 9 }} />
+                    </a>
+                  </Dropdown>
                 </div>
               </div>
               {/* 输入框(加高,对齐参考)*/}

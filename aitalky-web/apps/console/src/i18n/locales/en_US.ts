@@ -800,6 +800,8 @@ export default {
     sentTranslation: 'Sent (translated)',
     sendAsLang: 'Message will be sent in "{{lang}}"',
     pickCustomerLang: 'Please select customer language first',
+    agentTransHint: 'When enabled, your messages are auto-translated to the customer language before sending. The customer sees the translation; you still see the original.',
+    pickLang: 'Select language',
     detectLang: 'Detect language',
     detectedAs: 'Detected as {{lang}}, set as customer language',
     detectFail: 'Could not detect the language',
