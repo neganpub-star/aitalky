@@ -29,6 +29,28 @@ function emptyConfig(): MessengerConfigVO {
   }
 }
 
+type ThemeToken = ReturnType<typeof theme.useToken>['token']
+
+// 单张设置卡(必须放模块作用域:若定义在组件内,每次渲染都生成新组件类型→React 卸载重建整卡→卡内输入框失焦/只进一字/滚动跳顶)
+function SettingCard({ token, styles, open, onClick, icon, title, desc, body }: {
+  token: ThemeToken; styles: Record<string, CSSProperties>; open: boolean; onClick: () => void
+  icon: ReactNode; title: string; desc: string; body?: ReactNode
+}) {
+  return (
+    <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 14, border: `1px solid ${token.colorBorder}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+      <div style={styles.cardHead} onClick={onClick}>
+        <span style={{ fontSize: 20, color: token.colorText }}>{icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={styles.cardTitle}>{title}</div>
+          <div style={styles.cardDesc}>{desc}</div>
+        </div>
+        {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
+      </div>
+      {open && body && <div style={styles.cardBody}>{body}</div>}
+    </div>
+  )
+}
+
 // 会话服务 - 信使设置(对齐 aitalky img_1):中间卡片 accordion + 右侧 widget 实时预览
 // 卡片顺序:欢迎信息 → Wiki → 回复时间 → 消息查看时间 → 启动器样式 → 系统消息显示 → 偏好设置 → 客户撤回权限 → 网站标题图标
 export default function Messenger() {
@@ -110,26 +132,11 @@ export default function Messenger() {
     actions: { marginTop: 18, display: 'flex', gap: 10 },
   }
 
-  // 单张卡片(自绘贴合 aitalky:白底圆角、朴素线条图标、标题副标题、展开箭头)
-  const Card = ({ k, icon, title, desc, body, onlyComingSoon }: {
-    k: string; icon: ReactNode; title: string; desc: string; body?: ReactNode; onlyComingSoon?: boolean
-  }) => {
-    const open = openKey === k
-    return (
-      <div style={{ background: token.colorBgContainer, borderRadius: 10, marginBottom: 14, border: `1px solid ${token.colorBorder}`, boxShadow: '0 1px 2px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-        <div style={styles.cardHead}
-          onClick={() => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(open ? null : k) }}>
-          <span style={{ fontSize: 20, color: token.colorText }}>{icon}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={styles.cardTitle}>{title}</div>
-            <div style={styles.cardDesc}>{desc}</div>
-          </div>
-          {open ? <DownOutlined style={{ color: token.colorTextTertiary }} /> : <RightOutlined style={{ color: token.colorTextQuaternary }} />}
-        </div>
-        {open && body && <div style={styles.cardBody}>{body}</div>}
-      </div>
-    )
-  }
+  // 卡片公共属性:注入主题/样式/展开态/点击(展开切换或占位提示)。卡片本体见模块作用域 SettingCard
+  const cardProps = (k: string, onlyComingSoon?: boolean) => ({
+    token, styles, open: openKey === k,
+    onClick: () => { if (onlyComingSoon) { message.info(t('mse.comingSoon')); return } setOpenKey(openKey === k ? null : k) },
+  })
 
   // 卡片底部 取消 + 保存
   const saveBtns = (
@@ -146,7 +153,7 @@ export default function Messenger() {
         <div style={styles.h1}>{t('mse.title')}</div>
 
         {/* 欢迎信息:项目信息(只读)+ 各语种问候语平铺 */}
-        <Card k="welcome" icon={<SmileOutlined />} title={t('mse.welcomeTitle')} desc={t('mse.welcomeDesc')} body={
+        <SettingCard {...cardProps('welcome')} icon={<SmileOutlined />} title={t('mse.welcomeTitle')} desc={t('mse.welcomeDesc')} body={
           <>
             {/* 项目信息(只读,品牌=项目名称/LOGO) */}
             <div style={styles.fieldLabel}>{t('mse.projectInfo')}</div>
@@ -199,10 +206,10 @@ export default function Messenger() {
         } />
 
         {/* Wiki 集成(占位) */}
-        <Card k="wiki" icon={<AppstoreOutlined />} title={t('mse.wikiTitle')} desc={t('mse.wikiDesc')} onlyComingSoon />
+        <SettingCard {...cardProps('wiki', true)} icon={<AppstoreOutlined />} title={t('mse.wikiTitle')} desc={t('mse.wikiDesc')} />
 
         {/* 回复时间预期(5 选项) */}
-        <Card k="reply" icon={<ClockCircleOutlined />} title={t('mse.replyTimeTitle')} desc={t('mse.replyTimeDesc')} body={
+        <SettingCard {...cardProps('reply')} icon={<ClockCircleOutlined />} title={t('mse.replyTimeTitle')} desc={t('mse.replyTimeDesc')} body={
           <>
             <Radio.Group style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}
               value={cfg.replyTime ?? 'rtFew'} onChange={(e) => patch({ replyTime: e.target.value })}>
@@ -217,7 +224,7 @@ export default function Messenger() {
         } />
 
         {/* 消息查看时间(保存天数) */}
-        <Card k="retention" icon={<EyeOutlined />} title={t('mse.retentionTitle')} desc={t('mse.retentionDesc')} body={
+        <SettingCard {...cardProps('retention')} icon={<EyeOutlined />} title={t('mse.retentionTitle')} desc={t('mse.retentionDesc')} body={
           <>
             <Radio.Group style={{ marginTop: 14 }} value={cfg.messageRetentionDays > 0 ? 'limited' : 'unlimited'}
               onChange={(e) => patch({ messageRetentionDays: e.target.value === 'limited' ? 7 : 0 })}>
@@ -236,10 +243,10 @@ export default function Messenger() {
         } />
 
         {/* 启动器样式(占位) */}
-        <Card k="launcher" icon={<AimOutlined />} title={t('mse.launcherTitle')} desc={t('mse.launcherDesc')} onlyComingSoon />
+        <SettingCard {...cardProps('launcher', true)} icon={<AimOutlined />} title={t('mse.launcherTitle')} desc={t('mse.launcherDesc')} />
 
         {/* 系统消息显示 */}
-        <Card k="sysmsg" icon={<MessageOutlined />} title={t('mse.sysMsgTitle')} desc={t('mse.sysMsgDesc')} body={
+        <SettingCard {...cardProps('sysmsg')} icon={<MessageOutlined />} title={t('mse.sysMsgTitle')} desc={t('mse.sysMsgDesc')} body={
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
               <Checkbox checked={cfg.sysMsgUnread} onChange={(e) => patch({ sysMsgUnread: e.target.checked })}>{t('mse.sysUnread')}</Checkbox>
@@ -252,7 +259,7 @@ export default function Messenger() {
         } />
 
         {/* 偏好设置(弹窗通知) */}
-        <Card k="pref" icon={<BellOutlined />} title={t('mse.prefTitle')} desc={t('mse.prefDesc')} body={
+        <SettingCard {...cardProps('pref')} icon={<BellOutlined />} title={t('mse.prefTitle')} desc={t('mse.prefDesc')} body={
           <>
             <div style={styles.switchRow}>
               <Switch checked={cfg.popupEnabled} onChange={(v) => patch({ popupEnabled: v })} />
@@ -273,7 +280,7 @@ export default function Messenger() {
         } />
 
         {/* 客户撤回消息权限 */}
-        <Card k="retract" icon={<RollbackOutlined />} title={t('mse.retractTitle')} desc={t('mse.retractDesc')} body={
+        <SettingCard {...cardProps('retract')} icon={<RollbackOutlined />} title={t('mse.retractTitle')} desc={t('mse.retractDesc')} body={
           <>
             <div style={{ marginTop: 14 }}>
               <Checkbox checked={cfg.customerRetractEnabled} onChange={(e) => patch({ customerRetractEnabled: e.target.checked })}>{t('mse.retractCheck')}</Checkbox>
@@ -284,7 +291,7 @@ export default function Messenger() {
         } />
 
         {/* 自定义网站标题和图标 */}
-        <Card k="web" icon={<GlobalOutlined />} title={t('mse.webTitleTitle')} desc={t('mse.webTitleDesc')} body={
+        <SettingCard {...cardProps('web')} icon={<GlobalOutlined />} title={t('mse.webTitleTitle')} desc={t('mse.webTitleDesc')} body={
           <>
             <div style={styles.fieldLabel}>{t('mse.webIcon')}</div>
             <Upload showUploadList={false} accept="image/*" beforeUpload={beforeIconUpload} disabled={uploading}>
