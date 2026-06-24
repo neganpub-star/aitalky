@@ -909,9 +909,9 @@ export default function Inbox() {
     }
   }
   // A 客户消息自动翻译开关(顶部条):开启时确保目标语言落库,并立即翻译当前可见历史消息
-  const toggleCustAuto = () => {
+  const toggleCustAuto = (on: boolean) => {
     if (!selectedId || !detail) return
-    const next = detail.autoTranslate === 1 ? 0 : 1
+    const next = on ? 1 : 0
     const to = detail.translateTo || transLang
     setDetail({ ...detail, autoTranslate: next, translateTo: to })
     setTranslateSetting(selectedId, { autoTranslate: next, translateTo: to }).catch(() => {})
@@ -1488,9 +1488,11 @@ export default function Inbox() {
                 <Tooltip title={t('inbox.transHint')}>
                   <QuestionCircleOutlined style={{ color: token.colorTextQuaternary, fontSize: 13, cursor: 'help' }} />
                 </Tooltip>
-                <a onClick={toggleCustAuto} style={{ fontWeight: 500, marginLeft: 2 }}>
-                  {detail.autoTranslate === 1 ? t('inbox.closeTranslate') : t('inbox.openTranslate')}
-                </a>
+                {/* 翻译开关:Switch 比文字链接直观(绿=开启),与底部条统一 */}
+                <Switch size="small" checked={detail.autoTranslate === 1} onChange={toggleCustAuto} style={{ marginLeft: 8 }} />
+                <span style={{ color: token.colorTextTertiary }}>
+                  {detail.autoTranslate === 1 ? t('inbox.translateOn') : t('inbox.translateOff')}
+                </span>
               </div>
             )}
 

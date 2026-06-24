@@ -811,6 +811,8 @@ export default {
     transHint: '开启后,该会话客户发来的消息会自动翻译为所选语言,显示在原文下方',
     openTranslate: '开启翻译',
     closeTranslate: '关闭翻译',
+    translateOn: '翻译中',
+    translateOff: '已关闭',
     translated: '已翻译',
     original: '原文',
     sentTranslation: '已发送译文',
