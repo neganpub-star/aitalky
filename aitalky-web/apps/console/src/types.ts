@@ -172,7 +172,9 @@ export interface ConversationDetailVO {
   source: string | null
   ip: string | null
   location: string | null
-  autoTranslate: number | null
+  autoTranslate: number | null     // A 客户消息自动翻译开关
+  translateTo: string | null       // A 客户消息翻译目标语言
+  agentAutoTranslate: number | null // B 坐席消息自动翻译开关
   assigneeMemberId: string | null
   lastMessageAt: string | null
   customerId: string | null

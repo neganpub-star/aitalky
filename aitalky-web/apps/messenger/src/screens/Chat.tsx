@@ -75,6 +75,8 @@ function fmtTime(ms: number): string {
 // 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
 export default function Chat({ data, agent, messages, pending, unreadAfterSeq, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
+  // 客户语言:坐席消息自动翻译后,客户端按此语言取译文显示(= init 生效语言 = 客户源语言)
+  const myLang = data.config?.lang || ''
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
@@ -294,7 +296,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                     </div>
                   ) : (
                     /* 链接仅对客服消息解析:客户自己没有插入链接的入口,其手打 [x](y) 一律纯文本(防伪造钓鱼链接) */
-                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.content, setWebview)}</div>
+                    <div className={`bubble ${mine ? 'mine' : 'agent'}`}>{mine ? m.content : renderRichText(m.translations?.[myLang] || m.content, setWebview)}</div>
                   )}
                   {/* 自己消息:气泡旁 ··· 触发复制/撤回菜单(菜单右对齐 ··· 浮出,不带三角) */}
                   {mine && (

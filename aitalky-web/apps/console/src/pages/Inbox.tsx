@@ -6,7 +6,7 @@ import {
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
-  FileSearchOutlined, UpOutlined, TranslationOutlined,
+  FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -16,7 +16,8 @@ import { wsClient, type WsStatus } from '../ws/client'
 import {
   assignConversation, claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, loadBeforeMessages, replyConversation, retractConversationMessage,
-  searchConversations, searchMessagesInConversation, sendConversationTyping, translateMessage, updateCustomerContact,
+  searchConversations, searchMessagesInConversation, sendConversationTyping, translateMessage,
+  setTranslateSetting, translateText, updateCustomerLanguage, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { pageMembers } from '../api/member'
@@ -110,6 +111,13 @@ function fmtMsgTime(ms: number): string {
   return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}-${md}`
 }
 
+// 翻译可选语言(下拉用):值=aitalky 语言码,后端映射成引擎码
+const LANG_OPTIONS = [
+  { value: 'zh_CN', label: '简体中文' }, { value: 'zh_TW', label: '繁體中文' },
+  { value: 'en_US', label: 'English' }, { value: 'ja_JP', label: '日本語' },
+  { value: 'ko_KR', label: '한국어' },
+]
+
 // 客户源语言代码 → 展示名(对齐 aitalky)
 function langLabel(code: string | null): string {
   if (!code) return '-'
@@ -182,6 +190,8 @@ export default function Inbox() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [detail, setDetail] = useState<ConversationDetailVO | null>(null)
+  // A 客户消息翻译目标语言:会话设置 translateTo 优先,未设回退坐席界面语言
+  const custTransTo = detail?.translateTo || transLang
   const [messages, setMessages] = useState<MessageVO[]>([])
   const [loadingMsgs, setLoadingMsgs] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false) // 历史翻页加载中(顶部 spinner)
@@ -211,7 +221,6 @@ export default function Inbox() {
   const [editVal, setEditVal] = useState('')
   const [savingContact, setSavingContact] = useState(false)
   const [bizCollapsed, setBizCollapsed] = useState(false)
-  const [autoTranslate, setAutoTranslate] = useState(false) // 翻译为占位(AI翻译模块未做)
   const [quickOpen, setQuickOpen] = useState(false)
   const [quickReplies, setQuickReplies] = useState<QuickReplyVO[]>([])
   const [quickCats, setQuickCats] = useState<QuickReplyCategoryVO[]>([])
@@ -342,6 +351,12 @@ export default function Inbox() {
   // ===== WS 消息分发:命中当前会话→网②gap检测+并入;更新列表预览/未读 =====
   useEffect(() => {
     return wsClient.onMessage((msg) => {
+      // A 客户消息译文更新帧:客户消息+带 translations(原始推送时 translations 为空,翻译完才带)。
+      // 只更新当前会话该条译文,不计未读/不响铃/不刷列表(原始帧已处理过这些),避免非当前会话未读虚高。
+      if (msg.senderType === 'customer' && msg.translations && Object.keys(msg.translations).length > 0) {
+        if (selectedRef.current === msg.conversationId) setMessages((prev) => mergeMessages(prev, [msg]))
+        return
+      }
       const isCurrent = selectedRef.current === msg.conversationId
       if (isCurrent) {
         // 网②:seq 跳号(> localMax+1)说明中间漏帧 → 触发补拉;这条本身也并入(去重)
@@ -874,17 +889,61 @@ export default function Inbox() {
   const [translatingId, setTranslatingId] = useState<string | null>(null)
   const onTranslate = useCallback(async (msgId: string) => {
     if (!selectedId) return
+    const target = detail?.translateTo || transLang
     setTranslatingId(msgId)
     try {
-      const text = await translateMessage(selectedId, msgId, transLang)
+      const text = await translateMessage(selectedId, msgId, target)
       setMessages((prev) => prev.map((x) => (x.msgId === msgId
-        ? { ...x, translations: { ...(x.translations || {}), [transLang]: text } } : x)))
+        ? { ...x, translations: { ...(x.translations || {}), [target]: text } } : x)))
     } catch {
       // 配额不足/引擎异常由全局拦截器提示
     } finally {
       setTranslatingId(null)
     }
-  }, [selectedId, transLang])
+  }, [selectedId, transLang, detail])
+
+  // A 客户消息自动翻译开关(顶部条):开启时确保目标语言落库(默认坐席界面语言)
+  const toggleCustAuto = () => {
+    if (!selectedId || !detail) return
+    const next = detail.autoTranslate === 1 ? 0 : 1
+    const to = detail.translateTo || transLang
+    setDetail({ ...detail, autoTranslate: next, translateTo: to })
+    setTranslateSetting(selectedId, { autoTranslate: next, translateTo: to }).catch(() => {})
+  }
+  // A 客户消息翻译目标语言(顶部下拉)
+  const changeCustTransTo = (v: string) => {
+    if (!selectedId || !detail) return
+    setDetail({ ...detail, translateTo: v })
+    setTranslateSetting(selectedId, { translateTo: v }).catch(() => {})
+  }
+  // B 坐席消息自动翻译开关(底部)
+  const toggleAgentAuto = (on: boolean) => {
+    if (!selectedId || !detail) return
+    setDetail({ ...detail, agentAutoTranslate: on ? 1 : 0 })
+    setTranslateSetting(selectedId, { agentAutoTranslate: on ? 1 : 0 }).catch(() => {})
+  }
+  // B 客户源语言(底部下拉=坐席消息翻译目标语言)
+  const changeCustLang = (v: string) => {
+    if (!selectedId || !detail) return
+    setDetail({ ...detail, sourceLanguage: v })
+    updateCustomerLanguage(selectedId, v).catch(() => {})
+  }
+  // 底部「翻译」按钮:把输入框内容翻成客户语言并替换(坐席确认后发译文给客户)
+  const [translatingInput, setTranslatingInput] = useState(false)
+  const onTranslateInput = async () => {
+    if (!selectedId || !input.trim()) return
+    const target = detail?.sourceLanguage
+    if (!target) { message.info(t('inbox.pickCustomerLang')); return }
+    setTranslatingInput(true)
+    try {
+      const tr = await translateText(selectedId, input, target)
+      if (tr) setInput(tr)
+    } catch {
+      // 配额/引擎异常由全局拦截器提示
+    } finally {
+      setTranslatingInput(false)
+    }
+  }
 
   // 输入中:节流 3s 通知客户(瞬时,不落库);失败静默
   const onTypingSend = useCallback(() => {
@@ -1157,11 +1216,19 @@ export default function Inbox() {
             )}
             {toolbar}
           </div>
-          {/* 译文:文本消息翻译后显示在气泡下方(浅底+「译文」标签),对齐参考系统 */}
-          {!internal && m.type === 'text' && m.translations?.[transLang] && (
-            <div style={{ marginTop: 4, padding: '6px 11px', borderRadius: 8, background: token.colorFillQuaternary, color: token.colorTextSecondary, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: mine ? 'flex-end' : 'flex-start' }}>
-              <span style={{ fontSize: 11, color: token.colorTextTertiary, display: 'block', marginBottom: 2 }}>{t('inbox.translation')}</span>
-              {m.translations[transLang]}
+          {/* A 客户消息译文:翻译后作为独立气泡显示在原文下方,标「✓ 已翻译」(对齐参考) */}
+          {!mine && !internal && m.type === 'text' && m.translations?.[custTransTo] && (
+            <div style={{ marginTop: 4, padding: '8px 13px', borderRadius: 8, borderTopLeftRadius: 2, background: isDark ? '#33343b' : '#f2f4f7', color: token.colorText, fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: 'flex-start' }}>
+              {m.translations[custTransTo]}
+              <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                <CheckCircleOutlined /> {t('inbox.translated')}
+              </div>
+            </div>
+          )}
+          {/* B 坐席消息原文标记:已翻译发出(客户看译文,坐席看原文),标「✓ 原文」 */}
+          {mine && !internal && m.type === 'text' && m.translations && Object.keys(m.translations).length > 0 && (
+            <div style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3, alignSelf: 'flex-end' }}>
+              <CheckCircleOutlined /> {t('inbox.original')}
             </div>
           )}
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>
@@ -1370,6 +1437,19 @@ export default function Inbox() {
               </span>
             </div>
 
+            {/* 顶部翻译条(A 客户消息方向):将客户消息翻译为 X + 开启/关闭翻译。对齐参考头部下方蓝 bar */}
+            {detail && (
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+                padding: '7px 16px', background: isDark ? '#1f2a3d' : '#eef4ff', borderBottom: splitBorder, fontSize: 13, color: token.colorTextSecondary }}>
+                <span>{t('inbox.transTo')}</span>
+                <Select size="small" variant="borderless" value={custTransTo} options={LANG_OPTIONS}
+                  onChange={changeCustTransTo} style={{ minWidth: 88 }} popupMatchSelectWidth={false} />
+                <a onClick={toggleCustAuto} style={{ marginLeft: 4 }}>
+                  {detail.autoTranslate === 1 ? t('inbox.closeTranslate') : t('inbox.openTranslate')}
+                </a>
+              </div>
+            )}
+
             <div ref={msgScrollRef} onScroll={onMsgScroll} style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
               <div ref={msgContentRef}>
                 {/* 历史翻页加载中(顶部) */}
@@ -1411,12 +1491,13 @@ export default function Inbox() {
                     </span>
                   ))}
                 </div>
-                {/* 翻译控件(占位,AI翻译模块未做)*/}
+                {/* B 坐席消息翻译:自动翻译开关 + 客户源语言(=译成什么语言发给客户) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: token.colorTextSecondary }}>
                   <span>{t('inbox.autoTranslate')}</span>
-                  <Switch size="small" checked={autoTranslate} onChange={(v) => { setAutoTranslate(v); message.info(t('settings.wip')) }} />
+                  <Switch size="small" checked={detail.agentAutoTranslate === 1} onChange={toggleAgentAuto} />
                   <span style={{ color: token.colorTextTertiary }}>{t('inbox.customerLang')}</span>
-                  <span>{langLabel(detail.sourceLanguage)}</span>
+                  <Select size="small" variant="borderless" value={detail.sourceLanguage || undefined} options={LANG_OPTIONS}
+                    onChange={changeCustLang} style={{ minWidth: 88 }} popupMatchSelectWidth={false} placeholder="-" />
                 </div>
               </div>
               {/* 输入框(加高,对齐参考)*/}
@@ -1428,7 +1509,11 @@ export default function Inbox() {
                   if (e.target.value.trim() && replyTab === 'reply') onTypingSend()
                 }}
                 onKeyDown={onInputKeyDown}
-                placeholder={t(replyTab === 'reply' ? 'inbox.replyPlaceholder' : 'inbox.internalPlaceholder')}
+                placeholder={replyTab === 'reply'
+                  ? (detail?.agentAutoTranslate === 1 && detail.sourceLanguage
+                      ? t('inbox.sendAsLang', { lang: langLabel(detail.sourceLanguage) })
+                      : t('inbox.replyPlaceholder'))
+                  : t('inbox.internalPlaceholder')}
                 autoSize={{ minRows: 5, maxRows: 10 }}
                 variant="borderless"
                 style={{ padding: 0, fontSize: 15 }}
@@ -1556,7 +1641,7 @@ export default function Inbox() {
                 {unassigned && !closed && (
                   <Button size="small" style={{ marginRight: 8 }} onClick={onClaim}>{t('inbox.claim')}</Button>
                 )}
-                <Button style={{ marginRight: 8 }} onClick={() => message.info(t('settings.wip'))}>{t('inbox.translate')}</Button>
+                <Button style={{ marginRight: 8 }} loading={translatingInput} disabled={!input.trim()} onClick={onTranslateInput}>{t('inbox.translate')}</Button>
                 <Button type="primary" disabled={!input.trim()} onClick={onSend}>
                   {t('inbox.send')}
                 </Button>

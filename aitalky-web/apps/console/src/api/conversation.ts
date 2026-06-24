@@ -98,6 +98,21 @@ export function translateMessage(id: string, msgId: string, targetLang: string) 
   return client.post<unknown, string>(`/conversations/${id}/messages/${msgId}/translate`, null, { params: { targetLang } })
 }
 
+/** 更新会话翻译设置:A 客户消息(autoTranslate+translateTo)/ B 坐席消息(agentAutoTranslate);各字段省略=不改 */
+export function setTranslateSetting(id: string, body: { autoTranslate?: number; translateTo?: string; agentAutoTranslate?: number }) {
+  return client.put<unknown, void>(`/conversations/${id}/translate-setting`, body)
+}
+
+/** 坐席输入框手动翻译预览(底部「翻译」按钮):翻成客户语言返回译文,不落库 */
+export function translateText(id: string, text: string, targetLang: string) {
+  return client.post<unknown, string>(`/conversations/${id}/translate-text`, null, { params: { text, targetLang } })
+}
+
+/** 更新客户源语言(详情面板「语言」/底部「客户源语言」下拉) */
+export function updateCustomerLanguage(id: string, lang: string) {
+  return client.put<unknown, void>(`/conversations/${id}/customer-language`, null, { params: { lang } })
+}
+
 /** 更新客户联系方式/邮箱(详情面板编辑) */
 export function updateCustomerContact(id: string, contact: string, email: string) {
   return client.put<unknown, void>(`/conversations/${id}/customer`, { contact, email })

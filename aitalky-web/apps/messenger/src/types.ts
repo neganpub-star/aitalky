@@ -69,6 +69,8 @@ export interface MessageVO {
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number
+  // 译文缓存:语言码 → 译文。坐席消息自动翻译后带上,客户端按自己语言显示译文
+  translations?: Record<string, string> | null
 }
 
 // URL 接入参数:?appId=&userId=(或 visitorId)&lang=&source=
