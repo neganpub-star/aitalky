@@ -46,4 +46,10 @@ public interface MessageService {
      * @return 撤回后的消息(isVisible=false),供上层推 WS
      */
     Message retract(Long conversationId, Long msgId, String operatorType, Long operatorId);
+
+    /** 取单条消息(翻译用);不存在抛 MESSAGE_NOT_FOUND */
+    Message getMessage(Long conversationId, Long msgId);
+
+    /** 把译文写入 translations[targetLang](客户消息译文缓存,首次翻译后存,重复命中不再调引擎);返回更新后的消息 */
+    Message saveTranslation(Long conversationId, Long msgId, String targetLang, String translatedText);
 }

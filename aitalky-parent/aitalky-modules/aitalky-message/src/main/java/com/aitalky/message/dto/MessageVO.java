@@ -7,5 +7,7 @@ public record MessageVO(
         Long msgId, Long seq, Long conversationId,
         String senderType, Long senderId, String senderName, String senderAvatar,
         String type, String content, Map<String, Object> payload,
-        Boolean internal, Boolean isVisible, Long timestamp) {
+        Boolean internal, Boolean isVisible, Long timestamp,
+        // 译文缓存 Map<语言码,译文>(坐席侧渲染消息下方译文;客户端忽略)
+        Map<String, String> translations) {
 }

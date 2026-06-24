@@ -104,6 +104,12 @@ aitalky:
     lang: en                      # 统一存英文地名(国际通用,中英坐席都可读);改 zh-CN 则按中文风格拼接
     timeout-ms: 2000
     cache-days: 7
+  translate:
+    # 消息翻译引擎(可配可扩);当前复用 cicada 阿里云机翻网关,后续可加 claude 等 LLM
+    enabled: true
+    provider: ali-gateway
+    ali-gateway-url: http://47.242.9.154:8080/api/translate/auto
+    timeout-ms: 8000
   minio:
     # 对象存储(头像/图片消息);本地开发明文,上线改环境变量/配置中心
     endpoint: http://localhost:9000

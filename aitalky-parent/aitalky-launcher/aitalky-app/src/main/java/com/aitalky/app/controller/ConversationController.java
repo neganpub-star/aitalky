@@ -51,6 +51,7 @@ public class ConversationController {
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
     private final com.aitalky.conversation.service.AssignService assignService;
     private final org.redisson.api.RedissonClient redisson; // 查客户 WS 在线状态(ws:conn:cust:{id})
+    private final com.aitalky.app.service.TranslationService translationService;
 
     /** 收件箱列表 */
     @GetMapping
@@ -124,6 +125,13 @@ public class ConversationController {
         CnvConversation c = conversationService.getById(id);
         customerService.updateContact(c.getCustomerId(), c.getProjectId(), req.contact(), req.email());
         return R.ok();
+    }
+
+    /** 手动翻译某条消息到目标语言(坐席);命中缓存不扣费。targetLang=aitalky 语言码 zh_CN/en_US... */
+    @PostMapping("/{id}/messages/{msgId}/translate")
+    public R<String> translateMessage(@PathVariable Long id, @PathVariable Long msgId,
+                                      @RequestParam String targetLang) {
+        return R.ok(translationService.translateMessage(id, msgId, targetLang));
     }
 
     /** 会话消息(beforeSeq 历史翻页 / afterSeq 增量;都不传取最近 50 条)。坐席可见内部消息 */

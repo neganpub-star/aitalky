@@ -151,4 +151,20 @@ public class MessageServiceImpl implements MessageService {
         m.setIsVisible(false);
         return messageRepository.save(m);
     }
+
+    @Override
+    public Message getMessage(Long conversationId, Long msgId) {
+        return messageRepository.findByConversationIdAndMsgId(conversationId, msgId)
+                .orElseThrow(() -> new BizException(ResultCode.MESSAGE_NOT_FOUND));
+    }
+
+    @Override
+    public Message saveTranslation(Long conversationId, Long msgId, String targetLang, String translatedText) {
+        Message m = getMessage(conversationId, msgId);
+        java.util.Map<String, String> t = m.getTranslations() == null
+                ? new java.util.HashMap<>() : new java.util.HashMap<>(m.getTranslations());
+        t.put(targetLang, translatedText);
+        m.setTranslations(t);
+        return messageRepository.save(m);
+    }
 }

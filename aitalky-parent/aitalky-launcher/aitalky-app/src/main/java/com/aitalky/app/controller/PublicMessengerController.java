@@ -286,7 +286,8 @@ public class PublicMessengerController {
         return new MessageVO(m.getMsgId(), m.getSeq(), m.getConversationId(),
                 m.getSenderType(), m.getSenderId(), m.getSenderName(), m.getSenderAvatar(),
                 m.getType(), retracted ? null : m.getContent(), retracted ? null : m.getPayload(),
-                m.getInternal(), m.getIsVisible(), m.getTimestamp());
+                m.getInternal(), m.getIsVisible(), m.getTimestamp(),
+                retracted ? null : m.getTranslations());
     }
 
     private static LocalDateTime toLdt(Long ts) {
