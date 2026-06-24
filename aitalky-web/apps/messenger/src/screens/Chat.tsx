@@ -217,11 +217,15 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                 <div className="hc-status">{t('agentOffline')}</div>
               ) : agent.mode === 'ASSIGNED_ONLINE' ? (
                 <div className="hc-status">{t('agentOnline')}</div>
-              ) : (
+              ) : replyTimeText(agent.replyTime) ? (
+                // POOL_ONLINE 且配了回复时间:展示「预计回复时间 + 时间」
                 <>
                   <div className="hc-status">{t('agentReplyTime')}</div>
-                  {replyTimeText(agent.replyTime) && <div className="hc-status-sub">🕑 {replyTimeText(agent.replyTime)}</div>}
+                  <div className="hc-status-sub">🕑 {replyTimeText(agent.replyTime)}</div>
                 </>
+              ) : (
+                // 有在线坐席但未配回复时间:显示「在线」,不露空标签
+                <div className="hc-status">{t('agentOnline')}</div>
               )}
             </div>
           </div>
