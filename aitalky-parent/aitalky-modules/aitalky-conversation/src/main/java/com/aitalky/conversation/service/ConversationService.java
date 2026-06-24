@@ -60,6 +60,13 @@ public interface ConversationService {
     void resetUnread(Long conversationId);
 
     /**
+     * 回填会话「所在地」(IP 异步解析归属地后调用)。仅按 id 更新 location,空值不更新。
+     * <p>常在无租户上下文的异步线程调用——多租户拦截器在上下文无 projectId 时整体忽略,
+     * 故按 id 更新可正常生效,无需透传 TenantContext。
+     */
+    void updateLocation(Long conversationId, String location);
+
+    /**
      * 新消息落地后更新会话冗余字段(列表展示用)。
      *
      * @param senderAvatar 发送者头像快照(列表项小头像:谁最后回复显示谁)

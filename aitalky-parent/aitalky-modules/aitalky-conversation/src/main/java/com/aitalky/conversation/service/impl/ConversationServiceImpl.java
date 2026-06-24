@@ -276,6 +276,18 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public void updateLocation(Long conversationId, String location) {
+        if (conversationId == null || !org.springframework.util.StringUtils.hasText(location)) {
+            return;
+        }
+        // 仅按 id set location:用 update wrapper 不带实体,避免覆盖其他字段;
+        // 异步线程无租户上下文,多租户拦截器整体忽略 → 按 id 更新正常生效
+        conversationMapper.update(null, Wrappers.<CnvConversation>lambdaUpdate()
+                .eq(CnvConversation::getId, conversationId)
+                .set(CnvConversation::getLocation, location));
+    }
+
+    @Override
     public long markCustomerRead(Long conversationId, long seq) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {

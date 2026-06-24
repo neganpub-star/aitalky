@@ -54,6 +54,7 @@ public class PublicMessengerController {
     private final com.aitalky.app.service.AssignNotifier assignNotifier;
     private final com.aitalky.conversation.service.AssignService assignService;
     private final com.aitalky.framework.storage.MinioService minioService;
+    private final com.aitalky.framework.geo.GeoIpService geoIpService;
 
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
@@ -91,6 +92,12 @@ public class PublicMessengerController {
         var openResult = conversationService.openOrCreate(new OpenConversationCmd(
                 project.getId(), customer.getId(), groupId, req.source(), null, clientIp(request), null));
         CnvConversation conv = openResult.conversation();
+        // 异步解析客户 IP 归属地回填「所在地」(不阻塞接入)。location 为空才解析(新会话/历史未解析),
+        // 已有则跳过;私网/本地 IP 由 GeoIpService 内部跳过。解析成功回调按 id 写库。
+        if (!StringUtils.hasText(conv.getLocation())) {
+            Long convId = conv.getId();
+            geoIpService.resolveAsync(conv.getIp(), loc -> conversationService.updateLocation(convId, loc));
+        }
         // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
         assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
         String token = customerTokenService.issue(project.getId(), customer.getId());
