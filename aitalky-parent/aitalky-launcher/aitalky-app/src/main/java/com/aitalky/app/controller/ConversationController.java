@@ -157,6 +157,18 @@ public class ConversationController {
         return R.ok();
     }
 
+    /** 语种识别:本地字符集识别某条客户消息的语种,识别成功则自动回填客户源语言,返回 aitalky 语言码(null=无法识别) */
+    @PostMapping("/{id}/messages/{msgId}/detect-lang")
+    public R<String> detectLang(@PathVariable Long id, @PathVariable Long msgId) {
+        CnvConversation c = conversationService.getById(id);
+        Message m = messageService.getMessage(id, msgId);
+        String lang = com.aitalky.framework.translate.LanguageDetector.detect(m.getContent());
+        if (lang != null) {
+            customerService.updateSourceLanguage(c.getCustomerId(), c.getProjectId(), lang);
+        }
+        return R.ok(lang);
+    }
+
     /** 会话消息(beforeSeq 历史翻页 / afterSeq 增量;都不传取最近 50 条)。坐席可见内部消息 */
     @GetMapping("/{id}/messages")
     public R<List<MessageVO>> messages(@PathVariable Long id,
