@@ -209,7 +209,7 @@ export default function Messenger() {
             </Radio.Group>
             {cfg.messageRetentionDays > 0 && (
               <div style={{ marginTop: 14 }}>
-                <InputNumber min={1} max={999999} value={cfg.messageRetentionDays}
+                <InputNumber min={1} max={9999} value={cfg.messageRetentionDays}
                   onChange={(v) => patch({ messageRetentionDays: v || 1 })} addonAfter={t('mse.retentionDays')} />
                 <div style={styles.tip}>{t('mse.retentionTip')}</div>
               </div>
