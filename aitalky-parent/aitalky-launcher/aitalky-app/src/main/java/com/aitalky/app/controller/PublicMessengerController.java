@@ -98,8 +98,7 @@ public class PublicMessengerController {
             Long convId = conv.getId();
             geoIpService.resolveAsync(conv.getIp(), loc -> conversationService.updateLocation(convId, loc));
         }
-        // 新会话经引擎自动分配到坐席 → 发「该会话分配给了X」系统消息(仅坐席可见)
-        assignNotifier.notifyAssigned(conv, openResult.autoAssignedMemberId());
+        // 注意:此处不分配、不发分配系统消息——会话此刻为「未激活」,待客户发首条消息时才激活分配(见 send)
         String token = customerTokenService.issue(project.getId(), customer.getId());
         // 服务坐席头部:已分配=显示该坐席(在线/离线);未分配=显示项目在线坐席(预计回复)或忙碌留言
         var agent = resolveAgent(project.getId(), conv.getAssigneeMemberId(),
@@ -162,6 +161,13 @@ public class PublicMessengerController {
         // 黑名单拦截:被拉黑的用户/游客发消息返回会话不可用(init 时已拦,此处拦"已建会话后才被拉黑"的情况)
         if (blacklistService.isBlocked(conv.getProjectId(), customer.getExternalUserId(), customer.getVisitorId())) {
             throw new BizException(ResultCode.CONVERSATION_BLOCKED);
+        }
+        // 客户首条消息激活会话:未激活(打开未发)此刻才自动分配+进列表(对齐参考:发消息才分配)。
+        // 先于消息落库,使「分配给X」系统消息 seq 小于客户首条消息 → 渲染在其上方,符合参考顺序。
+        var activated = conversationService.activateIfDraft(conv.getId());
+        if (activated != null) {
+            conv = activated.conversation();                  // 用激活后的会话(status/assignee 已最新)
+            assignNotifier.notifyAssigned(conv, activated.autoAssignedMemberId());
         }
         Message m = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), conv.getId(), customer.getId(),

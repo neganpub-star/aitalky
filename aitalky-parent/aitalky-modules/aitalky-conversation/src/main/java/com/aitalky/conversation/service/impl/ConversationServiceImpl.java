@@ -29,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 会话服务实现。状态 0等待队列 / 1进行中 / 2已结束。
+ * 会话服务实现。状态 0等待队列 / 1进行中 / 2已结束 / 3未激活(客户已打开窗口但未发消息,不进列表/不分配)。
  */
 @Slf4j
 @Service
@@ -67,7 +67,9 @@ public class ConversationServiceImpl implements ConversationService {
             conv.setProjectId(cmd.projectId());
             conv.setCustomerId(cmd.customerId());
             conv.setGroupId(cmd.groupId());
-            conv.setStatus(1);            // 先置进行中(未分配);引擎按规则分配或转等待队列
+            // 对齐参考:客户只是"打开窗口"不立即分配/进列表,先置「未激活」(status=3);
+            // 待客户发出首条消息时由 activateIfDraft 激活(此刻才自动分配、推进轮询游标、进列表)。
+            conv.setStatus(3);
             conv.setSource(cmd.source());
             conv.setDeviceInfo(cmd.deviceInfo());
             conv.setIp(cmd.ip());
@@ -75,13 +77,32 @@ public class ConversationServiceImpl implements ConversationService {
             conv.setAutoTranslate(0);
             conv.setUnreadCount(0);
             conv.setLastSeq(0L);
-            // 关键:新会话即置 last_message_at=创建时间。列表按 last_message_at 倒序排,
-            // 若留 NULL,MySQL DESC 会把新会话排到最底部(在所有有消息的会话之下)→ 坐席顶部看不到。
+            // last_message_at=创建时间(排序兜底);未激活会话不进列表,激活后由首条消息刷新该值。
             conv.setLastMessageAt(LocalDateTime.now());
             conversationMapper.insert(conv);
-            log.info("创建会话 conversationId={}, customerId={}", conv.getId(), cmd.customerId());
-            // 自动分配(手动模式/无在线/全满 返回 null,会话留未分配或进等待队列)
+            log.info("创建会话(未激活) conversationId={}, customerId={}", conv.getId(), cmd.customerId());
+            // 此处不分配:分配延迟到客户首条消息(见 activateIfDraft),避免"只打开不发消息"占用轮询名额/坐席列表
+            return new com.aitalky.conversation.dto.OpenConversationResult(conv, null);
+        });
+    }
+
+    @Override
+    public com.aitalky.conversation.dto.OpenConversationResult activateIfDraft(Long conversationId) {
+        // 加锁防客户连发并发重复激活/重复分配;同一会话激活串行
+        return lockTemplate.execute("lock:conv:activate:" + conversationId, 3, 10, () -> {
+            CnvConversation conv = conversationMapper.selectById(conversationId);
+            if (conv == null || conv.getStatus() == null || conv.getStatus() != 3) {
+                return null; // 不存在或已激活(非未激活态):无需处理
+            }
+            // 此刻才自动分配(轮询游标在此推进);分配成功 applyAssign 内置 status=1+assignee,
+            // 全满则置 status=0 进等待队列,手动模式/无在线则不改(仍为3)
             Long assigned = assignEngine.autoAssign(conv);
+            // 激活语义=客户已发消息就该进列表:除"进等待队列(0)"外,未被分配改动的(仍3)一律置进行中(未分配)
+            if (conv.getStatus() != null && conv.getStatus() == 3) {
+                conv.setStatus(1);
+                conversationMapper.updateById(conv);
+            }
+            log.info("会话激活 conversationId={}, assigned={}, status={}", conversationId, assigned, conv.getStatus());
             return new com.aitalky.conversation.dto.OpenConversationResult(conv, assigned);
         });
     }
@@ -99,7 +120,8 @@ public class ConversationServiceImpl implements ConversationService {
                 }
                 wrapper.in(CnvConversation::getId, mentionConvIds);
             }
-            case "unassigned" -> wrapper.isNull(CnvConversation::getAssigneeMemberId).ne(CnvConversation::getStatus, 2);
+            // 未分配池=等待队列(0)+未分配进行中(1);排除已结束(2)与未激活(3,客户打开未发消息不入列表)
+            case "unassigned" -> wrapper.isNull(CnvConversation::getAssigneeMemberId).in(CnvConversation::getStatus, 0, 1);
             case "all" -> {
                 if (!canViewAll) {
                     throw new BizException(ResultCode.NO_FUNCTION_PERMISSION);

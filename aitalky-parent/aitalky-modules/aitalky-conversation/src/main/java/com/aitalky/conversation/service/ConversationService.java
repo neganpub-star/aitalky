@@ -10,8 +10,18 @@ import java.time.LocalDateTime;
 /** 会话服务 */
 public interface ConversationService {
 
-    /** 建或取该客户的活跃会话(进行中/等待队列);已结束则新建。新建会话经引擎自动分配,结果含分配到的坐席 */
+    /**
+     * 建或取该客户的活跃会话(进行中/等待队列/未激活);已结束则新建。
+     * <p>对齐参考:新建会话先置「未激活」(status=3),<b>不立即分配、不进坐席列表</b>;
+     * 待客户发首条消息时 {@link #activateIfDraft} 才激活分配。结果 autoAssignedMemberId 恒为 null。
+     */
     com.aitalky.conversation.dto.OpenConversationResult openOrCreate(com.aitalky.conversation.dto.OpenConversationCmd cmd);
+
+    /**
+     * 客户首条消息激活未激活会话(status=3):此刻才自动分配(轮询游标在此推进)并置进行中。
+     * <p>非未激活态(已激活/不存在)返回 null;激活成功返回含分配到的坐席(供上层发「分配给X」系统消息)。
+     */
+    com.aitalky.conversation.dto.OpenConversationResult activateIfDraft(Long conversationId);
 
     /**
      * 收件箱列表(view: mine/unassigned/all/mention)。
