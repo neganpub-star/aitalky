@@ -224,6 +224,8 @@ export interface MessageVO {
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number
+  // 译文缓存:语言码 → 译文(坐席侧消息下方渲染);手动翻译后回填
+  translations?: Record<string, string> | null
 }
 
 // 富消息有序片段(图文混排,一个气泡内按序渲染)

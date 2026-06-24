@@ -6,7 +6,7 @@ import {
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
-  FileSearchOutlined, UpOutlined,
+  FileSearchOutlined, UpOutlined, TranslationOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -16,7 +16,7 @@ import { wsClient, type WsStatus } from '../ws/client'
 import {
   assignConversation, claimConversation, closeConversation, getConversation, getConversationCounts,
   listConversations, listMessages, loadBeforeMessages, replyConversation, retractConversationMessage,
-  searchConversations, searchMessagesInConversation, sendConversationTyping, updateCustomerContact,
+  searchConversations, searchMessagesInConversation, sendConversationTyping, translateMessage, updateCustomerContact,
   type ConversationCounts,
 } from '../api/conversation'
 import { pageMembers } from '../api/member'
@@ -146,6 +146,7 @@ export default function Inbox() {
   const { token } = theme.useToken()
   const isDark = useAppStore((s) => s.themeMode) === 'dark'
   const myMemberId = useAppStore((s) => s.memberId)
+  const transLang = useAppStore((s) => s.lang) // 手动翻译目标语言=坐席界面语言
   const setUnreadTotal = useAppStore((s) => s.setUnreadTotal)
 
   const panelGray = isDark ? token.colorBgLayout : '#f7f7f7'
@@ -869,6 +870,22 @@ export default function Inbox() {
     navigator.clipboard?.writeText(text).then(() => message.success(t('inbox.copied'))).catch(() => {})
   }, [t])
 
+  // 手动翻译某条消息为坐席界面语言:成功后回填该消息 translations 即时渲染(命中缓存后端不扣费)
+  const [translatingId, setTranslatingId] = useState<string | null>(null)
+  const onTranslate = useCallback(async (msgId: string) => {
+    if (!selectedId) return
+    setTranslatingId(msgId)
+    try {
+      const text = await translateMessage(selectedId, msgId, transLang)
+      setMessages((prev) => prev.map((x) => (x.msgId === msgId
+        ? { ...x, translations: { ...(x.translations || {}), [transLang]: text } } : x)))
+    } catch {
+      // 配额不足/引擎异常由全局拦截器提示
+    } finally {
+      setTranslatingId(null)
+    }
+  }, [selectedId, transLang])
+
   // 输入中:节流 3s 通知客户(瞬时,不落库);失败静默
   const onTypingSend = useCallback(() => {
     if (!selectedId) return
@@ -1069,6 +1086,11 @@ export default function Inbox() {
         <Tooltip title={t('inbox.copy')}>
           <CopyOutlined style={iconStyle} onClick={() => copyMsg(m.content)} />
         </Tooltip>
+        {!mine && m.type === 'text' && (
+          <Tooltip title={t('inbox.translate')}>
+            <TranslationOutlined style={{ ...iconStyle, color: translatingId === m.msgId ? token.colorPrimary : iconStyle.color }} onClick={() => onTranslate(m.msgId)} />
+          </Tooltip>
+        )}
         {retractable && (
           <Tooltip title={t('inbox.retract')}>
             <RollbackOutlined style={iconStyle} onClick={() => onRetract(m.msgId)} />
@@ -1135,6 +1157,13 @@ export default function Inbox() {
             )}
             {toolbar}
           </div>
+          {/* 译文:文本消息翻译后显示在气泡下方(浅底+「译文」标签),对齐参考系统 */}
+          {!internal && m.type === 'text' && m.translations?.[transLang] && (
+            <div style={{ marginTop: 4, padding: '6px 11px', borderRadius: 8, background: token.colorFillQuaternary, color: token.colorTextSecondary, fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap', alignSelf: mine ? 'flex-end' : 'flex-start' }}>
+              <span style={{ fontSize: 11, color: token.colorTextTertiary, display: 'block', marginBottom: 2 }}>{t('inbox.translation')}</span>
+              {m.translations[transLang]}
+            </div>
+          )}
           <span style={{ fontSize: 11, color: token.colorTextTertiary, marginTop: 4 }}>
             {/* 已读回执:自己(非内部)消息只显示"未读";已读不显示(对齐现网) */}
             {mine && !internal && m.seq > customerReadSeq && (

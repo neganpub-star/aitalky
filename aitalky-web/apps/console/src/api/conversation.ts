@@ -93,6 +93,11 @@ export async function retractConversationMessage(id: string, msgId: string) {
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages/${msgId}/retract`))
 }
 
+/** 手动翻译某条消息到目标语言(返回译文);命中缓存后端不扣费 */
+export function translateMessage(id: string, msgId: string, targetLang: string) {
+  return client.post<unknown, string>(`/conversations/${id}/messages/${msgId}/translate`, null, { params: { targetLang } })
+}
+
 /** 更新客户联系方式/邮箱(详情面板编辑) */
 export function updateCustomerContact(id: string, contact: string, email: string) {
   return client.put<unknown, void>(`/conversations/${id}/customer`, { contact, email })

@@ -790,6 +790,7 @@ export default {
     autoTranslate: 'Auto-translate',
     customerLang: 'Customer language',
     translate: 'Translate',
+    translation: 'Translation',
     toolImage: 'Image',
     toolFile: 'Attachment',
     toolLink: 'Link',

@@ -806,6 +806,7 @@ export default {
     autoTranslate: '自动翻译',
     customerLang: '客户源语言',
     translate: '翻译',
+    translation: '译文',
     toolImage: '图片',
     toolFile: '附件',
     toolLink: '链接',
