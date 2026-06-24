@@ -177,8 +177,8 @@ public class BillingController {
         List<UsageVO> list = new ArrayList<>();
         list.add(usageOf(projectId, "seat", memberService.countActiveMembers(projectId)));
         list.add(usageOf(projectId, "customer", customerService.countByProject(projectId)));
-        list.add(usageOf(projectId, "translate_char", 0));
-        list.add(usageOf(projectId, "ai_tokens", 0));
+        list.add(usageOf(projectId, "translate_char", quotaService.used(projectId, "translate_char")));
+        list.add(usageOf(projectId, "ai_tokens", quotaService.used(projectId, "ai_tokens")));
         return R.ok(list);
     }
 

@@ -20,4 +20,6 @@ public class BilProjectResource extends BaseEntity {
     private String resourceType;
     /** 已购加量包配额累计(永久,不随订阅到期) */
     private Long purchasedAmount;
+    /** 已消耗量(translate_char/ai_tokens 累计消耗;customer 走实时计数不用此列) */
+    private Long usedAmount;
 }

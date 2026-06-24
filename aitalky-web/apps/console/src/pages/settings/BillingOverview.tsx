@@ -112,7 +112,7 @@ export default function BillingOverview() {
   }
 
   // 扩展服务=永久加量包模型:总量=免费默认值+已购包(后端 /usage 已按此返回 customer/translate_char/ai_tokens)。
-  //  可用=总量-已用(翻译/Tokens 功能未做,已用恒 0;客户=真实客户数)。usage 缺失时回退 defaultVal。
+  //  可用=总量-已用(翻译字符/AI Tokens 已用持久化 DB 累计消耗;客户=真实客户数)。usage 缺失时回退 defaultVal。
   const extVals = (type: string, defaultVal: number, wan: boolean): { avail: string; total: string } => {
     const fmt = (n: number) => (wan ? fmtWan(n) : String(n))
     const u = usageMap[type]

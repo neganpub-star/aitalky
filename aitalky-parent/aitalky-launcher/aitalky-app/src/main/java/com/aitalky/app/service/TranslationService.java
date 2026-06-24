@@ -16,7 +16,6 @@ import com.aitalky.message.service.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -44,7 +43,6 @@ public class TranslationService {
     private final MessageService messageService;
     private final ConversationService conversationService;
     private final QuotaService quotaService;
-    private final RedissonClient redisson;
     private final MessagePushPublisher pushPublisher;
     private final ObjectMapper objectMapper;
 
@@ -120,16 +118,15 @@ public class TranslationService {
         return doTranslate(projectId, text, targetLang).translatedText(); // 配额不足→TRANSLATE_QUOTA_EXCEEDED;引擎错→SYSTEM_ERROR
     }
 
-    /** 配额校验 + 调引擎 + 按实际字符扣减;不涉及消息存储。配额不足抛 TRANSLATE_QUOTA_EXCEEDED */
+    /** 配额校验 + 调引擎 + 按实际字符扣减;已用量持久化 DB(QuotaService)。配额不足抛 TRANSLATE_QUOTA_EXCEEDED */
     private TranslateResult doTranslate(Long projectId, String text, String targetLang) {
-        String usedKey = "translate:used:" + projectId;
-        long used = redisson.getAtomicLong(usedKey).get();
+        long used = quotaService.used(projectId, RES_TRANSLATE);
         if (!quotaService.hasRemaining(projectId, RES_TRANSLATE, used, text.length())) {
             throw new BizException(ResultCode.TRANSLATE_QUOTA_EXCEEDED);   // 翻译额度不足:提示充值/关翻译
         }
         TranslateResult r = translateService.translate(text, targetLang);
-        long total = redisson.getAtomicLong(usedKey).addAndGet(r.charCount());
-        log.info("翻译扣费 projectId={}, target={}, chars={}, projectUsed={}", projectId, targetLang, r.charCount(), total);
+        quotaService.addUsed(projectId, RES_TRANSLATE, r.charCount());     // 按实际字符落 DB
+        log.info("翻译扣费 projectId={}, target={}, chars={}", projectId, targetLang, r.charCount());
         return r;
     }
 }

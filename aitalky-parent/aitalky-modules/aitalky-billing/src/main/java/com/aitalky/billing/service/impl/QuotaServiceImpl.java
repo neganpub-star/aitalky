@@ -125,4 +125,29 @@ public class QuotaServiceImpl implements QuotaService {
         r.setPurchasedAmount(amount);
         resourceMapper.insert(r);
     }
+
+    @Override
+    public long used(Long projectId, String resourceType) {
+        BilProjectResource r = resourceMapper.selectOne(Wrappers.<BilProjectResource>lambdaQuery()
+                .eq(BilProjectResource::getProjectId, projectId)
+                .eq(BilProjectResource::getResourceType, resourceType)
+                .last("limit 1"));
+        return r == null || r.getUsedAmount() == null ? 0 : r.getUsedAmount();
+    }
+
+    @Override
+    public void addUsed(Long projectId, String resourceType, long amount) {
+        if (amount <= 0) {
+            return;
+        }
+        // 原子累加;无行则新建(purchased=0, used=amount)。insertFill 注入雪花ID
+        if (resourceMapper.incrUsed(projectId, resourceType, amount) == 0) {
+            BilProjectResource r = new BilProjectResource();
+            r.setProjectId(projectId);
+            r.setResourceType(resourceType);
+            r.setPurchasedAmount(0L);
+            r.setUsedAmount(amount);
+            resourceMapper.insert(r);
+        }
+    }
 }

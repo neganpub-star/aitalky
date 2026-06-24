@@ -23,6 +23,12 @@ public interface QuotaService {
     /** 校验配额:不够则抛 BizException(RESOURCE_QUOTA_EXCEEDED)。消费资源(加成员/建客户)前统一调用 */
     void ensure(Long projectId, String resourceType, long currentUsed, long need);
 
+    /** 已消耗量(translate_char/ai_tokens 累计消耗,持久化 DB);无记录=0。customer/seat 走实时计数不用此 */
+    long used(Long projectId, String resourceType);
+
+    /** 累加已消耗量(翻译/AI 扣费);原子累加、无记录则新建。持久化 DB,替代易丢的 Redis 计数 */
+    void addUsed(Long projectId, String resourceType, long amount);
+
     /** 发放永久加量包配额(订单核销时调,累加) */
     void grantPack(Long projectId, String resourceType, long amount);
 

@@ -19,4 +19,9 @@ public interface BilProjectResourceMapper extends BaseMapper<BilProjectResource>
     @Update("UPDATE bil_project_resource SET purchased_amount = #{amount}, update_time = NOW() " +
             "WHERE project_id = #{projectId} AND resource_type = #{resourceType} AND del_flag = 0")
     int setAmount(@Param("projectId") Long projectId, @Param("resourceType") String resourceType, @Param("amount") long amount);
+
+    /** 累加已消耗量(翻译/AI 扣费,原子);返回受影响行数,0 表示该行不存在需新增 */
+    @Update("UPDATE bil_project_resource SET used_amount = used_amount + #{delta}, update_time = NOW() " +
+            "WHERE project_id = #{projectId} AND resource_type = #{resourceType} AND del_flag = 0")
+    int incrUsed(@Param("projectId") Long projectId, @Param("resourceType") String resourceType, @Param("delta") long delta);
 }
