@@ -1,6 +1,6 @@
 import type { KeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { t } from '../i18n'
+import { t, replyTimeText } from '../i18n'
 import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
 
 interface Props {
@@ -220,7 +220,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
               ) : (
                 <>
                   <div className="hc-status">{t('agentReplyTime')}</div>
-                  {agent.replyTime && <div className="hc-status-sub">🕑 {agent.replyTime}</div>}
+                  {replyTimeText(agent.replyTime) && <div className="hc-status-sub">🕑 {replyTimeText(agent.replyTime)}</div>}
                 </>
               )}
             </div>

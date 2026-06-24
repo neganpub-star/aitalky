@@ -1,17 +1,10 @@
-import { t, type I18nKey } from '../i18n'
+import { t, replyTimeText } from '../i18n'
 import type { MessengerInit } from '../types'
 
 interface Props {
   data: MessengerInit
   lastMessage: string | null
   onEnter: () => void
-}
-
-// 回复时间预期 key(后端存储)→ 文案;未知值不展示
-const REPLY_TIME_KEYS: Record<string, I18nKey> = {
-  replyTimeFew: 'replyTimeFew',
-  replyTimeHours: 'replyTimeHours',
-  replyTimeDay: 'replyTimeDay',
 }
 
 // 信使首页问候卡片(对齐 aitalky 20-url-zh / img-83):渐变头图 + 品牌欢迎语 + 紧急通知 + 最近对话 + 发起对话
@@ -22,7 +15,7 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
   const brand = cfg?.brandName?.trim()
   const greeting = cfg?.greeting?.trim()
   const teamIntro = cfg?.teamIntro?.trim()
-  const replyTime = cfg?.replyTime && REPLY_TIME_KEYS[cfg.replyTime] ? t(REPLY_TIME_KEYS[cfg.replyTime]) : null
+  const replyTime = replyTimeText(cfg?.replyTime)
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
