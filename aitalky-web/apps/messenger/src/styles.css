@@ -145,6 +145,12 @@ body {
   object-fit: cover;
 }
 
+/* 透明 PNG 头像(Memoji)透出明显浅灰底,衬出圆形;文字兜底头像仍用品牌色 */
+img.avatar,
+.hc-avatar img {
+  background: #e2e6ee;
+}
+
 /* ===== 聊天 ===== */
 .chat-header {
   height: 52px;

@@ -996,7 +996,7 @@ export default function Inbox() {
       >
         {/* 未读数:角标在客户头像上(红色数字),进入会话清未读才消(对齐现网) */}
         <Badge count={c.unreadCount} size="small" offset={[-4, 4]}>
-          <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+          <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: c.customerAvatar ? token.colorFill : token.colorPrimary, flexShrink: 0 }}>
             {(c.customerName || 'U').charAt(0).toUpperCase()}
           </Avatar>
         </Badge>
@@ -1088,7 +1088,7 @@ export default function Inbox() {
         onMouseEnter={() => setHoverMsgId(m.msgId)}
         onMouseLeave={() => setHoverMsgId((cur) => (cur === m.msgId ? null : cur))}
       >
-        <Avatar size={32} src={m.senderAvatar || undefined} style={{ background: mine ? token.colorPrimary : token.colorTextQuaternary, flexShrink: 0 }}>
+        <Avatar size={32} src={m.senderAvatar || undefined} style={{ background: m.senderAvatar ? token.colorFill : (mine ? token.colorPrimary : token.colorTextQuaternary), flexShrink: 0 }}>
           {(m.senderName || (mine ? 'A' : 'U')).charAt(0).toUpperCase()}
         </Avatar>
         <div style={{ maxWidth: '62%', display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
@@ -1271,7 +1271,7 @@ export default function Inbox() {
             <div style={{ ...styles.colHeader, background: token.colorBgContainer }}>
               {/* 左:客户头像 + 名字 + 在线/离线状态(对齐参考) */}
               <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                <Avatar size={36} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+                <Avatar size={36} src={detail.customerAvatar || undefined} style={{ background: detail.customerAvatar ? token.colorFill : token.colorPrimary, flexShrink: 0 }}>
                   {(detail.customerName || 'U').charAt(0).toUpperCase()}
                 </Avatar>
                 <span style={{ minWidth: 0 }}>
@@ -1547,7 +1547,7 @@ export default function Inbox() {
 
           {/* 头像 + 名字 + 用户/访客标签(左对齐横排) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: splitBorder }}>
-            <Avatar size={44} src={detail.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+            <Avatar size={44} src={detail.customerAvatar || undefined} style={{ background: detail.customerAvatar ? token.colorFill : token.colorPrimary, flexShrink: 0 }}>
               {(detail.customerName || 'U').charAt(0).toUpperCase()}
             </Avatar>
             <div style={{ minWidth: 0 }}>
@@ -1719,7 +1719,7 @@ export default function Inbox() {
               searchResults.map((c) => (
                 <div key={c.id} className="at-row" onClick={() => openFromSearch(c)}
                   style={{ display: 'flex', gap: 10, padding: '12px 24px', cursor: 'pointer' }}>
-                  <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: token.colorPrimary, flexShrink: 0 }}>
+                  <Avatar size={40} src={c.customerAvatar || undefined} style={{ background: c.customerAvatar ? token.colorFill : token.colorPrimary, flexShrink: 0 }}>
                     {(c.customerName || 'U').charAt(0).toUpperCase()}
                   </Avatar>
                   <div style={{ flex: 1, minWidth: 0 }}>

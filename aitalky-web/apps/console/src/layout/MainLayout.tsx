@@ -192,7 +192,7 @@ export default function MainLayout() {
       {/* 头像 + 名字 + 角色 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 16px 14px' }}>
         <div style={{ position: 'relative' }}>
-          <Avatar size={46} src={avatar || undefined} style={{ background: token.colorPrimary, fontSize: 18 }}>
+          <Avatar size={46} src={avatar || undefined} style={{ background: avatar ? token.colorFill : token.colorPrimary, fontSize: 18 }}>
             {displayName.charAt(0).toUpperCase()}
           </Avatar>
           <span style={{
@@ -280,7 +280,7 @@ export default function MainLayout() {
             align={{ offset: [14, 0] }}
             styles={{ body: { padding: 0 } }}
           >
-            <Avatar src={avatar || undefined} style={{ background: token.colorPrimary, cursor: 'pointer' }}>
+            <Avatar src={avatar || undefined} style={{ background: avatar ? token.colorFill : token.colorPrimary, cursor: 'pointer' }}>
               {displayName.charAt(0).toUpperCase()}
             </Avatar>
           </Popover>
