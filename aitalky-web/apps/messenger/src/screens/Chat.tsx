@@ -154,6 +154,9 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
   const assigned = agent?.mode === 'ASSIGNED_ONLINE' || agent?.mode === 'ASSIGNED_OFFLINE'
   const agentName = assigned ? agent?.agents?.[0]?.name ?? null : null
   const showOnlineDot = agent?.mode === 'ASSIGNED_ONLINE' // 已分配·在线:头像带绿点
+  // 头部副标题(对齐参考):专属渠道名优先,否则团队介绍
+  const teamIntro = data.config?.teamIntro?.trim() || null
+  const headerSub = data.channelName || teamIntro
 
   // 新消息/输入态变化:仅在粘底时跟随到底;首屏即时跳底,之后平滑
   useEffect(() => {
@@ -187,10 +190,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
         <div className="back" onClick={onBack}>
           ‹
         </div>
-        {/* 标题=项目名;专属渠道接入时品牌名下展示一行渠道名。点击展开/收起服务坐席 */}
+        {/* 对齐参考:收起且已分配→标题显示坐席名、不显副标题;否则标题=品牌名,副标题=渠道名??团队介绍。点击展开/收起服务坐席 */}
         <div className="title" style={{ cursor: 'pointer' }} onClick={() => setHeaderOpen((v) => !v)}>
-          {brandName}
-          {data.channelName && <div className="chat-channel">{data.channelName}</div>}
+          {!headerOpen && agentName ? agentName : brandName}
+          {(headerOpen || !agentName) && headerSub && <div className="chat-channel">{headerSub}</div>}
         </div>
       </div>
 

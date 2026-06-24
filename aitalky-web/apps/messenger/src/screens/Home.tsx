@@ -14,7 +14,7 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
   const initial = (data.customerName || 'U').charAt(0).toUpperCase()
   const brand = cfg?.brandName?.trim()
   const greeting = cfg?.greeting?.trim()
-  const teamIntro = cfg?.teamIntro?.trim()
+  // 团队介绍不在首页 hero 显示(对齐参考:hero 副文案用默认引导语,团队介绍只在聊天头部展示)
   // 回复时间走 agent(后端仅在「有坐席在线」时下发,离线/无人在线为 null)——对齐参考「平衡状态下才告知」
   const agentList = data.agent?.agents ?? []
   const replyTime = replyTimeText(data.agent?.replyTime)
@@ -32,7 +32,7 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
         {/* 品牌名 + 问候语(任一缺省时回退默认问候,避免空标题) */}
         {brand && <h1>{brand}</h1>}
         {(greeting || !brand) && <h1>{greeting || t('greetingTitle')}</h1>}
-        <p>{teamIntro || t('greetingSub')}</p>
+        <p>{t('greetingSub')}</p>
       </div>
 
       <div className="home-cards">

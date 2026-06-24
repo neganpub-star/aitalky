@@ -177,6 +177,23 @@ export default function Messenger() {
                   onChange={(e) => patchI18n(lang, { greeting: e.target.value })} />
               </div>
             ))}
+
+            {/* 团队介绍:所有启用语种平铺(对齐参考,问候语下方;展示在信使聊天头部副标题) */}
+            <div style={styles.fieldLabel}>{t('mse.teamIntro')}</div>
+            <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 10 }}>{t('mse.teamIntroDesc')}</div>
+            {cfg.enabledLanguages.map((lang) => (
+              <div key={lang} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 13, marginBottom: 6 }}>
+                  {langLabel(lang, lng)}
+                  {lang === cfg.defaultLanguage && (
+                    <span style={{ marginLeft: 8, fontSize: 11, color: '#1677ff', background: '#e6f0ff', padding: '1px 6px', borderRadius: 4 }}>{t('mse.defaultTag')}</span>
+                  )}
+                </div>
+                <Input.TextArea maxLength={200} showCount rows={2} value={i18nOf(lang).teamIntro ?? ''} placeholder={t('mse.teamIntroPh')}
+                  style={{ maxWidth: 420, fontSize: 13 }}
+                  onChange={(e) => patchI18n(lang, { teamIntro: e.target.value })} />
+              </div>
+            ))}
             {saveBtns}
           </>
         } />
