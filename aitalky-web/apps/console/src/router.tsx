@@ -11,7 +11,6 @@ import SettingsLayout from './layout/SettingsLayout'
 import ProfileLayout from './layout/ProfileLayout'
 import Members from './pages/settings/Members'
 import Invites from './pages/settings/Invites'
-import Placeholder from './pages/settings/Placeholder'
 import ProfileBasic from './pages/profile/ProfileBasic'
 import ProfilePreferences from './pages/profile/ProfilePreferences'
 import ProfilePush from './pages/profile/ProfilePush'
@@ -87,7 +86,6 @@ export const router = createHashRouter([
           { path: 'team', element: <TeamBasic /> },
           { path: 'deactivate', element: <DeactivateProject /> },
           { path: 'roles', element: <RolePage /> },
-          { path: 'data', element: <Placeholder title="数据管理" /> },
           { path: 'billing', element: <Navigate to="/settings/billing/overview" replace /> },
           { path: 'billing/overview', element: <BillingOverview /> },
           { path: 'billing/plans', element: <BillingPlans /> },
