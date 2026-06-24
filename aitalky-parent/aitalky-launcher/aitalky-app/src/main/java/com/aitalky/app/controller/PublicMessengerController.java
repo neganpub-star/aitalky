@@ -55,6 +55,7 @@ public class PublicMessengerController {
     private final com.aitalky.conversation.service.AssignService assignService;
     private final com.aitalky.framework.storage.MinioService minioService;
     private final com.aitalky.framework.geo.GeoIpService geoIpService;
+    private final com.aitalky.app.service.TranslationService translationService;
 
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
@@ -175,6 +176,8 @@ public class PublicMessengerController {
                 req.type(), req.content(), req.payload(), false, null));
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), true, true);
+        // A 客户消息自动翻译(会话开了 autoTranslate):异步翻成 translate_to,翻完按 seq 推坐席(前端覆盖更新译文)
+        translationService.autoTranslateCustomerMsgAsync(conv, m.getMsgId(), req.type(), req.content());
         // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端
         MessageVO vo = toVO(m);
         publishPush(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), conv.getCustomerId(), vo);

@@ -35,6 +35,10 @@ public class CnvConversation extends BaseEntity {
     private String location;
     /** 是否开启自动翻译 */
     private Integer autoTranslate;
+    /** 客户消息翻译目标语言(aitalky 语言码 zh_CN/en_US...);空=未设 */
+    private String translateTo;
+    /** 坐席消息是否自动翻成客户语言发出(B方向开关) */
+    private Integer agentAutoTranslate;
     /** 坐席侧未读数 */
     private Integer unreadCount;
     /** 会话内已分配最大消息序号 */

@@ -298,6 +298,21 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public void updateTranslateSetting(Long conversationId, Integer autoTranslate, String translateTo, Integer agentAutoTranslate) {
+        var update = Wrappers.<CnvConversation>lambdaUpdate().eq(CnvConversation::getId, conversationId);
+        if (autoTranslate != null) {
+            update.set(CnvConversation::getAutoTranslate, autoTranslate);
+        }
+        if (translateTo != null) {
+            update.set(CnvConversation::getTranslateTo, translateTo);
+        }
+        if (agentAutoTranslate != null) {
+            update.set(CnvConversation::getAgentAutoTranslate, agentAutoTranslate);
+        }
+        conversationMapper.update(null, update);
+    }
+
+    @Override
     public void updateLocation(Long conversationId, String location) {
         if (conversationId == null || !org.springframework.util.StringUtils.hasText(location)) {
             return;

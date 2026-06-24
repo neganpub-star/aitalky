@@ -103,6 +103,16 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    public void updateSourceLanguage(Long customerId, Long projectId, String lang) {
+        CusCustomer c = customerMapper.selectById(customerId);
+        if (c == null || !projectId.equals(c.getProjectId())) {
+            return; // 越权保护
+        }
+        c.setSourceLanguage(lang);
+        customerMapper.updateById(c);
+    }
+
+    @Override
     public long countByProject(Long projectId) {
         return customerMapper.selectCount(Wrappers.<CusCustomer>lambdaQuery()
                 .eq(CusCustomer::getProjectId, projectId));

@@ -29,6 +29,9 @@ public interface CustomerService {
      */
     void updateContact(Long customerId, Long projectId, String contact, String email);
 
+    /** 更新客户源语言(详情面板「语言」/底部「客户源语言」下拉;B 方向坐席消息翻译目标) */
+    void updateSourceLanguage(Long customerId, Long projectId, String lang);
+
     /** 统计项目客户数(计费配额计量用) */
     long countByProject(Long projectId);
 }

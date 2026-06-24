@@ -108,7 +108,7 @@ public class ConversationController {
         boolean customerOnline = c.getCustomerId() != null
                 && !redisson.getSet("ws:conn:cust:" + c.getCustomerId()).isEmpty();
         return R.ok(new ConversationDetailVO(c.getId(), c.getStatus(), c.getSource(), c.getIp(), c.getLocation(),
-                c.getAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
+                c.getAutoTranslate(), c.getTranslateTo(), c.getAgentAutoTranslate(), c.getAssigneeMemberId(), c.getLastMessageAt(),
                 cu == null ? null : cu.getId(), cu == null ? null : cu.getExternalUserId(),
                 cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                 cu == null ? null : cu.getType(), cu == null ? null : cu.getSourceLanguage(),
@@ -132,6 +132,29 @@ public class ConversationController {
     public R<String> translateMessage(@PathVariable Long id, @PathVariable Long msgId,
                                       @RequestParam String targetLang) {
         return R.ok(translationService.translateMessage(id, msgId, targetLang));
+    }
+
+    /** 更新会话翻译设置:A 客户消息自动翻译(autoTranslate+translateTo)+ B 坐席消息自动翻译(agentAutoTranslate) */
+    @PutMapping("/{id}/translate-setting")
+    public R<Void> translateSetting(@PathVariable Long id, @RequestBody com.aitalky.app.dto.TranslateSettingReq req) {
+        conversationService.getById(id); // 租户隔离校验
+        conversationService.updateTranslateSetting(id, req.autoTranslate(), req.translateTo(), req.agentAutoTranslate());
+        return R.ok();
+    }
+
+    /** 坐席输入框手动翻译预览(底部「翻译」按钮):翻成客户语言返回译文,不落库;扣费 */
+    @PostMapping("/{id}/translate-text")
+    public R<String> translateText(@PathVariable Long id, @RequestParam String text, @RequestParam String targetLang) {
+        conversationService.getById(id);
+        return R.ok(translationService.translateAgentText(TenantContext.getProjectId(), text, targetLang));
+    }
+
+    /** 更新客户源语言(详情面板「语言」/底部「客户源语言」下拉) */
+    @PutMapping("/{id}/customer-language")
+    public R<Void> customerLanguage(@PathVariable Long id, @RequestParam String lang) {
+        CnvConversation c = conversationService.getById(id);
+        customerService.updateSourceLanguage(c.getCustomerId(), c.getProjectId(), lang);
+        return R.ok();
     }
 
     /** 会话消息(beforeSeq 历史翻页 / afterSeq 增量;都不传取最近 50 条)。坐席可见内部消息 */
@@ -170,6 +193,19 @@ public class ConversationController {
                 conv.getProjectId(), id, conv.getCustomerId(),
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), req.payload(), internal, req.mentions()));
+        // B 坐席消息自动翻译:会话开了 agent_auto_translate → 翻成客户语言存 translations,
+        // 客户端显示译文、坐席端显示原文(标「原文」)。同步翻译(发送时等待),失败则按原文发。
+        if (!internal && "text".equals(req.type())
+                && conv.getAgentAutoTranslate() != null && conv.getAgentAutoTranslate() == 1) {
+            CusCustomer cust = customerService.getById(conv.getCustomerId());
+            String clientLang = cust == null ? null : cust.getSourceLanguage();
+            if (org.springframework.util.StringUtils.hasText(clientLang)) {
+                String translated = translationService.translateAgentText(conv.getProjectId(), req.content(), clientLang);
+                if (translated != null) {
+                    m = messageService.saveTranslation(id, m.getMsgId(), clientLang, translated);
+                }
+            }
+        }
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false, true);
         Long targetAssignee = conv.getAssigneeMemberId();

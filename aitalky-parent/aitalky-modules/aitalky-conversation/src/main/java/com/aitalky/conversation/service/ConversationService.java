@@ -70,6 +70,14 @@ public interface ConversationService {
     void resetUnread(Long conversationId);
 
     /**
+     * 更新会话翻译设置(坐席操作)。各参数 null 表示不改。
+     * @param autoTranslate      A 客户消息自动翻译开关 1开/0关
+     * @param translateTo        A 客户消息翻译目标语言(zh_CN/en_US...)
+     * @param agentAutoTranslate B 坐席消息自动翻译开关 1开/0关
+     */
+    void updateTranslateSetting(Long conversationId, Integer autoTranslate, String translateTo, Integer agentAutoTranslate);
+
+    /**
      * 回填会话「所在地」(IP 异步解析归属地后调用)。仅按 id 更新 location,空值不更新。
      * <p>常在无租户上下文的异步线程调用——多租户拦截器在上下文无 projectId 时整体忽略,
      * 故按 id 更新可正常生效,无需透传 TenantContext。
