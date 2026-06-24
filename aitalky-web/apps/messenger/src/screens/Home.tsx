@@ -15,7 +15,9 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
   const brand = cfg?.brandName?.trim()
   const greeting = cfg?.greeting?.trim()
   const teamIntro = cfg?.teamIntro?.trim()
-  const replyTime = replyTimeText(cfg?.replyTime)
+  // 回复时间走 agent(后端仅在「有坐席在线」时下发,离线/无人在线为 null)——对齐参考「平衡状态下才告知」
+  const agentList = data.agent?.agents ?? []
+  const replyTime = replyTimeText(data.agent?.replyTime)
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
@@ -45,17 +47,35 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
             )}
             <div className="preview">
               <div className="name">{data.customerName}</div>
-              <div className="last">{lastMessage || replyTime || t('noRecent')}</div>
+              <div className="last">{lastMessage || t('noRecent')}</div>
             </div>
             <span style={{ color: 'var(--text-2)' }}>›</span>
           </div>
         </div>
 
+        {/* 开启新的会话:有坐席在线时展示坐席头像 + 预计回复时间(对齐参考 img-64);否则只显示「发起对话」 */}
         <div className="card" onClick={onEnter}>
-          <div className="start-row">
-            <span>{t('startChat')}</span>
-            <span style={{ color: 'var(--brand)' }}>›</span>
-          </div>
+          {agentList.length > 0 && replyTime ? (
+            <div className="recent-row">
+              <div className="hc-avatars">
+                {agentList.slice(0, 3).map((a, i) => (
+                  <span className="hc-avatar" key={i} style={{ zIndex: 3 - i }}>
+                    {a.avatar ? <img src={a.avatar} alt="" /> : <span className="hc-avatar-fb" />}
+                  </span>
+                ))}
+              </div>
+              <div className="preview">
+                <div className="name">{t('startChat')}</div>
+                <div className="last">{t('agentReplyTime')} · 🕑 {replyTime}</div>
+              </div>
+              <span style={{ color: 'var(--brand)' }}>›</span>
+            </div>
+          ) : (
+            <div className="start-row">
+              <span>{t('startChat')}</span>
+              <span style={{ color: 'var(--brand)' }}>›</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
