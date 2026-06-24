@@ -73,10 +73,10 @@ public class PublicMessengerController {
         // 信使公开配置(品牌/欢迎语/紧急通知,按客户语言);无登录上下文,Service 内显式按 projectId 查询。
         // 提前到建客户之前:据此算"生效语言",落库客户来源语言(详情/坐席侧展示用)。
         var config = messengerConfigService.getPublicConfig(project.getId(), req.lang());
-        // 品牌名=项目名称(messenger 模块不依赖 identity,在此注入);LOGO 暂无项目字段
+        // 品牌名/LOGO=项目名称/LOGO(messenger 模块不依赖 identity,在此注入)
         if (config != null) {
             config = new com.aitalky.messenger.dto.MessengerPublicVO(
-                    project.getName(), null, config.webTitle(), config.webIcon(), config.replyTime(),
+                    project.getName(), project.getLogo(), config.webTitle(), config.webIcon(), config.replyTime(),
                     config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled(),
                     config.sysMsgUnread(), config.sysMsgTyping(), config.sysMsgMemberRetract(),
                     config.popupEnabled(), config.popupAllowClose(), config.customerRetractEnabled(),

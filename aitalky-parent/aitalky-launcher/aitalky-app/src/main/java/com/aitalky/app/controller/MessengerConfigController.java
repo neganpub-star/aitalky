@@ -28,16 +28,18 @@ public class MessengerConfigController {
     @GetMapping
     public R<MessengerConfigVO> get() {
         MessengerConfigVO cfg = messengerConfigService.getConfig();
-        // 注入品牌:取当前项目名称(LOGO 暂无项目字段,后续随项目设置补)
+        // 注入品牌:取当前项目名称 + LOGO(品牌=项目名称/LOGO,只读,在基本信息页改)
         String brandName = null;
+        String logo = null;
         Long projectId = TenantContext.getProjectId();
         if (projectId != null) {
             IdProject project = projectService.getById(projectId);
             if (project != null) {
                 brandName = project.getName();
+                logo = project.getLogo();
             }
         }
-        return R.ok(withBrand(cfg, brandName));
+        return R.ok(withBrand(cfg, brandName, logo));
     }
 
     @PutMapping
@@ -59,10 +61,10 @@ public class MessengerConfigController {
         return R.ok();
     }
 
-    /** 用项目名填充只读品牌字段(VO 是 record,重建一份) */
-    private static MessengerConfigVO withBrand(MessengerConfigVO c, String brandName) {
+    /** 用项目名称/LOGO 填充只读品牌字段(VO 是 record,重建一份) */
+    private static MessengerConfigVO withBrand(MessengerConfigVO c, String brandName, String logo) {
         return new MessengerConfigVO(
-                brandName, c.logo(), c.customDomain(), c.badge(), c.webTitle(), c.webIcon(),
+                brandName, logo, c.customDomain(), c.badge(), c.webTitle(), c.webIcon(),
                 c.defaultLanguage(), c.enabledLanguages(), c.replyTime(), c.messageRetentionDays(),
                 c.popupEnabled(), c.popupAllowClose(),
                 c.sysMsgUnread(), c.sysMsgTyping(), c.sysMsgMemberRetract(), c.customerRetractEnabled(),
