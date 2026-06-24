@@ -34,15 +34,15 @@ public class GeoIpService {
 
     private final RedissonClient redisson;
     private final GeoIpProperties props;
-    private final ObjectMapper objectMapper;
+    /** 自用 ObjectMapper(仅解析 ip-api 响应):不注入 Spring 的,避免非 web 入口(ws/Netty)无该 bean 致启动失败 */
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient http;
     /** 自带守护线程池:不依赖全局 @EnableAsync,避免污染其他模块;池小即可(新会话才解析,量不大) */
     private final ExecutorService pool;
 
-    public GeoIpService(RedissonClient redisson, GeoIpProperties props, ObjectMapper objectMapper) {
+    public GeoIpService(RedissonClient redisson, GeoIpProperties props) {
         this.redisson = redisson;
         this.props = props;
-        this.objectMapper = objectMapper;
         this.http = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(props.timeoutMs()))
                 .build();
