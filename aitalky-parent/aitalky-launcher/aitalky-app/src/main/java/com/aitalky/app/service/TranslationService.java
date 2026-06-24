@@ -109,26 +109,24 @@ public class TranslationService {
     }
 
     /**
-     * B 坐席消息:翻成客户语言 targetLang,返回译文(发送时调用,发给客户的是译文)。每次都扣费。
-     * 引擎异常/空文本 返回 null(调用方按原文发送,不阻断)。
+     * B 坐席消息:翻成客户语言 targetLang,返回译文(发送时调用)。每次都扣费。
+     * <p>未启用/空文本/无目标语言 返回 null(调用方按原文正常发)。
+     * <b>配额不足或引擎失败则抛异常</b>——调用方据此<b>阻止发送</b>并提示坐席(避免把看不懂的原文发给客户)。
      */
     public String translateAgentText(Long projectId, String text, String targetLang) {
         if (!translateService.enabled() || !StringUtils.hasText(text) || !StringUtils.hasText(targetLang)) {
             return null;
         }
-        try {
-            return doTranslate(projectId, text, targetLang).translatedText();
-        } catch (Exception e) {
-            log.warn("坐席消息翻译失败 projectId={}, 原因={}", projectId, e.getMessage());
-            return null;
-        }
+        return doTranslate(projectId, text, targetLang).translatedText(); // 配额不足→TRANSLATE_QUOTA_EXCEEDED;引擎错→SYSTEM_ERROR
     }
 
-    /** 配额校验 + 调引擎 + 按实际字符扣减;不涉及消息存储 */
+    /** 配额校验 + 调引擎 + 按实际字符扣减;不涉及消息存储。配额不足抛 TRANSLATE_QUOTA_EXCEEDED */
     private TranslateResult doTranslate(Long projectId, String text, String targetLang) {
         String usedKey = "translate:used:" + projectId;
         long used = redisson.getAtomicLong(usedKey).get();
-        quotaService.ensure(projectId, RES_TRANSLATE, used, text.length());   // 不够抛 RESOURCE_QUOTA_EXCEEDED
+        if (!quotaService.hasRemaining(projectId, RES_TRANSLATE, used, text.length())) {
+            throw new BizException(ResultCode.TRANSLATE_QUOTA_EXCEEDED);   // 翻译额度不足:提示充值/关翻译
+        }
         TranslateResult r = translateService.translate(text, targetLang);
         long total = redisson.getAtomicLong(usedKey).addAndGet(r.charCount());
         log.info("翻译扣费 projectId={}, target={}, chars={}, projectUsed={}", projectId, targetLang, r.charCount(), total);

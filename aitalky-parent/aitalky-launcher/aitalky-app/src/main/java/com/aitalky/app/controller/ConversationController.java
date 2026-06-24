@@ -201,22 +201,25 @@ public class ConversationController {
         boolean wasClosed = conv.getStatus() != null && conv.getStatus() == 2; // 取消息前状态:已结束坐席重发→重开+归属当前坐席
         MemberBrief me = memberService.brief(TenantContext.getMemberId());
         boolean internal = Boolean.TRUE.equals(req.internal());
+        // B 坐席消息自动翻译:会话开了 agent_auto_translate → 先翻成客户语言(同步,先于落库)。
+        // 翻译失败(配额不足/引擎错)直接抛异常 → 消息不落库不发送,坐席收到提示(去充值或关翻译);
+        // 避免把客户看不懂的原文发出。无目标语言则不翻、按原文正常发。
+        String translated = null;
+        String clientLang = null;
+        if (!internal && "text".equals(req.type())
+                && conv.getAgentAutoTranslate() != null && conv.getAgentAutoTranslate() == 1) {
+            CusCustomer cust = customerService.getById(conv.getCustomerId());
+            clientLang = cust == null ? null : cust.getSourceLanguage();
+            if (org.springframework.util.StringUtils.hasText(clientLang)) {
+                translated = translationService.translateAgentText(conv.getProjectId(), req.content(), clientLang);
+            }
+        }
         Message m = messageService.send(new SendMessageCmd(
                 conv.getProjectId(), id, conv.getCustomerId(),
                 "agent", me.id(), me.nickname(), me.avatar(),
                 req.type(), req.content(), req.payload(), internal, req.mentions()));
-        // B 坐席消息自动翻译:会话开了 agent_auto_translate → 翻成客户语言存 translations,
-        // 客户端显示译文、坐席端显示原文(标「原文」)。同步翻译(发送时等待),失败则按原文发。
-        if (!internal && "text".equals(req.type())
-                && conv.getAgentAutoTranslate() != null && conv.getAgentAutoTranslate() == 1) {
-            CusCustomer cust = customerService.getById(conv.getCustomerId());
-            String clientLang = cust == null ? null : cust.getSourceLanguage();
-            if (org.springframework.util.StringUtils.hasText(clientLang)) {
-                String translated = translationService.translateAgentText(conv.getProjectId(), req.content(), clientLang);
-                if (translated != null) {
-                    m = messageService.saveTranslation(id, m.getMsgId(), clientLang, translated);
-                }
-            }
+        if (translated != null) {
+            m = messageService.saveTranslation(id, m.getMsgId(), clientLang, translated);
         }
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
                 m.getSenderAvatar(), m.getSenderName(), false, true);

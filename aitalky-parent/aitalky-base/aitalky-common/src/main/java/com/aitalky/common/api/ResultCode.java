@@ -100,6 +100,8 @@ public enum ResultCode {
     RESOURCE_QUOTA_EXCEEDED(1061, "billing.resource.quota.exceeded"),
     /** 验证码连续输错次数过多,已临时锁定(防暴力枚举) */
     VERIFY_CODE_LOCKED(1062, "verify.code.locked"),
+    /** 翻译额度不足(translate_char 配额耗尽);提示充值或关闭自动翻译 */
+    TRANSLATE_QUOTA_EXCEEDED(1063, "translate.quota.exceeded"),
 
     // ===== 系统 5xx =====
     SYSTEM_ERROR(500, "system.error");
