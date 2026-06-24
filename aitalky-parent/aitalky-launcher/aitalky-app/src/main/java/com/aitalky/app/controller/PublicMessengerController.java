@@ -308,7 +308,13 @@ public class PublicMessengerController {
     }
 
     private String clientIp(HttpServletRequest req) {
+        // 生产经反向代理:取 X-Forwarded-For 首段=真实客户公网 IP(可正常解析归属地);
+        // 本地直连无 XFF → getRemoteAddr() 常为 IPv6 回环,归一成 127.0.0.1 避免详情显示 0:0:0:0:0:0:0:1
         String xff = req.getHeader("X-Forwarded-For");
-        return StringUtils.hasText(xff) ? xff.split(",")[0].trim() : req.getRemoteAddr();
+        String ip = StringUtils.hasText(xff) ? xff.split(",")[0].trim() : req.getRemoteAddr();
+        if ("::1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip)) {
+            return "127.0.0.1";
+        }
+        return ip;
     }
 }
