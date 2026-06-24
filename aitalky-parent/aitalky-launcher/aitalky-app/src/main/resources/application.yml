@@ -104,7 +104,6 @@ aitalky:
     lang: en                      # 统一存英文地名(国际通用,中英坐席都可读);改 zh-CN 则按中文风格拼接
     timeout-ms: 2000
     cache-days: 7
-    dev-fallback-ip: 8.8.8.8      # 开发期回退:本地回环/内网 IP 无归属地,改用此公网 IP 解析以便本地看效果;上线务必留空
   minio:
     # 对象存储(头像/图片消息);本地开发明文,上线改环境变量/配置中心
     endpoint: http://localhost:9000
