@@ -792,6 +792,7 @@ export default {
     translate: 'Translate',
     translation: 'Translation',
     transTo: 'Translate customer messages to:',
+    transHint: 'When enabled, incoming customer messages in this conversation are auto-translated to the selected language, shown below the original.',
     openTranslate: 'Enable translation',
     closeTranslate: 'Disable translation',
     translated: 'Translated',

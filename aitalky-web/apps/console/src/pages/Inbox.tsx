@@ -1,12 +1,12 @@
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Avatar, Badge, Button, ConfigProvider, Empty, Image, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
+import { Avatar, Badge, Button, ConfigProvider, Dropdown, Empty, Image, Input, Modal, Popconfirm, Popover, Segmented, Select, Spin, Switch, Tooltip, message, theme } from 'antd'
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
   PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
-  FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined, GlobalOutlined,
+  FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined, GlobalOutlined, QuestionCircleOutlined,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../auth/perm'
@@ -1471,12 +1471,21 @@ export default function Inbox() {
 
             {/* 顶部翻译条(A 客户消息方向):将客户消息翻译为 X + 开启/关闭翻译。对齐参考头部下方蓝 bar */}
             {detail && (
-              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-                padding: '7px 16px', background: isDark ? '#1f2a3d' : '#eef4ff', borderBottom: splitBorder, fontSize: 13, color: token.colorTextSecondary }}>
+              <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                height: 38, background: isDark ? '#1f2a3d' : '#eef3fe', fontSize: 13, color: token.colorTextSecondary }}>
                 <span>{t('inbox.transTo')}</span>
-                <Select size="small" variant="borderless" value={custTransTo} options={langOptions}
-                  onChange={changeCustTransTo} style={{ minWidth: 88 }} popupMatchSelectWidth={false} />
-                <a onClick={toggleCustAuto} style={{ marginLeft: 4 }}>
+                {/* 目标语言:蓝色文字链接,点击弹语言菜单(贴参考,非带框下拉) */}
+                <Dropdown trigger={['click']} placement="bottom"
+                  menu={{ selectable: true, selectedKeys: [custTransTo],
+                    items: langOptions.map((o) => ({ key: o.value, label: o.label, onClick: () => changeCustTransTo(o.value) })) }}>
+                  <a style={{ color: token.colorPrimary, fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                    {langLabel(custTransTo, transLang)}<DownOutlined style={{ fontSize: 9 }} />
+                  </a>
+                </Dropdown>
+                <Tooltip title={t('inbox.transHint')}>
+                  <QuestionCircleOutlined style={{ color: token.colorTextQuaternary, fontSize: 13, cursor: 'help' }} />
+                </Tooltip>
+                <a onClick={toggleCustAuto} style={{ fontWeight: 500, marginLeft: 2 }}>
                   {detail.autoTranslate === 1 ? t('inbox.closeTranslate') : t('inbox.openTranslate')}
                 </a>
               </div>

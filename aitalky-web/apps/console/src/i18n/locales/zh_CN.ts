@@ -808,6 +808,7 @@ export default {
     translate: '翻译',
     translation: '译文',
     transTo: '将客户消息翻译为:',
+    transHint: '开启后,该会话客户发来的消息会自动翻译为所选语言,显示在原文下方',
     openTranslate: '开启翻译',
     closeTranslate: '关闭翻译',
     translated: '已翻译',
