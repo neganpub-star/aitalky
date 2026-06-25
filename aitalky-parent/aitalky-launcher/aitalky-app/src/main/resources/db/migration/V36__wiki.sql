@@ -130,6 +130,7 @@ CREATE TABLE `wiki_category_i18n` (
     `category_id` BIGINT       NOT NULL COMMENT '类别ID',
     `lang`        VARCHAR(16)  NOT NULL COMMENT '语言',
     `name`        VARCHAR(128) NULL COMMENT '类别名(分语言)',
+    `description` VARCHAR(512) NULL COMMENT '类别描述(分语言)',
     `create_by`   BIGINT       NULL,
     `create_time` DATETIME     NULL,
     `update_by`   BIGINT       NULL,

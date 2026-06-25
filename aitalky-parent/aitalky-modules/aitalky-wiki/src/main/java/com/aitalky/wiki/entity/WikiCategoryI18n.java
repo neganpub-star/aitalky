@@ -20,4 +20,7 @@ public class WikiCategoryI18n extends BaseEntity {
 
     /** 类别名(分语言) */
     private String name;
+
+    /** 类别描述(分语言) */
+    private String description;
 }
