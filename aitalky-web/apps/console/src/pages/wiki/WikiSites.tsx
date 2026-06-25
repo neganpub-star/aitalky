@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Input, Select, Modal, Popover, message, theme, Spin } from 'antd'
+import { Button, Input, Select, Drawer, Popover, message, theme, Spin } from 'antd'
 import { PlusOutlined, CheckCircleFilled, MinusCircleFilled } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -148,19 +148,16 @@ export default function WikiSites() {
         ? <div style={{ textAlign: 'center', paddingTop: 80 }}><Spin /></div>
         : <>{section(t('wiki.defaultApps'), defaultApps)}{section(t('wiki.customApps'), customApps)}</>}
 
-      <Modal
+      <Drawer
         open={open}
         title={t('wiki.createApp')}
         width={560}
-        confirmLoading={saving}
-        onOk={submit}
-        onCancel={() => setOpen(false)}
-        okText={t('common.save')}
-        cancelText={t('common.cancel')}
+        onClose={() => setOpen(false)}
+        footer={<div style={{ textAlign: 'right' }}><Button type="primary" loading={saving} onClick={submit}>{t('common.save')}</Button></div>}
       >
         <div style={{
           background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8, padding: '10px 14px',
-          fontSize: 13, color: '#874d00', margin: '12px 0 20px',
+          fontSize: 13, color: '#874d00', margin: '0 0 20px',
         }}>
           {t('wiki.createTip')}
         </div>
@@ -192,7 +189,7 @@ export default function WikiSites() {
           <div style={{ fontSize: 12, color: token.colorTextTertiary, marginBottom: 10, lineHeight: 1.6 }}>{t('wiki.subdomainHint')}</div>
           <Input value={subdomain} onChange={(e) => setSubdomain(e.target.value)} placeholder="example" />
         </div>
-      </Modal>
+      </Drawer>
     </div>
   )
 }

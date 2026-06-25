@@ -81,6 +81,7 @@ export const router = createHashRouter([
           { path: 'sites/:id/content', element: <WikiWip titleKey="wiki.contentConfig" /> },
           { path: 'articles', element: <WikiArticles /> },
           { path: 'articles/:id', element: <WikiArticleDetail /> },
+          { path: 'articles/:id/edit', element: <WikiArticleEdit /> },
         ],
       },
       {
@@ -118,7 +119,5 @@ export const router = createHashRouter([
       },
     ],
   },
-  // 文章全屏编辑器:独立于 MainLayout(无侧栏/图标栏),对齐参考全屏编辑
-  { path: '/wiki/articles/:id/edit', element: <RequireProject><RequireWiki><WikiArticleEdit /></RequireWiki></RequireProject> },
   { path: '*', element: <Navigate to="/inbox" replace /> },
 ])

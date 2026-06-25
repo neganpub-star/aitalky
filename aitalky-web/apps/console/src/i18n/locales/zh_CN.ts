@@ -328,6 +328,8 @@ export default {
     customDomain: '自定义域名',
     customDomainHint: '您可以在这里为您的 wiki 应用配置自定义域名。自定义域名需要指明是 https:// 或者 http:// 作为前缀。',
     // 样式配置
+    homeStyle: '首页样式',
+    homeSearchPh: '搜您想问,快速解答',
     styleEdit: '样式编辑',
     langSetting: '语言设置',
     lang: '语言',
@@ -378,6 +380,14 @@ export default {
     preview: '实时预览',
     toc: '目录',
     tocEmpty: '正文中的标题(# / ## / ###)会显示在此',
+    // 详情
+    draftBox: '草稿箱',
+    publishedView: '已发布',
+    noContent: '该文章没有内容',
+    noPublished: '没有发布文章',
+    insertImage: '插入图片',
+    insertLink: '插入链接',
+    insertTable: '插入表格',
     // 历史
     history: '历史记录',
     historyPreview: '版本预览',
