@@ -56,7 +56,11 @@ body {
 .wiki-article-html h3 { font-size: 17px; font-weight: 600; margin: 14px 0 8px; }
 .wiki-article-html p { margin: 8px 0; }
 /* wangEditor 编辑区内表格/图片基本样式兜底 */
-.wiki-rich-editor .w-e-text-container { background: transparent; }
+/* wiki 编辑区固定白底黑字:wangEditor 为亮色,暗色主题下深色文字不可读,故强制浅色(文章本身亦白底) */
+.wiki-rich-editor,
+.wiki-rich-editor .w-e-container,
+.wiki-rich-editor .w-e-text-container { background: #fff !important; }
+.wiki-rich-editor .w-e-text-container [data-slate-editor] { color: #1a1a1a !important; }
 /* wiki 富文本工具栏:固定悬浮页面底部居中(对齐参考,不随内容滚动) */
 .wiki-rich-toolbar-float {
   position: fixed;
