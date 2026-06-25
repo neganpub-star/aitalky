@@ -70,6 +70,12 @@ public interface ConversationService {
     void resetUnread(Long conversationId);
 
     /**
+     * 坐席读会话:把坐席已读位 agent_read_seq 推进到 last_seq(信使端据此显示客户消息「未读/已读」)。
+     * @return 推进后的 agentReadSeq;若无变化(已是最新)返回 -1,供调用方决定是否推 WS 通知客户
+     */
+    long markAgentRead(Long conversationId);
+
+    /**
      * 更新会话翻译设置(坐席操作)。各参数 null 表示不改。
      * @param autoTranslate      A 客户消息自动翻译开关 1开/0关
      * @param translateTo        A 客户消息翻译目标语言(zh_CN/en_US...)

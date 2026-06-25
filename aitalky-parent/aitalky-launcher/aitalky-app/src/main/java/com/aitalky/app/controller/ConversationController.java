@@ -174,13 +174,25 @@ public class ConversationController {
     public R<List<MessageVO>> messages(@PathVariable Long id,
                                        @RequestParam(required = false) Long afterSeq,
                                        @RequestParam(required = false) Long beforeSeq) {
-        conversationService.getById(id);
+        CnvConversation conv = conversationService.getById(id);
         List<Message> list;
         if (beforeSeq != null) {
             // 历史向上翻页:不清未读(只看更早消息)
             list = messageService.loadBefore(id, beforeSeq, 50);
         } else {
             conversationService.resetUnread(id); // 首屏/增量:打开即清未读
+            // 坐席已读位推进到 last_seq,并推 WS 通知客户(信使端「客户最后一条消息」未读→消失)
+            long agentReadSeq = conversationService.markAgentRead(id);
+            if (agentReadSeq > 0) {
+                try {
+                    String payload = objectMapper.writeValueAsString(java.util.Map.of(
+                            "evt", "agentRead", "conversationId", String.valueOf(id), "agentReadSeq", String.valueOf(agentReadSeq)));
+                    // 推给客户(customerId 非空→信使端);assigneeMemberId 传 null 不回推坐席
+                    pushPublisher.publish(new MsgPushEvent(id, conv.getProjectId(), null, conv.getCustomerId(), payload));
+                } catch (Exception ignore) {
+                    // 瞬时事件,失败无需补偿(下次打开 init 带 agentReadSeq 兜底)
+                }
+            }
             list = afterSeq == null ? messageService.loadLatest(id, 50) : messageService.sync(id, afterSeq);
         }
         return R.ok(list.stream().map(PublicMessengerController::toVO).toList());

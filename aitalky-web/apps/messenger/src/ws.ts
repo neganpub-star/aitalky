@@ -10,6 +10,8 @@ type StatusFn = (s: WsStatus) => void
 type OpenFn = () => void
 // typing 瞬时事件:from=agent/customer,conversationId 为字符串(与消息帧一致)
 type TypingFn = (e: { conversationId: string; from: string }) => void
+// 坐席已读事件:坐席读会话时下发,信使端据此让「客户消息未读」标签消失
+type AgentReadFn = (e: { conversationId: string; agentReadSeq: number }) => void
 
 const PING_INTERVAL = 25_000
 const RECONNECT_BASE = 1_000
@@ -26,6 +28,7 @@ class MessengerWs {
   private statusFns = new Set<StatusFn>()
   private openFns = new Set<OpenFn>()
   private typingFns = new Set<TypingFn>()
+  private agentReadFns = new Set<AgentReadFn>()
   private status: WsStatus = 'closed'
 
   connect(token: string) {
@@ -57,6 +60,11 @@ class MessengerWs {
       // typing 瞬时帧:分发给 typing 监听(上层按 from 过滤+开关控制显示)
       if (data.evt === 'typing') {
         this.typingFns.forEach((fn) => fn({ conversationId: String(data.conversationId), from: String(data.from) }))
+        return
+      }
+      // 坐席已读帧:更新坐席已读位(信使端据此消「未读」标签)
+      if (data.evt === 'agentRead') {
+        this.agentReadFns.forEach((fn) => fn({ conversationId: String(data.conversationId), agentReadSeq: Number(data.agentReadSeq) }))
         return
       }
       // 控制帧(connected/pong)忽略;含 msgId 的为消息帧(seq/timestamp 规范化为 number)
@@ -133,6 +141,11 @@ class MessengerWs {
   onTyping(fn: TypingFn) {
     this.typingFns.add(fn)
     return () => this.typingFns.delete(fn)
+  }
+
+  onAgentRead(fn: AgentReadFn) {
+    this.agentReadFns.add(fn)
+    return () => this.agentReadFns.delete(fn)
   }
 
   close() {

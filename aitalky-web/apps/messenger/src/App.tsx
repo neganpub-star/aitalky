@@ -74,6 +74,8 @@ export default function App() {
   const [peerTyping, setPeerTyping] = useState(false)
   // 未读分割:进入聊天时的"已读到 seq",界后首条画"以下为未读消息"(受 sysMsgUnread 控制)
   const [unreadAfterSeq, setUnreadAfterSeq] = useState<number | null>(null)
+  // 坐席已读位:客户自己最后一条消息 seq>此值→显示「未读」;坐席读后(WS agentRead)推进→标签消失
+  const [agentReadSeq, setAgentReadSeq] = useState(0)
 
   // 补漏对账基准:本地已收到的最大 seq(以实际 max(seq) 前进,容忍空洞)
   const localMaxSeqRef = useRef(0)
@@ -214,6 +216,8 @@ export default function App() {
       loadingMoreRef.current = false
       // 历史视为已读:首次进聊天不显未读分割线(只标"离开后新来的")
       lastReadSeqRef.current = localMaxSeqRef.current
+      // 坐席已读位初始值(init 带出),用于客户消息「未读/已读」回执
+      setAgentReadSeq(d.agentReadSeq ?? 0)
     } catch {
       // 首次 init 失败 → 错误页;过期重建失败 → 保持现状(下次请求/轮询再触发)
       if (!reinit && !everReadyRef.current) setPhase('error')
@@ -258,6 +262,11 @@ export default function App() {
       clearTimeout(typingClearRef.current)
       typingClearRef.current = setTimeout(() => setPeerTyping(false), 4000)
     })
+    // 坐席已读:坐席读会话→推进本地坐席已读位(客户消息「未读」标签消失);单调前进
+    const offAgentRead = messengerWs.onAgentRead((e) => {
+      if (e.conversationId !== convIdRef.current) return
+      setAgentReadSeq((s) => Math.max(s, e.agentReadSeq))
+    })
     // 网①重连补漏 + 网③周期对账/聚焦补漏(顺带刷新坐席头部)
     const offOpen = messengerWs.onOpen(() => { syncRef.current(); refreshAgentRef.current() })
     const poll = setInterval(() => syncRef.current(), SYNC_POLL)
@@ -273,6 +282,7 @@ export default function App() {
       offStatus()
       offMsg()
       offTyping()
+      offAgentRead()
       offOpen()
       clearInterval(poll)
       clearTimeout(typingClearRef.current)
@@ -399,6 +409,7 @@ export default function App() {
       messages={messages}
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
+      agentReadSeq={agentReadSeq}
       toast={toast}
       loadingMore={loadingMore}
       onLoadMore={() => loadMoreRef.current()}

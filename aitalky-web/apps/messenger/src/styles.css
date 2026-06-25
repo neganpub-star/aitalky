@@ -400,6 +400,11 @@ img.avatar,
   color: var(--text-2);
   margin-top: 4px;
 }
+/* 已读回执:客户最后一条消息坐席未读时,时间戳前一枚蓝色「未读」标签(对齐参考) */
+.msg-unread-tag {
+  color: var(--bubble-customer);
+  margin-right: 6px;
+}
 /* 发送失败:气泡左侧红色感叹号(点击重发) */
 .msg-fail {
   width: 18px;

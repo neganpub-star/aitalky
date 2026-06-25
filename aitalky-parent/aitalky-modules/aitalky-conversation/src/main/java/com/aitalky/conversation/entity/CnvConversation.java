@@ -45,6 +45,8 @@ public class CnvConversation extends BaseEntity {
     private Long lastSeq;
     /** 客户已读到的 seq(已读回执:坐席消息 seq<=此值即"已读") */
     private Long customerReadSeq;
+    /** 坐席已读到的 seq(信使端据此显示客户消息「未读/已读」:客户消息 seq>此值即"未读") */
+    private Long agentReadSeq;
     /** 最后一条消息预览 */
     private String lastMessagePreview;
     /** 最后一条消息发送者头像快照(列表项小头像:谁最后回复显示谁) */

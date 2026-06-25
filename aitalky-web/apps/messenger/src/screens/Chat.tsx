@@ -9,6 +9,7 @@ interface Props {
   messages: MessageVO[]
   pending: PendingMsg[]
   unreadAfterSeq: number | null
+  agentReadSeq: number  // 坐席已读位:客户自己最后一条消息 seq>此值→显示「未读」
   toast: string | null
   loadingMore: boolean
   onLoadMore: () => Promise<number>  // 历史翻页:前插更早消息,返回新增条数
@@ -73,7 +74,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, agentReadSeq, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   // 客户语言:坐席消息自动翻译后,客户端按此语言取译文显示(= init 生效语言 = 客户源语言)
   const myLang = data.config?.lang || ''
@@ -145,6 +146,10 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
     const unread = messages.filter((m) => m.seq > (unreadAfterSeq as number) && m.isVisible !== false)
     if (unread.some((m) => m.senderType === 'agent')) firstUnreadId = unread[0]?.msgId ?? null
   }
+
+  // 已读回执(对齐参考):仅「客户自己最后一条消息」在坐席未读时显示「未读」,坐席读后(agentReadSeq>=seq)标签消失;受「未读」开关控制
+  const receiptOn = data.config?.sysMsgUnread ?? true
+  const lastMineSeq = messages.reduce((mx, m) => (m.senderType === 'customer' && m.isVisible !== false && m.seq > mx ? m.seq : mx), 0)
 
   // 紧急通知(后管配置,init 按客户语言带出);客户可关闭
   const urgent = data.config?.urgentEnabled && data.config.urgentNotice?.trim() ? data.config.urgentNotice : null
@@ -334,7 +339,12 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
                     </span>
                   )}
                 </div>
-                <div className="msg-time">{fmtTime(m.timestamp)}</div>
+                <div className="msg-time">
+                  {mine && receiptOn && m.seq === lastMineSeq && m.seq > agentReadSeq && (
+                    <span className="msg-unread-tag">{t('unreadTag')}</span>
+                  )}
+                  {fmtTime(m.timestamp)}
+                </div>
               </div>
             </div>
             </Fragment>

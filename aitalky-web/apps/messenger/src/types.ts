@@ -52,6 +52,8 @@ export interface MessengerInit {
   agent: MessengerAgent | null
   // 专属渠道名(会话经专属策略接入时有值):头部品牌名下展示一行渠道名;普通接入为 null
   channelName: string | null
+  // 坐席已读位:客户自己最后一条消息 seq>此值→显示「未读」,坐席读后(<=)标签消失
+  agentReadSeq: number | null
 }
 
 // 消息(对应后端 MessageVO)。senderType: customer/agent;type: text/image/...

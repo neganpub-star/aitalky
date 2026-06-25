@@ -298,6 +298,25 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    public long markAgentRead(Long conversationId) {
+        CnvConversation conv = conversationMapper.selectById(conversationId);
+        if (conv == null) {
+            return -1;
+        }
+        long lastSeq = java.util.Optional.ofNullable(conv.getLastSeq()).orElse(0L);
+        long cur = java.util.Optional.ofNullable(conv.getAgentReadSeq()).orElse(0L);
+        if (lastSeq <= cur) {
+            return -1; // 已是最新,无需推进/通知
+        }
+        // 只更新该字段,避免覆盖并发改动的其它列
+        CnvConversation upd = new CnvConversation();
+        upd.setId(conversationId);
+        upd.setAgentReadSeq(lastSeq);
+        conversationMapper.updateById(upd);
+        return lastSeq;
+    }
+
+    @Override
     public void updateTranslateSetting(Long conversationId, Integer autoTranslate, String translateTo, Integer agentAutoTranslate) {
         var update = Wrappers.<CnvConversation>lambdaUpdate().eq(CnvConversation::getId, conversationId);
         if (autoTranslate != null) {

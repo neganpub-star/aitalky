@@ -9,5 +9,7 @@ import com.aitalky.messenger.dto.MessengerPublicVO;
 public record MessengerInitVO(
         String token, Long conversationId,
         Long customerId, String customerName, String customerAvatar, Long lastSeq,
-        MessengerPublicVO config, MessengerAgentVO agent, String channelName) {
+        MessengerPublicVO config, MessengerAgentVO agent, String channelName,
+        // 坐席已读位:信使端据此在「客户自己最后一条消息」显示未读(seq>此值)/已读(消失)
+        Long agentReadSeq) {
 }

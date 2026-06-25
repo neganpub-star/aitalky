@@ -108,7 +108,7 @@ public class PublicMessengerController {
         String channelName = assignService.groupName(conv.getGroupId());
         return R.ok(new MessengerInitVO(token, conv.getId(),
                 customer.getId(), customer.getName(), customer.getAvatar(), conv.getLastSeq(), config, agent,
-                channelName));
+                channelName, conv.getAgentReadSeq()));
     }
 
     /** 刷新服务坐席头部(客户令牌):坐席上下线/会话被认领后,信使端 focus/重连时拉最新 */
