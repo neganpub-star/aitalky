@@ -308,7 +308,7 @@ export default function Messenger() {
         <SettingCard {...cardProps('web')} icon={<GlobalOutlined />} title={t('mse.webTitleTitle')} desc={t('mse.webTitleDesc')} body={
           <>
             <div style={styles.fieldLabel}>{t('mse.webIcon')}</div>
-            <Upload showUploadList={false} accept="image/*" beforeUpload={beforeIconUpload} disabled={uploading}>
+            <Upload showUploadList={false} accept=".ico,.png,image/x-icon,image/vnd.microsoft.icon,image/png" beforeUpload={beforeIconUpload} disabled={uploading}>
               <div style={{ width: 48, height: 48, borderRadius: 8, border: `1px dashed ${token.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: token.colorFillTertiary }}>
                 {uploading ? <LoadingOutlined style={{ color: token.colorPrimary }} />
                   : cfg.webIcon ? <img src={cfg.webIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

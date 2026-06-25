@@ -205,8 +205,13 @@ export default function App() {
       setAgent(d.agent)
       setPhase('ready')
       everReadyRef.current = true
-      // 自定义网站标题(URL 接入,浏览器标签页)
+      // 自定义网站标题 + 图标 favicon(仅 URL 接入,浏览器标签页)
       if (d.config?.webTitle?.trim()) document.title = d.config.webTitle
+      if (d.config?.webIcon) {
+        let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']")
+        if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link) }
+        link.href = d.config.webIcon
+      }
       messengerWs.close() // 重建时先断旧连接(旧令牌已失效),再用新令牌连
       messengerWs.connect(d.token)
       // 拉历史(最近 50);localMaxSeq = 最新 seq
