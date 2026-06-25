@@ -10,6 +10,7 @@ interface Props {
   pending: PendingMsg[]
   unreadAfterSeq: number | null
   agentReadSeq: number  // 坐席已读位:客户自己最后一条消息 seq>此值→显示「未读」
+  canReturnHome: boolean // 专属接入(带 groupId)时为 false:隐藏返回按钮,不可回首页
   toast: string | null
   loadingMore: boolean
   onLoadMore: () => Promise<number>  // 历史翻页:前插更早消息,返回新增条数
@@ -74,7 +75,7 @@ function fmtTime(ms: number): string {
 }
 
 // 信使聊天窗(对齐 aitalky 23-userid):返回+标题、客服左灰气泡/客户右蓝气泡、底部输入+发送
-export default function Chat({ data, agent, messages, pending, unreadAfterSeq, agentReadSeq, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
+export default function Chat({ data, agent, messages, pending, unreadAfterSeq, agentReadSeq, canReturnHome, toast, loadingMore, onLoadMore, onSend, onSendFile, onResend, onRetract, onTyping, peerTyping, onBack }: Props) {
   const [input, setInput] = useState('')
   // 客户语言:坐席消息自动翻译后,客户端按此语言取译文显示(= init 生效语言 = 客户源语言)
   const myLang = data.config?.lang || ''
@@ -192,7 +193,9 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
     <>
       {toast && <div className="msg-toast">{toast}</div>}
       <div className="chat-header">
-        <div className="back" onClick={onBack}>
+        {/* 专属接入(canReturnHome=false):隐藏返回箭头但保留占位,保持标题居中 */}
+        <div className="back" onClick={canReturnHome ? onBack : undefined}
+          style={canReturnHome ? undefined : { visibility: 'hidden', pointerEvents: 'none' }}>
           ‹
         </div>
         {/* 对齐参考:收起且已分配→标题显示坐席名、不显副标题;否则标题=品牌名,副标题=渠道名??团队介绍。点击展开/收起服务坐席 */}

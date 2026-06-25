@@ -61,8 +61,10 @@ function mergeMessages(prev: MessageVO[], incoming: MessageVO[]): MessageVO[] {
 const SYNC_POLL = 12_000
 
 export default function App() {
+  // 专属接入(URL 带 groupId):直接进会话页、不可返回首页、刷新仍是会话页(对齐参考)
+  const exclusiveEntry = new URLSearchParams(location.search).has('groupId')
   const [phase, setPhase] = useState<'loading' | 'error' | 'ready'>('loading')
-  const [screen, setScreen] = useState<'home' | 'chat'>('home')
+  const [screen, setScreen] = useState<'home' | 'chat'>(exclusiveEntry ? 'chat' : 'home')
   const [data, setData] = useState<MessengerInit | null>(null)
   const [agent, setAgent] = useState<MessengerAgent | null>(null) // 服务坐席头部(随上下线/认领刷新)
   const [messages, setMessages] = useState<MessageVO[]>([])
@@ -410,6 +412,7 @@ export default function App() {
       pending={pending}
       unreadAfterSeq={unreadAfterSeq}
       agentReadSeq={agentReadSeq}
+      canReturnHome={!exclusiveEntry}
       toast={toast}
       loadingMore={loadingMore}
       onLoadMore={() => loadMoreRef.current()}
