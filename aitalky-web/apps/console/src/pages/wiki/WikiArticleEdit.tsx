@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Input, Tooltip, theme, Spin, message } from 'antd'
+import { Button, Input, Tooltip, Drawer, Avatar, theme, Spin, message } from 'antd'
 import { PlayCircleOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../../auth/perm'
 import { getArticle, saveArticleDraft, publishArticle, type WikiArticleDetailVO } from '../../api/wiki'
+import { sanitizeHtml } from '../../utils/sanitize'
+import { useAppStore } from '../../store/useAppStore'
 import RichEditor from './RichEditor'
 
 // 文章支持中英两种语言(对齐参考)
@@ -36,6 +38,12 @@ export default function WikiArticleEdit() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [lang, setLang] = useState('zh_CN')
+  // 实时预览(右侧 Drawer,渲染当前草稿)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewLang, setPreviewLang] = useState('zh_CN')
+  const [previewTime, setPreviewTime] = useState('')
+  const nickname = useAppStore((s) => s.nickname)
+  const avatar = useAppStore((s) => s.avatar)
   const [drafts, setDrafts] = useState<Record<string, LangDraft>>({
     zh_CN: { title: '', summary: '', content: '' },
     en_US: { title: '', summary: '', content: '' },
@@ -68,7 +76,16 @@ export default function WikiArticleEdit() {
     }
   }
   const onSave = async () => { setSaving(true); try { await saveAll(); message.success(t('profile.saved')) } catch { /* 拦截器已提示 */ } finally { setSaving(false) } }
-  const onPreview = async () => { setSaving(true); try { await saveAll(); message.info(t('wiki.previewWip')) } catch { /* 拦截器已提示 */ } finally { setSaving(false) } }
+  // 实时预览:先保存草稿(对齐参考),再右侧滑出预览当前语言草稿
+  const onPreview = async () => {
+    setSaving(true)
+    try {
+      await saveAll()
+      setPreviewLang(lang)
+      setPreviewTime(new Date().toLocaleString())
+      setPreviewOpen(true)
+    } catch { /* 拦截器已提示 */ } finally { setSaving(false) }
+  }
   const onPublish = async () => {
     setSaving(true)
     try { await saveAll(); await publishArticle(id); message.success(t('wiki.published')); nav(`/wiki/articles/${id}`) }
@@ -109,7 +126,7 @@ export default function WikiArticleEdit() {
             : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{it.text}</div>)}
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px 48px 24px', maxWidth: 920 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: '24px 48px 24px' }}>
           <Input variant="borderless" value={cur.title} onChange={(e) => setField('title', e.target.value)}
             placeholder={t('wiki.articleName')} style={{ fontSize: 30, fontWeight: 700, padding: 0, marginBottom: 8 }} />
           <Input variant="borderless" value={cur.summary} onChange={(e) => setField('summary', e.target.value)}
@@ -118,6 +135,45 @@ export default function WikiArticleEdit() {
           <RichEditor key={lang} value={cur.content} onChange={(v) => setField('content', v)} placeholder={t('wiki.articleBodyPh')} />
         </div>
       </div>
+
+      {/* 实时预览 Drawer(右侧滑出,渲染当前草稿;对齐参考) */}
+      <Drawer open={previewOpen} onClose={() => setPreviewOpen(false)} width="50%" closable={false} styles={{ body: { padding: 0 } }}>
+        {(() => {
+          const p = drafts[previewLang] || { title: '', summary: '', content: '' }
+          return (
+            <div style={{ minHeight: '100%', background: token.colorBgContainer }}>
+              {/* 顶部品牌 + 语言切换 */}
+              <div style={{ display: 'flex', alignItems: 'center', padding: '18px 28px', borderBottom: `1px solid ${token.colorSplit}` }}>
+                <div style={{ width: 30, height: 30, borderRadius: 7, background: token.colorPrimary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginRight: 10 }}>Ai</div>
+                <span style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>aitalky</span>
+                <div style={{ display: 'inline-flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, padding: 3 }}>
+                  {LANGS.map((l) => (
+                    <div key={l.code} onClick={() => setPreviewLang(l.code)} style={{ padding: '2px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13, background: previewLang === l.code ? token.colorPrimaryBg : 'transparent', color: previewLang === l.code ? token.colorPrimary : token.colorText }}>{l.label}</div>
+                  ))}
+                </div>
+              </div>
+              {/* 正文 */}
+              <div style={{ padding: '32px 40px' }}>
+                <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 10 }}>{p.title || t('wiki.untitled')}</div>
+                {p.summary && <div style={{ fontSize: 15, color: token.colorTextSecondary, marginBottom: 18 }}>{p.summary}</div>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+                  <Avatar size={32} src={avatar || undefined} style={{ background: token.colorPrimary }}>{(nickname || 'U').charAt(0).toUpperCase()}</Avatar>
+                  <div style={{ lineHeight: 1.3 }}>
+                    <div style={{ fontSize: 14 }}>{nickname || '-'}</div>
+                    <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{previewTime}</div>
+                  </div>
+                </div>
+                {p.content
+                  ? <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.content) }} />
+                  : <div style={{ color: token.colorTextTertiary }}>{t('wiki.noContent')}</div>}
+                <div style={{ marginTop: 48, padding: '14px', background: token.colorFillQuaternary, borderRadius: 8, textAlign: 'center', fontSize: 13, color: token.colorTextTertiary }}>
+                  {t('wiki.readFooter')}
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+      </Drawer>
     </div>
   )
 }

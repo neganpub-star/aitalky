@@ -54,9 +54,9 @@ export default function RichEditor({ value, onChange, placeholder }: {
   }, [])
 
   return (
-    <div className="wiki-rich-editor" style={{ border: '1px solid #e5e6eb', borderRadius: 8 }}>
-      {/* 不裁剪:否则表格选格子/链接等向上弹出的面板被容器边界裁掉 */}
-      <div ref={editorBoxRef} style={{ minHeight: '46vh' }} />
+    <div className="wiki-rich-editor">
+      {/* 无边框铺满(对齐参考);不裁剪:否则表格选格子等向上弹出面板被裁 */}
+      <div ref={editorBoxRef} style={{ minHeight: '60vh' }} />
       {/* 工具栏放底部(对齐参考底部插入栏) */}
       <div ref={toolbarBoxRef} style={{ borderTop: '1px solid #e5e6eb' }} />
     </div>
