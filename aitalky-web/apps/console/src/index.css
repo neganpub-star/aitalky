@@ -57,3 +57,16 @@ body {
 .wiki-article-html p { margin: 8px 0; }
 /* wangEditor 编辑区内表格/图片基本样式兜底 */
 .wiki-rich-editor .w-e-text-container { background: transparent; }
+/* wiki 富文本工具栏:固定悬浮页面底部居中(对齐参考,不随内容滚动) */
+.wiki-rich-toolbar-float {
+  position: fixed;
+  bottom: 28px;
+  left: calc(50% + 130px);
+  transform: translateX(-50%);
+  z-index: 100;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 2px 6px;
+}
+.wiki-rich-toolbar-float .w-e-toolbar { background: transparent !important; border: none !important; border-radius: 10px; }

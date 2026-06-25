@@ -126,13 +126,18 @@ export default function WikiArticleEdit() {
             : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{idx + 1}. {it.text}</div>)}
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: '24px 48px 24px' }}>
-          <Input variant="borderless" value={cur.title} onChange={(e) => setField('title', e.target.value)}
-            placeholder={t('wiki.articleName')} style={{ fontSize: 30, fontWeight: 700, padding: 0, marginBottom: 8 }} />
-          <Input variant="borderless" value={cur.summary} onChange={(e) => setField('summary', e.target.value)}
-            placeholder={t('wiki.articleDesc')} style={{ fontSize: 16, color: token.colorTextSecondary, padding: 0, marginBottom: 16 }} />
-          {/* 富文本正文(key=lang:语言切换重挂载注入对应内容) */}
-          <RichEditor key={lang} value={cur.content} onChange={(v) => setField('content', v)} placeholder={t('wiki.articleBodyPh')} />
+        {/* 右侧:标题/描述固定顶部,正文独立滚动(对齐参考) */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flexShrink: 0, padding: '24px 48px 0' }}>
+            <Input variant="borderless" value={cur.title} onChange={(e) => setField('title', e.target.value)}
+              placeholder={t('wiki.articleName')} style={{ fontSize: 30, fontWeight: 700, padding: 0, marginBottom: 8 }} />
+            <Input variant="borderless" value={cur.summary} onChange={(e) => setField('summary', e.target.value)}
+              placeholder={t('wiki.articleDesc')} style={{ fontSize: 16, color: token.colorTextSecondary, padding: 0, marginBottom: 4 }} />
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: '12px 48px 24px' }}>
+            {/* 富文本正文(key=lang:语言切换重挂载注入对应内容) */}
+            <RichEditor key={lang} value={cur.content} onChange={(v) => setField('content', v)} placeholder={t('wiki.articleBodyPh')} />
+          </div>
         </div>
       </div>
 

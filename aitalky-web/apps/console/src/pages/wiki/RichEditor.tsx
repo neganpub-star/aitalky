@@ -55,10 +55,10 @@ export default function RichEditor({ value, onChange, placeholder }: {
 
   return (
     <div className="wiki-rich-editor">
-      {/* 无边框铺满(对齐参考);不裁剪:否则表格选格子等向上弹出面板被裁 */}
-      <div ref={editorBoxRef} style={{ minHeight: '60vh' }} />
-      {/* 工具栏放底部(对齐参考底部插入栏) */}
-      <div ref={toolbarBoxRef} style={{ borderTop: '1px solid #e5e6eb' }} />
+      {/* 无边框铺满(对齐参考);底部留白避免内容被浮动工具栏遮挡 */}
+      <div ref={editorBoxRef} style={{ minHeight: '60vh', paddingBottom: 72 }} />
+      {/* 工具栏固定悬浮在页面底部居中(对齐参考,不随内容滚动) */}
+      <div ref={toolbarBoxRef} className="wiki-rich-toolbar-float" />
     </div>
   )
 }
