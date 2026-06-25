@@ -27,8 +27,12 @@ import RolePage from './pages/settings/RolePage'
 import BillingOverview from './pages/settings/BillingOverview'
 import BillingPlans from './pages/settings/BillingPlans'
 import OrderRecords from './pages/settings/OrderRecords'
+import WikiLayout from './layout/WikiLayout'
+import WikiSites from './pages/wiki/WikiSites'
+import WikiSiteEdit from './pages/wiki/WikiSiteEdit'
+import WikiWip from './pages/wiki/WikiWip'
 import { getCtx, getToken } from './auth/session'
-import { canAccessSettings } from './auth/perm'
+import { canAccessSettings, canAccessWiki } from './auth/perm'
 
 /** 需登录(有 token) */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -47,6 +51,11 @@ function RequireSettings({ children }: { children: ReactNode }) {
   return canAccessSettings() ? <>{children}</> : <Navigate to="/inbox" replace />
 }
 
+/** 需知识库权限(无 wiki 功能直达 /wiki 重定向回收件箱) */
+function RequireWiki({ children }: { children: ReactNode }) {
+  return canAccessWiki() ? <>{children}</> : <Navigate to="/inbox" replace />
+}
+
 export const router = createHashRouter([
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
@@ -59,6 +68,17 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/inbox" replace /> },
       { path: 'inbox', element: <Inbox /> },
+      {
+        path: 'wiki',
+        element: <RequireWiki><WikiLayout /></RequireWiki>,
+        children: [
+          { index: true, element: <Navigate to="/wiki/sites" replace /> },
+          { path: 'sites', element: <WikiSites /> },
+          { path: 'sites/:id', element: <WikiSiteEdit /> },
+          { path: 'sites/:id/content', element: <WikiWip titleKey="wiki.contentConfig" /> },
+          { path: 'articles', element: <WikiWip titleKey="wiki.articleManage" /> },
+        ],
+      },
       {
         path: 'profile',
         element: <ProfileLayout />,

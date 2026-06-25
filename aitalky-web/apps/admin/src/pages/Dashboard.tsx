@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Card, Col, Row, theme } from 'antd'
-import { UserOutlined, ProjectOutlined, GiftOutlined, TranslationOutlined } from '@ant-design/icons'
+import {
+  UserOutlined, ProjectOutlined, GiftOutlined, TranslationOutlined,
+  DollarOutlined, CheckCircleOutlined, ClockCircleOutlined,
+} from '@ant-design/icons'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAdminStore } from '../store/useAdminStore'
 import { hasPerm } from '../auth/perm'
-import { listLanguages, listPlans, pageProjects, pageUsers } from '../api/resources'
+import { getOrderStats, listLanguages, listPlans, pageProjects, pageUsers } from '../api/resources'
 
 // 概览:欢迎条 + 关键计数卡(按权限拉取,无权限的卡片显示 —)
 export default function Dashboard() {
@@ -13,21 +16,33 @@ export default function Dashboard() {
   const { token } = theme.useToken()
   const realName = useAdminStore((s) => s.realName)
   const username = useAdminStore((s) => s.username)
-  const [stats, setStats] = useState<{ users?: number; projects?: number; plans?: number; languages?: number }>({})
+  const [stats, setStats] = useState<{
+    users?: number; projects?: number; plans?: number; languages?: number
+    paidAmount?: string; paidOrders?: number; pendingOrders?: number
+  }>({})
 
   useEffect(() => {
     if (hasPerm('users')) pageUsers({ page: 1, size: 1 }).then((r) => setStats((s) => ({ ...s, users: r.total }))).catch(() => {})
     if (hasPerm('tenants')) pageProjects({ page: 1, size: 1 }).then((r) => setStats((s) => ({ ...s, projects: r.total }))).catch(() => {})
     if (hasPerm('plans')) listPlans().then((r) => setStats((s) => ({ ...s, plans: r.filter((p) => p.status === 1).length }))).catch(() => {})
     if (hasPerm('dict')) listLanguages().then((r) => setStats((s) => ({ ...s, languages: r.filter((l) => l.status === 1).length }))).catch(() => {})
+    if (hasPerm('orders')) getOrderStats().then((r) => setStats((s) => ({
+      ...s,
+      paidAmount: `${Number(r.paidAmount).toLocaleString()} ${r.currency}`,
+      paidOrders: r.paidOrders,
+      pendingOrders: r.pendingOrders,
+    }))).catch(() => {})
   }, [])
 
   // 每张卡一个主题色(图标块底色用浅色调,图标用纯色)
-  const cards: { perm: string; icon: ReactNode; label: string; value?: number; color: string; bg: string }[] = [
+  const cards: { perm: string; icon: ReactNode; label: string; value?: number | string; color: string; bg: string }[] = [
     { perm: 'users', icon: <UserOutlined />, label: t('dashboard.users'), value: stats.users, color: '#409eff', bg: 'rgba(64,158,255,0.12)' },
     { perm: 'tenants', icon: <ProjectOutlined />, label: t('dashboard.projects'), value: stats.projects, color: '#67c23a', bg: 'rgba(103,194,58,0.12)' },
     { perm: 'plans', icon: <GiftOutlined />, label: t('dashboard.plans'), value: stats.plans, color: '#e6a23c', bg: 'rgba(230,162,60,0.12)' },
     { perm: 'dict', icon: <TranslationOutlined />, label: t('dashboard.languages'), value: stats.languages, color: '#f56c6c', bg: 'rgba(245,108,108,0.12)' },
+    { perm: 'orders', icon: <DollarOutlined />, label: t('dashboard.paidAmount'), value: stats.paidAmount, color: '#13c2c2', bg: 'rgba(19,194,194,0.12)' },
+    { perm: 'orders', icon: <CheckCircleOutlined />, label: t('dashboard.paidOrders'), value: stats.paidOrders, color: '#722ed1', bg: 'rgba(114,46,209,0.12)' },
+    { perm: 'orders', icon: <ClockCircleOutlined />, label: t('dashboard.pendingOrders'), value: stats.pendingOrders, color: '#fa8c16', bg: 'rgba(250,140,22,0.12)' },
   ].filter((c) => hasPerm(c.perm))
 
   return (
@@ -45,7 +60,7 @@ export default function Dashboard() {
       {/* 计数卡 */}
       <Row gutter={[16, 16]}>
         {cards.map((c) => (
-          <Col key={c.perm} xs={24} sm={12} md={6}>
+          <Col key={c.label} xs={24} sm={12} md={6}>
             <Card variant="borderless" styles={{ body: { display: 'flex', alignItems: 'center', gap: 16, padding: 20 } }}>
               <div style={{
                 width: 56, height: 56, borderRadius: 12, flexShrink: 0,

@@ -29,3 +29,13 @@ export const SETTINGS_FUNCTIONS = [
 export function canAccessSettings(): boolean {
   return hasAnyFunction(...SETTINGS_FUNCTIONS)
 }
+
+/** 知识库(wiki)相关功能(任一即可看到「知识库」入口);对齐 PermissionCatalog 的 wiki.app.* / wiki.article.* */
+export const WIKI_FUNCTIONS = [
+  'wiki.app.create', 'wiki.app.site', 'wiki.app.style', 'wiki.app.content', 'wiki.app.delete',
+  'wiki.article.create', 'wiki.article.edit', 'wiki.article.publish', 'wiki.article.delete', 'wiki.article.setting',
+]
+
+export function canAccessWiki(): boolean {
+  return hasAnyFunction(...WIKI_FUNCTIONS)
+}

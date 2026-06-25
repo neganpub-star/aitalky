@@ -98,6 +98,10 @@ export default {
     createTime: 'Created',
     paidTime: 'Paid',
     totalCount: '{{count}} in total',
+    statTotal: 'Total orders',
+    statPaid: 'Completed orders',
+    statPending: 'Pending orders',
+    statAmount: 'Total revenue',
   },
   coins: {
     channel: 'Channel',
@@ -119,6 +123,9 @@ export default {
     projects: 'Projects (tenants)',
     plans: 'Active plans',
     languages: 'Enabled languages',
+    paidAmount: 'Total revenue',
+    paidOrders: 'Completed orders',
+    pendingOrders: 'Pending orders',
   },
   users: {
     email: 'Email',

@@ -2,7 +2,7 @@ import client from './client'
 import { encryptPassword } from './crypto'
 import type {
   AddonVO, AdminAccountDetailVO, AdminAccountVO, AdminOrderVO, AdminProjectVO,
-  AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, PageResult, PlanVO,
+  AdminVO, AgreementVO, CoinVO, ConfigVO, FunctionDef, LanguageVO, OrderStatsVO, PageResult, PlanVO,
   ProjectSubscriptionVO, RoleVO, SubscriptionLogVO,
 } from '../types'
 
@@ -115,6 +115,10 @@ export function deleteAdmin(id: string) {
 export interface OrderQuery { projectId?: string; status?: number; type?: string; page?: number; size?: number }
 export function pageOrders(q: OrderQuery) {
   return client.get<unknown, PageResult<AdminOrderVO>>('/admin/orders', { params: q })
+}
+// 订单统计(全局口径,不随筛选变化):总数/已完成/待支付/累计成交额
+export function getOrderStats() {
+  return client.get<unknown, OrderStatsVO>('/admin/orders/stats')
 }
 
 // ===== 币种配置 =====

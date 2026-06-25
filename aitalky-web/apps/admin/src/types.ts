@@ -205,6 +205,15 @@ export interface AdminOrderVO {
   createTime?: string
 }
 
+// 订单统计(全局口径,跨项目)
+export interface OrderStatsVO {
+  totalOrders: number
+  paidOrders: number
+  pendingOrders: number
+  paidAmount: number
+  currency: string
+}
+
 export interface CoinVO {
   id: string
   channel: string

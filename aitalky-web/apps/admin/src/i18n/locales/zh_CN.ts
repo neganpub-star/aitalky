@@ -98,6 +98,10 @@ export default {
     createTime: '创建时间',
     paidTime: '支付时间',
     totalCount: '共 {{count}} 条',
+    statTotal: '订单总数',
+    statPaid: '已完成订单',
+    statPending: '待支付订单',
+    statAmount: '累计成交额',
   },
   coins: {
     channel: '渠道',
@@ -119,6 +123,9 @@ export default {
     projects: '项目(租户)',
     plans: '在售套餐',
     languages: '启用语种',
+    paidAmount: '累计成交额',
+    paidOrders: '成交订单',
+    pendingOrders: '待支付订单',
   },
   users: {
     email: '邮箱',

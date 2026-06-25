@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Select, Space, Table, Tag, Tooltip } from 'antd'
-import { ReloadOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Input, Row, Select, Space, Statistic, Table, Tag, Tooltip, theme } from 'antd'
+import { ReloadOutlined, DollarOutlined, CheckCircleOutlined, ClockCircleOutlined, ProfileOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { useTranslation } from 'react-i18next'
-import { pageOrders } from '../api/resources'
-import type { AdminOrderVO } from '../types'
+import { getOrderStats, pageOrders } from '../api/resources'
+import type { AdminOrderVO, OrderStatsVO } from '../types'
 import PageCard from '../components/PageCard'
 
 // 订单状态/类型 → 颜色映射(展示用)
@@ -16,6 +16,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export default function Orders() {
   const { t } = useTranslation()
+  const { token } = theme.useToken()
   const [data, setData] = useState<AdminOrderVO[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -23,6 +24,11 @@ export default function Orders() {
   const [status, setStatus] = useState<number | undefined>(undefined)
   const [type, setType] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
+  // 全局统计(不随筛选变);进入即拉一次,刷新时同步更新
+  const [stats, setStats] = useState<OrderStatsVO | null>(null)
+
+  const loadStats = () => getOrderStats().then(setStats).catch(() => {})
+  useEffect(() => { loadStats() }, [])
 
   const load = async (p = page) => {
     setLoading(true)
@@ -70,10 +76,34 @@ export default function Orders() {
       title={t('nav.orders')}
       extra={(
         <Tooltip title={t('common.refresh')}>
-          <Button icon={<ReloadOutlined />} onClick={() => load(page)} />
+          <Button icon={<ReloadOutlined />} onClick={() => { load(page); loadStats() }} />
         </Tooltip>
       )}
     >
+      {/* 全局统计卡(跨项目,不随下方筛选变化) */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        {([
+          { key: 'statAmount', icon: <DollarOutlined />, color: '#67c23a', bg: 'rgba(103,194,58,0.12)', value: stats ? `${Number(stats.paidAmount).toLocaleString()} ${stats.currency}` : '-' },
+          { key: 'statPaid', icon: <CheckCircleOutlined />, color: '#409eff', bg: 'rgba(64,158,255,0.12)', value: stats?.paidOrders ?? '-' },
+          { key: 'statPending', icon: <ClockCircleOutlined />, color: '#e6a23c', bg: 'rgba(230,162,60,0.12)', value: stats?.pendingOrders ?? '-' },
+          { key: 'statTotal', icon: <ProfileOutlined />, color: '#909399', bg: 'rgba(144,147,153,0.14)', value: stats?.totalOrders ?? '-' },
+        ]).map((c) => (
+          <Col key={c.key} xs={12} sm={12} md={6}>
+            <Card variant="borderless" styles={{ body: { display: 'flex', alignItems: 'center', gap: 14, padding: 18 } }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 10, flexShrink: 0,
+                background: c.bg, color: c.color, fontSize: 22,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>{c.icon}</div>
+              <Statistic
+                title={t(`orders.${c.key}`)}
+                value={c.value}
+                valueStyle={{ fontSize: 22, fontWeight: 700, color: token.colorText }}
+              />
+            </Card>
+          </Col>
+        ))}
+      </Row>
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
           placeholder={t('orders.projectIdPlaceholder')}
