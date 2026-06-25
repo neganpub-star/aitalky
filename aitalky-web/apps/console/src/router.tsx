@@ -30,6 +30,9 @@ import OrderRecords from './pages/settings/OrderRecords'
 import WikiLayout from './layout/WikiLayout'
 import WikiSites from './pages/wiki/WikiSites'
 import WikiSiteEdit from './pages/wiki/WikiSiteEdit'
+import WikiArticles from './pages/wiki/WikiArticles'
+import WikiArticleDetail from './pages/wiki/WikiArticleDetail'
+import WikiArticleEdit from './pages/wiki/WikiArticleEdit'
 import WikiWip from './pages/wiki/WikiWip'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings, canAccessWiki } from './auth/perm'
@@ -76,7 +79,8 @@ export const router = createHashRouter([
           { path: 'sites', element: <WikiSites /> },
           { path: 'sites/:id', element: <WikiSiteEdit /> },
           { path: 'sites/:id/content', element: <WikiWip titleKey="wiki.contentConfig" /> },
-          { path: 'articles', element: <WikiWip titleKey="wiki.articleManage" /> },
+          { path: 'articles', element: <WikiArticles /> },
+          { path: 'articles/:id', element: <WikiArticleDetail /> },
         ],
       },
       {
@@ -114,5 +118,7 @@ export const router = createHashRouter([
       },
     ],
   },
+  // 文章全屏编辑器:独立于 MainLayout(无侧栏/图标栏),对齐参考全屏编辑
+  { path: '/wiki/articles/:id/edit', element: <RequireProject><RequireWiki><WikiArticleEdit /></RequireWiki></RequireProject> },
   { path: '*', element: <Navigate to="/inbox" replace /> },
 ])

@@ -17,10 +17,16 @@ export default function WikiLayout() {
   const loc = useLocation()
 
   const items: MenuProps['items'] = [
-    { key: '/wiki/articles', icon: <FileTextOutlined />, label: t('wiki.articleManage') },
+    {
+      key: 'article-grp', icon: <FileTextOutlined />, label: t('wiki.articleManage'),
+      // 最新版:文章管理下只有「文章列表」(文章设置在行操作 ⋮ 里,不在侧边栏)
+      children: [
+        { key: '/wiki/articles', label: t('wiki.articleList') },
+      ],
+    },
     { key: '/wiki/sites', icon: <AppstoreOutlined />, label: t('wiki.apps') },
   ]
-  // 文章编辑/站点编辑等子路由归属对应顶级项高亮
+  // 子路由归属对应菜单项高亮
   const selected = loc.pathname.startsWith('/wiki/articles') ? '/wiki/articles' : '/wiki/sites'
 
   const styles: Record<string, CSSProperties> = {
@@ -34,8 +40,9 @@ export default function WikiLayout() {
     <div style={styles.root}>
       <div style={styles.side}>
         <div style={styles.title}>Wiki</div>
-        <Menu mode="inline" selectedKeys={[selected]} items={items}
-          style={{ border: 'none', background: 'transparent' }} onClick={({ key }) => nav(key)} />
+        <Menu mode="inline" selectedKeys={[selected]} defaultOpenKeys={['article-grp']} items={items}
+          style={{ border: 'none', background: 'transparent' }}
+          onClick={({ key }) => { if (!key.startsWith('article-grp')) nav(key) }} />
       </div>
       <div style={styles.content}>
         <Outlet />

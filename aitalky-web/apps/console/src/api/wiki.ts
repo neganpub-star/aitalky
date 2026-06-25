@@ -67,3 +67,77 @@ export function toggleSiteEnabled(id: string, enabled: number) {
 export function deleteSite(id: string) {
   return client.delete<unknown, void>(`/wiki/sites/${id}`)
 }
+
+// ============ 文章 ============
+export interface WikiArticleRowVO {
+  id: string
+  title: string | null
+  status: number // 1未发布 2已发布 3有变更
+  langCount: number
+  isRecommend: number
+  editorId: string | null
+  editorName: string | null
+  editorAvatar: string | null
+  updateTime: string | null
+  shareCode: string | null
+}
+export interface WikiArticleI18nVO {
+  lang: string
+  title: string | null
+  summary: string | null
+  content: string | null
+  pubTitle: string | null
+  pubSummary: string | null
+  pubContent: string | null
+  published: number
+}
+export interface WikiArticleDetailVO {
+  id: string
+  status: number
+  isRecommend: number
+  shareCode: string | null
+  editorId: string | null
+  editorName: string | null
+  editorAvatar: string | null
+  updateTime: string | null
+  i18ns: WikiArticleI18nVO[]
+}
+export interface WikiArticleHistoryVO {
+  id: string
+  action: number // 1创建 2编辑 3发布 4取消发布
+  operatorId: string | null
+  operatorName: string | null
+  operatorAvatar: string | null
+  createTime: string | null
+}
+
+export function listArticles(p?: { status?: number; lang?: string }) {
+  return client.get<unknown, WikiArticleRowVO[]>('/wiki/articles', { params: p })
+}
+export function createArticle() {
+  return client.post<unknown, string>('/wiki/articles')
+}
+export function getArticle(id: string) {
+  return client.get<unknown, WikiArticleDetailVO>(`/wiki/articles/${id}`)
+}
+export function saveArticleDraft(id: string, p: { lang: string; title?: string | null; summary?: string | null; content?: string | null }) {
+  return client.put<unknown, void>(`/wiki/articles/${id}/draft`, p)
+}
+export function publishArticle(id: string) {
+  return client.put<unknown, void>(`/wiki/articles/${id}/publish`)
+}
+export function unpublishArticle(id: string) {
+  return client.put<unknown, void>(`/wiki/articles/${id}/unpublish`)
+}
+export function recommendArticle(id: string, recommend: number) {
+  return client.put<unknown, void>(`/wiki/articles/${id}/recommend`, { recommend })
+}
+export function articleHistory(id: string) {
+  return client.get<unknown, WikiArticleHistoryVO[]>(`/wiki/articles/${id}/history`)
+}
+export function articleHistorySnapshot(historyId: string) {
+  return client.get<unknown, string>(`/wiki/articles/history/${historyId}/snapshot`)
+}
+export function deleteArticle(id: string) {
+  return client.delete<unknown, void>(`/wiki/articles/${id}`)
+}
