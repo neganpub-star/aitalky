@@ -372,7 +372,7 @@ export default {
     autoSaveNote: 'Note: clicking "Preview" or "Publish" auto-saves',
     preview: 'Preview',
     toc: 'Contents',
-    tocEmpty: 'Set a paragraph as a heading via the toolbar to see it here',
+    tocEmpty: 'Select text, then pick "Heading" in the floating menu to build the table of contents',
     draftBox: 'Draft',
     publishedView: 'Published',
     noContent: 'This article has no content',

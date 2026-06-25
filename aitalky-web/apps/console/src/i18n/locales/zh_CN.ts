@@ -381,7 +381,7 @@ export default {
     autoSaveNote: '注:点击"实时预览"、"发布"会自动保存',
     preview: '实时预览',
     toc: '目录',
-    tocEmpty: '用工具栏「标题」把段落设为标题后,会显示在此',
+    tocEmpty: '选中正文文字,在浮动菜单里选「标题」,即可在此生成目录',
     // 详情
     draftBox: '草稿箱',
     publishedView: '已发布',
