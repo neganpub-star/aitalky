@@ -139,12 +139,12 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
   // 客户撤回权限(信使设置开关下发);关则不显示撤回入口
   const canCustomerRetract = data.config?.customerRetractEnabled ?? true
 
-  // 未读分割线:界(unreadAfterSeq)之后首条消息上方画线。开关关、无界、或未读里无客服消息→不画
+  // 新消息分割线:界(unreadAfterSeq)之后首条消息上方画线(对齐参考:不论谁发,客户离开后再回来发的也算)。开关关或无界→不画
   const showUnread = (data.config?.sysMsgUnread ?? true) && unreadAfterSeq != null
   let firstUnreadId: string | null = null
   if (showUnread) {
     const unread = messages.filter((m) => m.seq > (unreadAfterSeq as number) && m.isVisible !== false)
-    if (unread.some((m) => m.senderType === 'agent')) firstUnreadId = unread[0]?.msgId ?? null
+    firstUnreadId = unread[0]?.msgId ?? null
   }
 
   // 已读回执(对齐参考):仅「客户自己最后一条消息」在坐席未读时显示「未读」,坐席读后(agentReadSeq>=seq)标签消失;受「未读」开关控制
