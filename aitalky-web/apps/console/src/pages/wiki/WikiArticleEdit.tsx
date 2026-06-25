@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, Input, Tooltip, Drawer, Avatar, theme, Spin, message } from 'antd'
 import { PlayCircleOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -7,24 +7,13 @@ import { hasFunction } from '../../auth/perm'
 import { getArticle, saveArticleDraft, publishArticle, type WikiArticleDetailVO } from '../../api/wiki'
 import { sanitizeHtml } from '../../utils/sanitize'
 import { useAppStore } from '../../store/useAppStore'
+import { parseToc, scrollToHeading, activeHeadingIdx } from '../../utils/toc'
 import RichEditor from './RichEditor'
 
 // 文章支持中英两种语言(对齐参考)
 const LANGS = [{ code: 'zh_CN', label: '中文' }, { code: 'en_US', label: '英文' }]
 
 interface LangDraft { title: string; summary: string; content: string }
-
-// 从正文 HTML 解析标题(h1/h2/h3)生成目录
-function parseToc(html: string): { level: number; text: string }[] {
-  if (!html) return []
-  try {
-    const doc = new DOMParser().parseFromString(html, 'text/html')
-    return Array.from(doc.querySelectorAll('h1,h2,h3')).map((el) => ({
-      level: Number(el.tagName.slice(1)),
-      text: el.textContent?.trim() || '',
-    })).filter((x) => x.text)
-  } catch { return [] }
-}
 
 // 文章编辑器(对齐参考最新版):wiki 布局内,「正在编辑」+ 语言 tab + 目录 + 文章名/描述 + 富文本正文
 // (wangEditor:图片/链接/表格 + hoverbar)。保存/发布/实时预览/关闭。
@@ -66,14 +55,10 @@ export default function WikiArticleEdit() {
   const cur = drafts[lang]
   const setField = (k: keyof LangDraft, v: string) => setDrafts((p) => ({ ...p, [lang]: { ...p[lang], [k]: v } }))
   const toc = useMemo(() => parseToc(cur.content), [cur.content])
-
-  // 点击目录项滚动到对应标题:在容器内取非空标题(与 parseToc 过滤一致,保证下标对齐)第 idx 个
-  const scrollToHeading = (containerSel: string, idx: number) => {
-    const root = document.querySelector(containerSel)
-    if (!root) return
-    const hs = Array.from(root.querySelectorAll('h1,h2,h3')).filter((h) => h.textContent?.trim())
-    ;(hs[idx] as HTMLElement | undefined)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
+  // 实时预览:滚动容器 + 当前高亮章节(预览内目录固定,正文滚动时高亮跟随)
+  const previewScrollRef = useRef<HTMLDivElement>(null)
+  const [previewActive, setPreviewActive] = useState(0)
+  const onPreviewScroll = () => setPreviewActive(activeHeadingIdx(document.getElementById('wiki-preview-html'), 120))
 
   const saveAll = async () => {
     for (const l of LANGS) {
@@ -91,6 +76,7 @@ export default function WikiArticleEdit() {
       await saveAll()
       setPreviewLang(lang)
       setPreviewTime(new Date().toLocaleString())
+      setPreviewActive(0)
       setPreviewOpen(true)
     } catch { /* 拦截器已提示 */ } finally { setSaving(false) }
   }
@@ -131,7 +117,7 @@ export default function WikiArticleEdit() {
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('wiki.toc')}</div>
           {toc.length === 0
             ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
-            : toc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading('.wiki-rich-editor [data-slate-editor]', idx)}
+            : toc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading(document.querySelector('.wiki-rich-editor [data-slate-editor]'), idx)}
                 style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
                 className="at-row">{it.text}</div>)}
         </div>
@@ -157,9 +143,9 @@ export default function WikiArticleEdit() {
           const p = drafts[previewLang] || { title: '', summary: '', content: '' }
           const ptoc = parseToc(p.content)
           return (
-            <div style={{ minHeight: '100%', background: token.colorBgContainer }}>
-              {/* 顶部品牌 + 语言切换 */}
-              <div style={{ display: 'flex', alignItems: 'center', padding: '18px 28px', borderBottom: `1px solid ${token.colorSplit}` }}>
+            <div ref={previewScrollRef} onScroll={onPreviewScroll} style={{ height: '100%', overflow: 'auto', background: token.colorBgContainer }}>
+              {/* 顶部品牌 + 语言切换(固定在预览顶部) */}
+              <div style={{ position: 'sticky', top: 0, zIndex: 3, display: 'flex', alignItems: 'center', padding: '18px 28px', borderBottom: `1px solid ${token.colorSplit}`, background: token.colorBgContainer }}>
                 <div style={{ width: 30, height: 30, borderRadius: 7, background: token.colorPrimary, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, marginRight: 10 }}>Ai</div>
                 <span style={{ fontWeight: 700, fontSize: 17, flex: 1 }}>aitalky</span>
                 <div style={{ display: 'inline-flex', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, padding: 3 }}>
@@ -168,15 +154,15 @@ export default function WikiArticleEdit() {
                   ))}
                 </div>
               </div>
-              {/* 正文区:左目录 + 右正文(对齐参考实时预览的两栏布局) */}
+              {/* 正文区:左目录(固定) + 右正文(滚动)(对齐参考实时预览的两栏布局) */}
               <div style={{ display: 'flex', alignItems: 'flex-start', padding: '32px 36px', gap: 28 }}>
-                {/* 左目录 */}
-                <div style={{ width: 180, flexShrink: 0, borderRight: `1px solid ${token.colorSplit}`, paddingRight: 20 }}>
+                {/* 左目录:sticky 固定在品牌条下方,正文滚动时不动并高亮当前章节 */}
+                <div style={{ width: 180, flexShrink: 0, borderRight: `1px solid ${token.colorSplit}`, paddingRight: 20, position: 'sticky', top: 92, alignSelf: 'flex-start' }}>
                   <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>{t('wiki.toc')}</div>
                   {ptoc.length === 0
                     ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
-                    : ptoc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading('#wiki-preview-html', idx)}
-                        style={{ fontSize: 14, color: token.colorTextSecondary, padding: '6px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
+                    : ptoc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading(document.getElementById('wiki-preview-html'), idx)}
+                        style={{ fontSize: 14, color: idx === previewActive ? token.colorPrimary : token.colorTextSecondary, fontWeight: idx === previewActive ? 600 : 400, padding: '6px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
                         className="at-row">{it.text}</div>)}
                 </div>
                 {/* 右正文 */}

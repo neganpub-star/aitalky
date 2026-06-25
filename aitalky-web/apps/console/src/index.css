@@ -51,6 +51,8 @@ body {
 .wiki-article-html table td, .wiki-article-html table th { border: 1px solid #dcdfe6; padding: 6px 10px; }
 .wiki-article-html table th { background: #f5f7fa; font-weight: 600; }
 .wiki-article-html a { color: #2f6bff; }
+/* 目录锚点滚动时,标题不被顶部固定品牌条遮挡 */
+.wiki-article-html h1, .wiki-article-html h2, .wiki-article-html h3 { scroll-margin-top: 80px; }
 .wiki-article-html h1 { font-size: 24px; font-weight: 700; margin: 20px 0 12px; }
 .wiki-article-html h2 { font-size: 20px; font-weight: 700; margin: 18px 0 10px; }
 .wiki-article-html h3 { font-size: 17px; font-weight: 600; margin: 14px 0 8px; }
