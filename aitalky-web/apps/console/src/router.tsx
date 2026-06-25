@@ -78,7 +78,7 @@ export const router = createHashRouter([
         path: 'wiki',
         element: <RequireWiki><WikiLayout /></RequireWiki>,
         children: [
-          { index: true, element: <Navigate to="/wiki/sites" replace /> },
+          { index: true, element: <Navigate to="/wiki/articles" replace /> },
           { path: 'sites', element: <WikiSites /> },
           { path: 'sites/:id', element: <WikiSiteEdit /> },
           { path: 'categories/:id', element: <WikiCategoryDetail /> },
