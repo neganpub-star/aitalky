@@ -5,11 +5,16 @@ import com.aitalky.billing.mapper.BilOrderMapper;
 import com.aitalky.billing.service.OrderAdminService;
 import com.aitalky.billing.service.dto.AdminOrderQuery;
 import com.aitalky.billing.service.dto.AdminOrderVO;
+import com.aitalky.billing.service.dto.OrderStatsVO;
 import com.aitalky.common.api.PageResult;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 /**
  * 订单管理实现(后管)。后管无租户上下文(projectId=null),多租户拦截器整体忽略,故能跨项目查全部订单。
@@ -33,6 +38,22 @@ public class OrderAdminServiceImpl implements OrderAdminService {
                         .orderByDesc(BilOrder::getCreateTime));
         return PageResult.of(page.getRecords().stream().map(this::toVO).toList(),
                 page.getTotal(), current, size);
+    }
+
+    @Override
+    public OrderStatsVO stats() {
+        // 计数走逻辑删除自动过滤;后管无租户上下文,统计为全平台跨项目口径
+        long total = orderMapper.selectCount(null);
+        long paid = orderMapper.selectCount(Wrappers.<BilOrder>lambdaQuery().eq(BilOrder::getStatus, 1));
+        long pending = orderMapper.selectCount(Wrappers.<BilOrder>lambdaQuery().eq(BilOrder::getStatus, 0));
+        // 累计成交额=已完成订单金额合计;SUM 在 SQL 层做,IFNULL 兜底无数据
+        QueryWrapper<BilOrder> sumQuery = Wrappers.<BilOrder>query()
+                .select("IFNULL(SUM(amount), 0) AS paid_amount")
+                .eq("status", 1);
+        Map<String, Object> row = orderMapper.selectMaps(sumQuery).stream().findFirst().orElse(Map.of());
+        Object sum = row.get("paid_amount");
+        BigDecimal paidAmount = sum == null ? BigDecimal.ZERO : new BigDecimal(sum.toString());
+        return new OrderStatsVO(total, paid, pending, paidAmount, "USDT");
     }
 
     private AdminOrderVO toVO(BilOrder o) {

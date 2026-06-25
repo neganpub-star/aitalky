@@ -3,6 +3,7 @@ package com.aitalky.admin.controller;
 import com.aitalky.billing.service.OrderAdminService;
 import com.aitalky.billing.service.dto.AdminOrderQuery;
 import com.aitalky.billing.service.dto.AdminOrderVO;
+import com.aitalky.billing.service.dto.OrderStatsVO;
 import com.aitalky.common.api.PageResult;
 import com.aitalky.common.api.R;
 import com.aitalky.framework.web.RequiresFunction;
@@ -49,5 +50,12 @@ public class OrderAdminController {
             return o.withProjectName(name);
         }).toList();
         return R.ok(PageResult.of(records, result.total(), result.current(), result.size()));
+    }
+
+    /** 订单统计(全局口径,不随筛选变化):总数/已完成/待支付/累计成交额。订单页顶部卡 + 概览复用 */
+    @RequiresFunction("orders")
+    @GetMapping("/stats")
+    public R<OrderStatsVO> stats() {
+        return R.ok(orderAdminService.stats());
     }
 }
