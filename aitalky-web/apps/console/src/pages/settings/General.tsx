@@ -142,7 +142,7 @@ export default function General() {
           <div style={{ width: 372 }}>
             <MessengerPreview mode="home" data={{
               brandName: cfg?.brandName ?? null, logo: cfg?.logo ?? null,
-              greeting: previewGreeting, replyTime: cfg?.replyTime ?? null,
+              greeting: previewGreeting, teamIntro: null, replyTime: cfg?.replyTime ?? null,
               urgentNotice: null, urgentEnabled: false,
             }} />
           </div>

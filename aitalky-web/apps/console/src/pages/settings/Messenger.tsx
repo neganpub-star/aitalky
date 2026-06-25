@@ -351,6 +351,7 @@ export default function Messenger() {
             <MessengerPreview mode={previewMode} data={{
               brandName: cfg.brandName, logo: cfg.logo,
               greeting: i18nOf(previewLang).greeting,
+              teamIntro: i18nOf(previewLang).teamIntro,
               replyTime: cfg.replyTime,
               urgentNotice: i18nOf(previewLang).urgentNotice,
               urgentEnabled: i18nOf(previewLang).urgentEnabled,

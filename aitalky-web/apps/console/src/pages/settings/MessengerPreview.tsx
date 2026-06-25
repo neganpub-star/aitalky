@@ -12,6 +12,7 @@ export interface PreviewData {
   brandName: string | null
   logo: string | null
   greeting: string | null   // 当前预览语种的问候语
+  teamIntro: string | null  // 当前预览语种的团队介绍(首页 hero 副行)
   replyTime: string | null  // 回复时间 key
   urgentNotice: string | null
   urgentEnabled: boolean
@@ -23,6 +24,7 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
   const { t } = useTranslation()
   const brand = data.brandName || 'Aitalky'
   const greeting = data.greeting || t('mse.greetingPh')
+  const teamIntro = data.teamIntro?.trim() || ''
   const replyText = data.replyTime && REPLY_KEYS.includes(data.replyTime) ? t(`mse.${data.replyTime}`) : t('mse.rtFew')
   const showUrgent = data.urgentEnabled && !!data.urgentNotice?.trim()
 
@@ -38,18 +40,18 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
     return (
       <div style={{
         borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-        // 双层渐变:底层斜向蓝→薄荷色,上层自上而下渐隐到白(子卡区域回到纯白)
-        background: 'linear-gradient(180deg, rgba(255,255,255,0) 32%, #ffffff 64%), linear-gradient(120deg,#c7dcff 0%,#dcebe0 100%)',
+        // 粉彩渐变(对齐信使端 hero / 参考):青绿→天蓝→淡紫,上层自上而下渐隐到白(子卡区域回纯白)
+        background: 'linear-gradient(180deg, rgba(255,255,255,0) 30%, #ffffff 62%), linear-gradient(120deg,#93e3cb 0%,#9ccef2 50%,#cdb9f7 100%)',
       }}>
         {/* 顶部:品牌 LOGO + 关闭 */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 18px 0' }}>
           {logoEl(30)}
-          <CloseOutlined style={{ color: '#0b1f33', opacity: 0.5, fontSize: 16 }} />
+          <CloseOutlined style={{ color: '#15182b', opacity: 0.5, fontSize: 16 }} />
         </div>
-        {/* 大号品牌 + 欢迎语 */}
+        {/* 大号 问候语 + 团队介绍(对齐参考/信使端:品牌名由商户写入问候语,不单独显示) */}
         <div style={{ padding: '40px 20px 28px' }}>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0b1f33', lineHeight: 1.32 }}>{brand}</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#0b1f33', lineHeight: 1.32 }}>{greeting}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: '#15182b', lineHeight: 1.35 }}>{greeting}</div>
+          {teamIntro && <div style={{ fontSize: 24, fontWeight: 800, color: '#15182b', lineHeight: 1.35 }}>{teamIntro}</div>}
         </div>
         {/* 子卡区 */}
         <div style={{ padding: '0 14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -96,6 +98,10 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
         <div style={{ fontSize: 11, color: '#bbb', marginTop: 4, marginRight: side === 'right' ? 36 : 0, marginLeft: side === 'left' ? 36 : 0 }}>{time}</div>
       </div>
     )
+    // 系统行(撤回提示,居中灰字)
+    const SysLine = ({ text }: { text: string }) => (
+      <div style={{ textAlign: 'center', fontSize: 12, color: '#bbb', margin: '0 0 16px' }}>{text}</div>
+    )
     return (
       <div style={{ borderRadius: 16, overflow: 'hidden', boxShadow: '0 10px 34px rgba(0,0,0,0.14)', background: '#fff', minHeight: 600, display: 'flex', flexDirection: 'column' }}>
         {/* 顶栏 */}
@@ -103,13 +109,26 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
           <LeftOutlined style={{ color: '#666', fontSize: 16 }} />
           <span style={{ fontWeight: 700, fontSize: 16, color: '#1a1a1a' }}>{t('mse.demoAgent')}</span>
         </div>
-        {/* 消息区 */}
+        {/* 消息区(演示系统消息显示控制的几类:未读/正在输入中/成员撤回) */}
         <div style={{ flex: 1, padding: '18px 16px', background: 'linear-gradient(180deg,#ffffff 0%,#f6f8fb 100%)' }}>
           <Bubble side="right" text={t('mse.demoMsg1')} time="05-06 16:18" />
-          <div style={{ textAlign: 'center', fontSize: 12, color: '#bbb', margin: '0 0 16px' }}>{t('mse.demoRetract')}</div>
+          <SysLine text={t('mse.demoRetract')} />
           <Bubble side="left" text={t('mse.demoMsg2')} time="05-06 16:19" />
+          <SysLine text={t('mse.demoRetractAgent')} />
           <Bubble side="left" text={t('mse.demoMsg3')} time="05-06 16:20" />
-          <Bubble side="right" text={t('mse.demoMsg4')} time="05-06 16:24" />
+          {/* 正在输入中:客服气泡内 ··· + 下方提示 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <Avatar size={28} src={agentFace} />
+              <div style={{ padding: '8px 14px', fontSize: 16, lineHeight: 1, borderRadius: 10, background: '#f2f3f5', color: '#999', letterSpacing: 2 }}>···</div>
+            </div>
+            <div style={{ fontSize: 11, color: '#bbb', marginTop: 4, marginLeft: 36 }}>{t('mse.demoTyping')}</div>
+          </div>
+          {/* 客户最后一条:坐席未读 → 时间前蓝色「未读」 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 16 }}>
+            <div style={{ maxWidth: 200, padding: '8px 12px', fontSize: 13, lineHeight: 1.5, borderRadius: 10, background: '#dbeafe', color: '#1a1a1a' }}>{t('mse.demoMsg4')}</div>
+            <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}><span style={{ color: '#1677ff', marginRight: 6 }}>{t('mse.demoUnread')}</span>05-06 16:24</div>
+          </div>
         </div>
         {/* 输入框 */}
         <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
