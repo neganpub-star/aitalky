@@ -211,7 +211,7 @@ export default function Messenger() {
             {/* 信使已支持多种语言 + 跳转语言配置(常规设置) */}
             <div style={{ marginTop: 18, borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: 16 }}>
               <div style={{ fontSize: 13, marginBottom: 8 }}>{t('mse.langSupported')}</div>
-              <a onClick={() => nav('/settings/general')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <a onClick={() => nav('/settings/general')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: token.colorPrimary, fontWeight: 500 }}>
                 <SettingOutlined />{t('mse.langConfig')}
               </a>
             </div>
