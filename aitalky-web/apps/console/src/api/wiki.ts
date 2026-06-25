@@ -141,3 +141,68 @@ export function articleHistorySnapshot(historyId: string) {
 export function deleteArticle(id: string) {
   return client.delete<unknown, void>(`/wiki/articles/${id}`)
 }
+
+// ============ 内容配置(类别/分组/关联) ============
+export interface WikiI18nText { lang: string; name?: string | null; description?: string | null }
+export interface CategoryVO {
+  id: string
+  icon: string | null
+  name: string | null
+  description: string | null
+  sort: number
+  articleCount: number
+  i18ns: WikiI18nText[]
+}
+export interface LinkedArticle { linkId: string; articleId: string; title: string | null; status: number | null; sort: number }
+export interface CategoryGroup { id: string; name: string | null; sort: number; articles: LinkedArticle[] }
+export interface CategoryDetailVO {
+  id: string
+  icon: string | null
+  name: string | null
+  description: string | null
+  directArticles: LinkedArticle[]
+  groups: CategoryGroup[]
+}
+
+export function listCategories(siteId: string, lang?: string) {
+  return client.get<unknown, CategoryVO[]>(`/wiki/sites/${siteId}/categories`, { params: { lang } })
+}
+export function createCategory(siteId: string, p: { icon?: string | null; i18ns: WikiI18nText[] }) {
+  return client.post<unknown, string>(`/wiki/sites/${siteId}/categories`, p)
+}
+export function updateCategory(categoryId: string, p: { icon?: string | null; i18ns: WikiI18nText[] }) {
+  return client.put<unknown, void>(`/wiki/categories/${categoryId}`, p)
+}
+export function deleteCategory(categoryId: string) {
+  return client.delete<unknown, void>(`/wiki/categories/${categoryId}`)
+}
+export function sortCategories(siteId: string, ids: string[]) {
+  return client.put<unknown, void>(`/wiki/sites/${siteId}/categories/sort`, { ids })
+}
+export function categoryDetail(categoryId: string, lang?: string) {
+  return client.get<unknown, CategoryDetailVO>(`/wiki/categories/${categoryId}`, { params: { lang } })
+}
+export function createGroup(categoryId: string, p: { i18ns: WikiI18nText[] }) {
+  return client.post<unknown, string>(`/wiki/categories/${categoryId}/groups`, p)
+}
+export function updateGroup(groupId: string, p: { i18ns: WikiI18nText[] }) {
+  return client.put<unknown, void>(`/wiki/groups/${groupId}`, p)
+}
+export function deleteGroup(groupId: string) {
+  return client.delete<unknown, void>(`/wiki/groups/${groupId}`)
+}
+export function sortGroups(categoryId: string, ids: string[]) {
+  return client.put<unknown, void>(`/wiki/categories/${categoryId}/groups/sort`, { ids })
+}
+export function linkableArticles(categoryId: string, lang?: string) {
+  return client.get<unknown, WikiArticleRowVO[]>(`/wiki/categories/${categoryId}/linkable`, { params: { lang } })
+}
+export function linkArticles(categoryId: string, p: { groupId?: string | null; articleIds: string[] }) {
+  return client.post<unknown, void>(`/wiki/categories/${categoryId}/link`, p)
+}
+export function unlinkArticle(linkId: string) {
+  return client.delete<unknown, void>(`/wiki/links/${linkId}`)
+}
+export function sortArticles(categoryId: string, ids: string[], groupId?: string) {
+  return client.put<unknown, void>(`/wiki/categories/${categoryId}/articles/sort`, { ids }, { params: { groupId } })
+}

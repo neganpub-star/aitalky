@@ -12,6 +12,7 @@ import { uploadFile } from '../../api/file'
 import {
   getSite, saveSiteConfig, saveSiteStyle, deleteSite, checkSubdomain, type WikiSiteDetailVO,
 } from '../../api/wiki'
+import WikiContentPanel from './WikiContentPanel'
 
 const THEME_COLORS = ['#2f6bff', '#5c6b77', '#3b5bdb', '#3a93c9', '#2f9e44', '#f59f00', '#e03131', '#ff6b6b', '#7048e8']
 
@@ -75,7 +76,7 @@ export default function WikiSiteEdit() {
         {panel('style', <BgColorsOutlined />, t('wiki.styleConfig'), t('wiki.styleConfigDesc'),
           <SiteStylePanel site={site} onEdit={() => setStyleOpen(true)} />)}
         {panel('content', <ProfileOutlined />, t('wiki.contentConfig'), t('wiki.contentConfigDesc'),
-          <div style={{ color: token.colorTextTertiary, fontSize: 13, padding: '8px 0' }}>{t('common.wip')}</div>)}
+          <WikiContentPanel siteId={id} langs={site.multiLang === 1 ? ['zh_CN', 'en_US'] : [site.defaultLang]} />)}
       </div>
 
       <SiteStyleDrawer open={styleOpen} onClose={() => setStyleOpen(false)} site={site} langOptions={langOptions}

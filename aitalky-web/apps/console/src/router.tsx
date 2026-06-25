@@ -33,7 +33,7 @@ import WikiSiteEdit from './pages/wiki/WikiSiteEdit'
 import WikiArticles from './pages/wiki/WikiArticles'
 import WikiArticleDetail from './pages/wiki/WikiArticleDetail'
 import WikiArticleEdit from './pages/wiki/WikiArticleEdit'
-import WikiWip from './pages/wiki/WikiWip'
+import WikiCategoryDetail from './pages/wiki/WikiCategoryDetail'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings, canAccessWiki } from './auth/perm'
 
@@ -78,7 +78,7 @@ export const router = createHashRouter([
           { index: true, element: <Navigate to="/wiki/sites" replace /> },
           { path: 'sites', element: <WikiSites /> },
           { path: 'sites/:id', element: <WikiSiteEdit /> },
-          { path: 'sites/:id/content', element: <WikiWip titleKey="wiki.contentConfig" /> },
+          { path: 'categories/:id', element: <WikiCategoryDetail /> },
           { path: 'articles', element: <WikiArticles /> },
           { path: 'articles/:id', element: <WikiArticleDetail /> },
           { path: 'articles/:id/edit', element: <WikiArticleEdit /> },
