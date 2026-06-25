@@ -126,13 +126,14 @@ export default function WikiArticleEdit() {
             : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{idx + 1}. {it.text}</div>)}
         </div>
 
-        {/* 右侧:标题/描述固定顶部,正文独立滚动(对齐参考) */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* 右侧:标题/描述固定顶部,正文独立滚动。编辑区固定白底黑字——文章本身即白底展示,
+            wangEditor 为亮色主题,暗色下深色文字不可读,故编辑区不跟随暗色主题 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#fff' }}>
           <div style={{ flexShrink: 0, padding: '24px 48px 0' }}>
             <Input variant="borderless" value={cur.title} onChange={(e) => setField('title', e.target.value)}
-              placeholder={t('wiki.articleName')} style={{ fontSize: 30, fontWeight: 700, padding: 0, marginBottom: 8 }} />
+              placeholder={t('wiki.articleName')} style={{ fontSize: 30, fontWeight: 700, padding: 0, marginBottom: 8, color: '#1a1a1a' }} />
             <Input variant="borderless" value={cur.summary} onChange={(e) => setField('summary', e.target.value)}
-              placeholder={t('wiki.articleDesc')} style={{ fontSize: 16, color: token.colorTextSecondary, padding: 0, marginBottom: 4 }} />
+              placeholder={t('wiki.articleDesc')} style={{ fontSize: 16, color: '#8c8c8c', padding: 0, marginBottom: 4 }} />
           </div>
           <div style={{ flex: 1, overflow: 'auto', padding: '12px 48px 24px' }}>
             {/* 富文本正文(key=lang:语言切换重挂载注入对应内容) */}
