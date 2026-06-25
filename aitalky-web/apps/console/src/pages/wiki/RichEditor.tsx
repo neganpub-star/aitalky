@@ -68,12 +68,18 @@ export default function RichEditor({ value, onChange, placeholder }: {
     '--w-e-textarea-bg-color': token.colorBgContainer,
     '--w-e-textarea-color': token.colorText,
     '--w-e-textarea-slight-color': token.colorTextTertiary,
+    '--w-e-textarea-slight-bg-color': token.colorFillTertiary, // 表格表头行/代码块底色,默认浅灰,暗色下要跟随
+    '--w-e-textarea-slight-border-color': token.colorBorderSecondary,
     '--w-e-textarea-border-color': token.colorBorderSecondary,
+    '--w-e-textarea-handler-bg-color': token.colorPrimary, // 图片拖拽手柄 + 复用为正文链接色
     '--w-e-toolbar-bg-color': token.colorBgElevated,
     '--w-e-toolbar-color': token.colorText,
     '--w-e-toolbar-active-color': token.colorPrimary,
     '--w-e-toolbar-active-bg-color': token.colorFillSecondary,
     '--w-e-toolbar-border-color': token.colorBorderSecondary,
+    '--w-e-toolbar-disabled-color': token.colorTextDisabled,
+    '--w-e-modal-button-bg-color': token.colorFillTertiary, // 弹框「确定」按钮底色,默认 #fafafa 暗色下白底
+    '--w-e-modal-button-border-color': token.colorBorder,
   } as CSSProperties
 
   return (
