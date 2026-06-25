@@ -397,6 +397,7 @@ export default function App() {
     return (
       <Home
         data={data}
+        appId={parseAccess()?.appId || ''}
         lastMessage={last ? last.content : null}
         onEnter={() => {
           // 用户手势内:解锁音频 + 申请通知权限(失焦新消息提醒用)

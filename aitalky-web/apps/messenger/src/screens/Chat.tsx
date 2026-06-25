@@ -2,6 +2,7 @@ import type { KeyboardEvent, MouseEvent as ReactMouseEvent, ReactNode } from 're
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { t, replyTimeText } from '../i18n'
 import type { MessageVO, MessengerAgent, MessengerInit, PendingMsg } from '../types'
+import ArticleView from './ArticleView'
 
 interface Props {
   data: MessengerInit
@@ -88,6 +89,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
   }
   const [preview, setPreview] = useState<string | null>(null) // 图片全屏预览(lightbox)的图源 url
   const [webview, setWebview] = useState<string | null>(null) // 点链接:页内弹窗打开网页(不跳走)
+  const [articleCode, setArticleCode] = useState<string | null>(null) // 点文章卡片:overlay 内阅读
   const fileInputRef = useRef<HTMLInputElement>(null) // 回形针:触发图片选择
   const [urgentClosed, setUrgentClosed] = useState(false)
   // 头部默认折叠(只显项目名);点击项目名展开服务坐席(对齐参考)
@@ -433,6 +435,9 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
           </div>
         </div>
       )}
+
+      {/* 点文章卡片:overlay 内阅读已发布文章 */}
+      {articleCode && <ArticleView shareCode={articleCode} onClose={() => setArticleCode(null)} />}
     </>
   )
 }

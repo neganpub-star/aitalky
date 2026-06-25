@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react'
 import { t, replyTimeText } from '../i18n'
-import type { MessengerInit } from '../types'
+import type { MessengerInit, WikiRecommend } from '../types'
+import { recommendedArticles } from '../api'
+import ArticleView from './ArticleView'
 
 interface Props {
   data: MessengerInit
+  appId: string
   lastMessage: string | null
   onEnter: () => void
 }
@@ -12,11 +16,18 @@ const VERSION = 'V1.0.0'
 
 // 信使首页(对齐参考 img23):粉彩渐变 hero + 问候语 + 团队介绍 + 单个「在这里说点什么吧」入口 + 版本号
 // 问候语/团队介绍来自后端信使配置(品牌名由商户自行写入问候语);预计回复时间仅在有坐席在线时展示
-export default function Home({ data, onEnter }: Props) {
+export default function Home({ data, appId, onEnter }: Props) {
   const cfg = data.config
   const greeting = cfg?.greeting?.trim()
   const teamIntro = cfg?.teamIntro?.trim()
   const replyTime = replyTimeText(data.agent?.replyTime)
+  // 推荐文章(已发布+推荐,最多5篇);点击在 overlay 内阅读
+  const [recommends, setRecommends] = useState<WikiRecommend[]>([])
+  const [readCode, setReadCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (appId) recommendedArticles(appId, cfg?.lang || undefined).then(setRecommends).catch(() => {})
+  }, [appId, cfg?.lang])
 
   return (
     <div className="home">
@@ -42,7 +53,23 @@ export default function Home({ data, onEnter }: Props) {
         </div>
       </div>
 
+      {/* 推荐文章(对齐参考 img14:发起入口下方列表,点击阅读) */}
+      {recommends.length > 0 && (
+        <div className="home-recommends">
+          <div className="home-recommends-title">{t('recommendTitle')}</div>
+          {recommends.map((a) => (
+            <div key={a.id} className="home-recommend-item" onClick={() => a.shareCode && setReadCode(a.shareCode)}>
+              <span className="home-recommend-ico">📖</span>
+              <span className="home-recommend-name">{a.title || ''}</span>
+              <span className="home-recommend-arrow">›</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="home-version">{VERSION}</div>
+
+      {readCode && <ArticleView shareCode={readCode} onClose={() => setReadCode(null)} />}
     </div>
   )
 }

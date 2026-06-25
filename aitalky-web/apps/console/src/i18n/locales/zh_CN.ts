@@ -424,6 +424,8 @@ export default {
     unlinkConfirm: '确定移除该文章的关联吗?(不删除文章本身)',
     articleNamePh: '请输入文章名',
     articleNameRequired: '请输入默认语言的文章名',
+    articleNotFound: '文章不存在或未发布',
+    readFooter: '需要更多的帮助?从我们的帮助中心获得支持',
   },
   settings: {
     title: '设置',

@@ -34,6 +34,7 @@ import WikiArticles from './pages/wiki/WikiArticles'
 import WikiArticleDetail from './pages/wiki/WikiArticleDetail'
 import WikiArticleEdit from './pages/wiki/WikiArticleEdit'
 import WikiCategoryDetail from './pages/wiki/WikiCategoryDetail'
+import WikiArticleRead from './pages/wiki/WikiArticleRead'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings, canAccessWiki } from './auth/perm'
 
@@ -62,6 +63,8 @@ function RequireWiki({ children }: { children: ReactNode }) {
 export const router = createHashRouter([
   { path: '/login', element: <Login /> },
   { path: '/register', element: <Register /> },
+  // 对外文章阅读页(免登录):发文章卡片/推荐文章点击打开
+  { path: '/wiki-article/:shareCode', element: <WikiArticleRead /> },
   { path: '/join', element: <Join /> },
   { path: '/projects', element: <RequireAuth><Projects /></RequireAuth> },
   { path: '/projects/new', element: <RequireAuth><CreateProject /></RequireAuth> },

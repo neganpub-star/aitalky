@@ -85,3 +85,21 @@ export interface AccessParams {
   lang: string
   source?: string
 }
+
+// wiki 文章(信使端:推荐文章 + 阅读)
+export interface WikiArticleI18n {
+  lang: string
+  pubTitle: string | null
+  pubSummary: string | null
+  pubContent: string | null
+}
+export interface WikiArticleDetail {
+  id: string
+  shareCode: string | null
+  i18ns: WikiArticleI18n[]
+}
+export interface WikiRecommend {
+  id: string
+  title: string | null
+  shareCode: string | null
+}

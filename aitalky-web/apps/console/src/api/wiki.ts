@@ -150,6 +150,11 @@ export function sendableArticleDetail(id: string) {
   return client.get<unknown, WikiArticleDetailVO>(`/wiki/articles/sendable/${id}`)
 }
 
+// 对外公开:按外链码取已发布文章(阅读页,免登录)
+export function publicArticle(shareCode: string) {
+  return client.get<unknown, WikiArticleDetailVO>(`/public/wiki/article/${shareCode}`)
+}
+
 // ============ 内容配置(类别/分组/关联) ============
 export interface WikiI18nText { lang: string; name?: string | null; description?: string | null }
 export interface CategoryVO {

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AccessParams, MessageVO, MessengerAgent, MessengerInit } from './types'
+import type { AccessParams, MessageVO, MessengerAgent, MessengerInit, WikiArticleDetail, WikiRecommend } from './types'
 import { normInit, normMessage } from './normalize'
 import { currentLang } from './i18n'
 
@@ -64,6 +64,28 @@ export async function sendMessage(
   conversationId: string, content: string, type = 'text', payload?: { name?: string; size?: number },
 ): Promise<MessageVO> {
   return normMessage(await client.post<unknown, MessageVO>('/messages', { conversationId, content, type, payload }))
+}
+
+// wiki 公开接口(免登录,baseURL 不同于会话接口);复用统一响应 R 解包
+const wikiClient = axios.create({ baseURL: '/api/public/wiki', timeout: 15000 })
+wikiClient.interceptors.request.use((cfg) => { cfg.headers.lang = currentLang(); return cfg })
+wikiClient.interceptors.response.use((resp) => {
+  const r = resp.data
+  if (r && typeof r.code === 'number') {
+    if (r.code === 0) return r.data
+    return Promise.reject(new Error(r.message || 'fail'))
+  }
+  return r
+}, (err) => Promise.reject(err))
+
+/** 信使首页推荐文章(已发布+推荐,最多5篇) */
+export function recommendedArticles(appId: string, lang?: string): Promise<WikiRecommend[]> {
+  return wikiClient.get<unknown, WikiRecommend[]>('/recommended', { params: { appId, lang } })
+}
+
+/** 按外链码取已发布文章(信使端阅读) */
+export function publicArticle(shareCode: string): Promise<WikiArticleDetail> {
+  return wikiClient.get<unknown, WikiArticleDetail>(`/article/${shareCode}`)
 }
 
 /** 客户上传文件(图片/文档),返回 MinIO URL。带客户令牌(拦截器自动附加) */

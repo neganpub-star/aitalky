@@ -411,6 +411,8 @@ export default {
     unlinkConfirm: 'Remove this article link? (the article itself is kept)',
     articleNamePh: 'Enter article title',
     articleNameRequired: 'Please enter the article title in the default language',
+    articleNotFound: 'Article not found or unpublished',
+    readFooter: 'Need more help? Get support from our help center',
   },
   settings: {
     title: 'Settings',
