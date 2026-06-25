@@ -142,9 +142,10 @@ export default function WikiArticleEdit() {
       </div>
 
       {/* 实时预览 Drawer(右侧滑出,渲染当前草稿;对齐参考) */}
-      <Drawer open={previewOpen} onClose={() => setPreviewOpen(false)} width="50%" closable={false} styles={{ body: { padding: 0 } }}>
+      <Drawer open={previewOpen} onClose={() => setPreviewOpen(false)} width="58%" closable={false} styles={{ body: { padding: 0 } }}>
         {(() => {
           const p = drafts[previewLang] || { title: '', summary: '', content: '' }
+          const ptoc = parseToc(p.content)
           return (
             <div style={{ minHeight: '100%', background: token.colorBgContainer }}>
               {/* 顶部品牌 + 语言切换 */}
@@ -157,22 +158,32 @@ export default function WikiArticleEdit() {
                   ))}
                 </div>
               </div>
-              {/* 正文 */}
-              <div style={{ padding: '32px 40px' }}>
-                <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 10 }}>{p.title || t('wiki.untitled')}</div>
-                {p.summary && <div style={{ fontSize: 15, color: token.colorTextSecondary, marginBottom: 18 }}>{p.summary}</div>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-                  <Avatar size={32} src={avatar || undefined} style={{ background: token.colorPrimary }}>{(nickname || 'U').charAt(0).toUpperCase()}</Avatar>
-                  <div style={{ lineHeight: 1.3 }}>
-                    <div style={{ fontSize: 14 }}>{nickname || '-'}</div>
-                    <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{previewTime}</div>
-                  </div>
+              {/* 正文区:左目录 + 右正文(对齐参考实时预览的两栏布局) */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', padding: '32px 36px', gap: 28 }}>
+                {/* 左目录 */}
+                <div style={{ width: 180, flexShrink: 0, borderRight: `1px solid ${token.colorSplit}`, paddingRight: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>{t('wiki.toc')}</div>
+                  {ptoc.length === 0
+                    ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
+                    : ptoc.map((it, idx) => <div key={idx} style={{ fontSize: 14, color: token.colorTextSecondary, padding: '6px 0', paddingLeft: (it.level - 1) * 12 }}>{it.text}</div>)}
                 </div>
-                {p.content
-                  ? <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.content) }} />
-                  : <div style={{ color: token.colorTextTertiary }}>{t('wiki.noContent')}</div>}
-                <div style={{ marginTop: 48, padding: '14px', background: token.colorFillQuaternary, borderRadius: 8, textAlign: 'center', fontSize: 13, color: token.colorTextTertiary }}>
-                  {t('wiki.readFooter')}
+                {/* 右正文 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 10 }}>{p.title || t('wiki.untitled')}</div>
+                  {p.summary && <div style={{ fontSize: 15, color: token.colorTextSecondary, marginBottom: 18 }}>{p.summary}</div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+                    <Avatar size={32} src={avatar || undefined} style={{ background: token.colorPrimary }}>{(nickname || 'U').charAt(0).toUpperCase()}</Avatar>
+                    <div style={{ lineHeight: 1.3 }}>
+                      <div style={{ fontSize: 14 }}>{nickname || '-'}</div>
+                      <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{previewTime}</div>
+                    </div>
+                  </div>
+                  {p.content
+                    ? <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.content) }} />
+                    : <div style={{ color: token.colorTextTertiary }}>{t('wiki.noContent')}</div>}
+                  <div style={{ marginTop: 48, padding: '14px', background: token.colorFillQuaternary, borderRadius: 8, textAlign: 'center', fontSize: 13, color: token.colorTextTertiary }}>
+                    {t('wiki.readFooter')}
+                  </div>
                 </div>
               </div>
             </div>
