@@ -67,6 +67,14 @@ export default function WikiArticleEdit() {
   const setField = (k: keyof LangDraft, v: string) => setDrafts((p) => ({ ...p, [lang]: { ...p[lang], [k]: v } }))
   const toc = useMemo(() => parseToc(cur.content), [cur.content])
 
+  // 点击目录项滚动到对应标题:在容器内取非空标题(与 parseToc 过滤一致,保证下标对齐)第 idx 个
+  const scrollToHeading = (containerSel: string, idx: number) => {
+    const root = document.querySelector(containerSel)
+    if (!root) return
+    const hs = Array.from(root.querySelectorAll('h1,h2,h3')).filter((h) => h.textContent?.trim())
+    ;(hs[idx] as HTMLElement | undefined)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   const saveAll = async () => {
     for (const l of LANGS) {
       const dft = drafts[l.code]
@@ -123,7 +131,9 @@ export default function WikiArticleEdit() {
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('wiki.toc')}</div>
           {toc.length === 0
             ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
-            : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{it.text}</div>)}
+            : toc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading('.wiki-rich-editor [data-slate-editor]', idx)}
+                style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
+                className="at-row">{it.text}</div>)}
         </div>
 
         {/* 右侧:标题/描述固定顶部,正文独立滚动;配色跟随主题 */}
@@ -165,7 +175,9 @@ export default function WikiArticleEdit() {
                   <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>{t('wiki.toc')}</div>
                   {ptoc.length === 0
                     ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
-                    : ptoc.map((it, idx) => <div key={idx} style={{ fontSize: 14, color: token.colorTextSecondary, padding: '6px 0', paddingLeft: (it.level - 1) * 12 }}>{it.text}</div>)}
+                    : ptoc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading('#wiki-preview-html', idx)}
+                        style={{ fontSize: 14, color: token.colorTextSecondary, padding: '6px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
+                        className="at-row">{it.text}</div>)}
                 </div>
                 {/* 右正文 */}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -179,7 +191,7 @@ export default function WikiArticleEdit() {
                     </div>
                   </div>
                   {p.content
-                    ? <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.content) }} />
+                    ? <div id="wiki-preview-html" className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(p.content) }} />
                     : <div style={{ color: token.colorTextTertiary }}>{t('wiki.noContent')}</div>}
                   <div style={{ marginTop: 48, padding: '14px', background: token.colorFillQuaternary, borderRadius: 8, textAlign: 'center', fontSize: 13, color: token.colorTextTertiary }}>
                     {t('wiki.readFooter')}
