@@ -25,6 +25,8 @@ export default {
     copied: '已复制',
     lightMode: '白天模式',
     darkMode: '夜间模式',
+    expandAll: '全部展开',
+    collapseAll: '全部收起',
     saved: '保存成功',
     deleted: '已删除',
     deleteConfirm: '确认删除?',

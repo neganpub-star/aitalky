@@ -7,6 +7,7 @@ import {
   GlobalOutlined, PoweroffOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
   CloseOutlined, HomeOutlined, SunOutlined, MoonOutlined, ReloadOutlined,
   TeamOutlined, SafetyCertificateOutlined, ProfileOutlined, WalletOutlined, ControlOutlined,
+  ColumnHeightOutlined, VerticalAlignMiddleOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -33,6 +34,8 @@ export default function AdminLayout() {
   const logout = useAdminStore((s) => s.logout)
 
   const [collapsed, setCollapsed] = useState(false)
+  // 菜单展开的分组 key(受控);默认空 = 进入后所有分组收起,不再全展开
+  const [openKeys, setOpenKeys] = useState<string[]>([])
   // 已打开页签(只存 key,标题随语言实时取);概览页常驻不可关
   const [tags, setTags] = useState<string[]>(['/dashboard'])
   const dark = themeMode === 'dark'
@@ -88,6 +91,15 @@ export default function AdminLayout() {
     return result
   }, [allItems, groupDefs, permissions])
   const titleOf = (key: string) => allItems.find((i) => i.key === key)?.label || key
+
+  // 所有可展开的分组 key(子菜单);用于全部展开/全部收起
+  const groupKeys = useMemo(
+    () => items.filter((i) => i && 'children' in i && i.children).map((i) => i!.key as string),
+    [items],
+  )
+  const allOpen = groupKeys.length > 0 && groupKeys.every((k) => openKeys.includes(k))
+  // 单按钮切换:已全开则全收,否则全展
+  const toggleAll = () => setOpenKeys(allOpen ? [] : groupKeys)
 
   // 当前激活菜单 key(最长前缀匹配)
   const activeKey = useMemo(() => {
@@ -156,7 +168,8 @@ export default function AdminLayout() {
           theme={dark ? 'dark' : 'light'}
           style={{ background: siderBg, borderInlineEnd: 'none', height: 'calc(100% - 56px)', overflowY: 'auto' }}
           selectedKeys={[activeKey]}
-          defaultOpenKeys={['g-ops', 'g-catalog', 'g-system', 'g-access']}
+          openKeys={openKeys}
+          onOpenChange={(keys) => setOpenKeys(keys as string[])}
           items={items}
           onClick={({ key }) => nav(key)}
         />
@@ -181,6 +194,11 @@ export default function AdminLayout() {
             ]}
           />
           <div style={{ flex: 1 }} />
+          <Tooltip title={allOpen ? t('common.collapseAll') : t('common.expandAll')}>
+            <span onClick={toggleAll} style={{ fontSize: 16, cursor: 'pointer', color: token.colorTextSecondary, display: 'flex' }}>
+              {allOpen ? <VerticalAlignMiddleOutlined /> : <ColumnHeightOutlined />}
+            </span>
+          </Tooltip>
           <Tooltip title={t('common.refresh')}>
             <span onClick={() => nav(0)} style={{ fontSize: 16, cursor: 'pointer', color: token.colorTextSecondary, display: 'flex' }}>
               <ReloadOutlined />

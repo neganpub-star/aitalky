@@ -25,6 +25,8 @@ export default {
     copied: 'Copied',
     lightMode: 'Light mode',
     darkMode: 'Dark mode',
+    expandAll: 'Expand all',
+    collapseAll: 'Collapse all',
     saved: 'Saved',
     deleted: 'Deleted',
     deleteConfirm: 'Delete this item?',
