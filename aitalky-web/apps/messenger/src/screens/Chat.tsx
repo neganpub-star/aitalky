@@ -254,15 +254,16 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, t
         {messages.map((m) => {
           const mine = m.senderType === 'customer'
           const initial = (m.senderName || 'S').charAt(0).toUpperCase()
-          // 已撤回(isVisible=false):客户自己撤回→显示居中系统行;客服撤回→对客户永远静默移除
-          // (客服撤回属坐席内部动作,不向终端客户暴露;客户只看到该气泡消失)
+          // 已撤回(isVisible=false):自己撤回→始终显示「你撤回了一条消息」(对齐参考说明);
+          // 客服/成员撤回→受「成员撤回消息」开关控制:开则显示系统消息,关则静默移除
           if (m.isVisible === false) {
-            if (!mine) return null
-            return (
-              <div key={m.msgId} className="msg-system">
-                {t('retractedByYou')}
-              </div>
-            )
+            if (mine) {
+              return <div key={m.msgId} className="msg-system">{t('retractedByYou')}</div>
+            }
+            if (data.config?.sysMsgMemberRetract ?? true) {
+              return <div key={m.msgId} className="msg-system">{t('retractedByAgent')}</div>
+            }
+            return null
           }
           // 客户自己消息 + 权限开 + 2分钟内 → 可撤回
           const retractable = mine && canCustomerRetract && Date.now() - m.timestamp < RETRACT_WINDOW_MS
