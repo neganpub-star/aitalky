@@ -73,7 +73,7 @@ body {
   /* 粉彩渐变:左下薄荷绿 → 中间天蓝 → 右上淡紫(对齐参考) */
   background: linear-gradient(45deg, #bff0d8 0%, #a6d0f5 50%, #cabef9 100%);
   color: #15182b;
-  padding: 28px 24px 90px;
+  padding: 38px 24px 96px;
 }
 .home-hero .logo {
   width: 44px;
@@ -85,7 +85,7 @@ body {
   justify-content: center;
   font-weight: 700;
   overflow: hidden;
-  margin-bottom: 36px;
+  margin-bottom: 104px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .home-hero .logo img {
