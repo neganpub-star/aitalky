@@ -6,7 +6,7 @@ import {
 import {
   SmileOutlined, AppstoreOutlined, ClockCircleOutlined, EyeOutlined,
   AimOutlined, BellOutlined, GlobalOutlined, MessageOutlined, RollbackOutlined,
-  PictureOutlined, RightOutlined, DownOutlined, LoadingOutlined,
+  PictureOutlined, RightOutlined, DownOutlined, LoadingOutlined, SettingOutlined, InfoCircleFilled,
 } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -201,6 +201,20 @@ export default function Messenger() {
                   onChange={(e) => patchI18n(lang, { teamIntro: e.target.value })} />
               </div>
             ))}
+
+            {/* 浏览器翻译干扰预览提示(对齐参考) */}
+            <div style={{ display: 'flex', gap: 8, background: token.colorWarningBg, border: `1px solid ${token.colorWarningBorder}`, borderRadius: 8, padding: '10px 14px', fontSize: 12, color: token.colorTextSecondary, marginTop: 18, maxWidth: 420 }}>
+              <InfoCircleFilled style={{ color: '#faad14', marginTop: 2, flexShrink: 0 }} />
+              <span>{t('mse.browserTranslateNote')}</span>
+            </div>
+
+            {/* 信使已支持多种语言 + 跳转语言配置(常规设置) */}
+            <div style={{ marginTop: 18, borderTop: `1px solid ${token.colorBorderSecondary}`, paddingTop: 16 }}>
+              <div style={{ fontSize: 13, marginBottom: 8 }}>{t('mse.langSupported')}</div>
+              <a onClick={() => nav('/settings/general')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <SettingOutlined />{t('mse.langConfig')}
+              </a>
+            </div>
             {saveBtns}
           </>
         } />
