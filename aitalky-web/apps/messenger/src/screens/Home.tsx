@@ -27,19 +27,19 @@ export default function Home({ data, onEnter }: Props) {
         {/* 问候语 + 团队介绍(对齐参考 img19/img23:大号深色文字,品牌名由商户写入问候语) */}
         <h1>{greeting || t('greetingTitle')}</h1>
         <h1 className="home-sub">{teamIntro || t('greetingSub')}</h1>
-      </div>
 
-      {/* 单个发起会话入口(对齐参考 img23):标题 + 预计回复时间 + 蓝色发送箭头;点击进入会话 */}
-      <div className="home-start" onClick={onEnter}>
-        <div className="home-start-text">
-          <div className="home-start-title">{t('startInput')}</div>
-          {replyTime && <div className="home-start-sub">{replyTime}</div>}
+        {/* 单个发起会话入口(对齐参考 img23:浮于渐变之上):标题 + 预计回复时间 + 蓝色发送箭头 */}
+        <div className="home-start" onClick={onEnter}>
+          <div className="home-start-text">
+            <div className="home-start-title">{t('startInput')}</div>
+            {replyTime && <div className="home-start-sub">{replyTime}</div>}
+          </div>
+          <span className="home-start-send" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+            </svg>
+          </span>
         </div>
-        <span className="home-start-send" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-          </svg>
-        </span>
       </div>
 
       <div className="home-version">{VERSION}</div>

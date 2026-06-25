@@ -73,42 +73,42 @@ body {
   /* 粉彩渐变:左下薄荷绿 → 中间天蓝 → 右上淡紫(对齐参考) */
   background: linear-gradient(45deg, #bff0d8 0%, #a6d0f5 50%, #cabef9 100%);
   color: #15182b;
-  padding: 30px 26px 64px;
+  padding: 28px 24px 90px;
 }
 .home-hero .logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 13px;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
   background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   overflow: hidden;
-  margin-bottom: 56px;
+  margin-bottom: 36px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .home-hero .logo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 13px;
+  border-radius: 11px;
 }
 .home-hero h1 {
-  font-size: 29px;
-  line-height: 1.28;
+  font-size: 34px;
+  line-height: 1.5;
   font-weight: 700;
   margin: 0;
 }
 .home-hero h1.home-sub {
   margin-top: 2px;
 }
-/* 发起会话入口:浮于 hero 底部之上(对齐参考) */
+/* 发起会话入口:浮于渐变之上(对齐参考,在 hero 内) */
 .home-start {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  margin: -42px 18px 0;
+  margin-top: 30px;
   padding: 18px 20px;
   display: flex;
   align-items: center;
