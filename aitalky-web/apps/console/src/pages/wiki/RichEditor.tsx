@@ -39,6 +39,14 @@ export default function RichEditor({ value, onChange, placeholder }: {
             },
           },
         },
+        // 选中文字浮动菜单(对齐参考):标题/加粗/斜体/下划线/删除线/字色/背景色/对齐/列表/链接
+        hoverbarKeys: {
+          text: {
+            menuKeys: ['headerSelect', '|', 'bold', 'italic', 'underline', 'through', '|',
+              'color', 'bgColor', '|', 'justifyLeft', 'justifyCenter', 'justifyRight', '|',
+              'bulletedList', 'numberedList', '|', 'insertLink', 'clearStyle'],
+          },
+        },
       },
     })
     editorRef.current = editor
