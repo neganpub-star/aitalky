@@ -218,6 +218,55 @@ public class WikiArticleServiceImpl implements WikiArticleService {
         log.info("删除 wiki 文章 articleId={}", articleId);
     }
 
+    @Override
+    public WikiArticleDetailVO byShareCode(String shareCode) {
+        // 公开接口:无租户上下文,拦截器不拼 project_id;shareCode 全局唯一,直接查
+        WikiArticle a = articleMapper.selectOne(Wrappers.<WikiArticle>lambdaQuery()
+                .eq(WikiArticle::getShareCode, shareCode).last("limit 1"));
+        if (a == null || a.getStatus() == null || a.getStatus() == ST_UNPUBLISHED) {
+            throw new BizException(ResultCode.NOT_FOUND); // 未发布/不存在的外链不可访问
+        }
+        // 仅返回已发布语言的发布快照(对外只见已发布内容)
+        List<WikiArticleDetailVO.I18n> i18ns = i18nMapper.selectList(Wrappers.<WikiArticleI18n>lambdaQuery()
+                        .eq(WikiArticleI18n::getArticleId, a.getId()))
+                .stream().filter(r -> Integer.valueOf(1).equals(r.getPublished()))
+                .map(r -> new WikiArticleDetailVO.I18n(r.getLang(), null, null, null,
+                        r.getPubTitle(), r.getPubSummary(), r.getPubContent(), r.getPublished()))
+                .toList();
+        return new WikiArticleDetailVO(a.getId(), a.getStatus(), a.getIsRecommend(), a.getShareCode(),
+                a.getUpdateBy(), null, null, a.getUpdateTime(), i18ns);
+    }
+
+    @Override
+    public List<WikiArticleRowVO> recommended(Long projectId, String lang, int maxCount) {
+        String showLang = StringUtils.hasText(lang) ? lang : DEFAULT_LANG;
+        // 公开调用无租户上下文,显式按 projectId 过滤;已发布(含有变更)+ 推荐
+        List<WikiArticle> articles = articleMapper.selectList(Wrappers.<WikiArticle>lambdaQuery()
+                .eq(WikiArticle::getProjectId, projectId)
+                .in(WikiArticle::getStatus, ST_PUBLISHED, ST_CHANGED)
+                .eq(WikiArticle::getIsRecommend, 1)
+                .orderByDesc(WikiArticle::getUpdateTime).orderByDesc(WikiArticle::getId)
+                .last("limit " + Math.max(1, maxCount)));
+        if (articles.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = articles.stream().map(WikiArticle::getId).toList();
+        Map<Long, List<WikiArticleI18n>> byArticle = new LinkedHashMap<>();
+        for (WikiArticleI18n r : i18nMapper.selectList(Wrappers.<WikiArticleI18n>lambdaQuery().in(WikiArticleI18n::getArticleId, ids))) {
+            byArticle.computeIfAbsent(r.getArticleId(), k -> new java.util.ArrayList<>()).add(r);
+        }
+        return articles.stream().map(a -> {
+            List<WikiArticleI18n> rows = byArticle.getOrDefault(a.getId(), List.of());
+            // 推荐卡片用发布快照标题/摘要;取展示语言,空回退默认语言
+            WikiArticleI18n pick = rows.stream().filter(r -> showLang.equals(r.getLang()) && StringUtils.hasText(r.getPubTitle())).findFirst()
+                    .or(() -> rows.stream().filter(r -> DEFAULT_LANG.equals(r.getLang()) && StringUtils.hasText(r.getPubTitle())).findFirst())
+                    .orElse(rows.stream().filter(r -> StringUtils.hasText(r.getPubTitle())).findFirst().orElse(null));
+            String title = pick == null ? null : pick.getPubTitle();
+            return new WikiArticleRowVO(a.getId(), title, a.getStatus(), null, a.getIsRecommend(),
+                    null, null, null, a.getUpdateTime(), a.getShareCode());
+        }).toList();
+    }
+
     /** 重算状态:无已发布语言→未发布;有已发布且草稿==发布→已发布;有差异→有变更。 */
     private void recomputeStatus(WikiArticle a) {
         List<WikiArticleI18n> rows = i18nMapper.selectList(Wrappers.<WikiArticleI18n>lambdaQuery()

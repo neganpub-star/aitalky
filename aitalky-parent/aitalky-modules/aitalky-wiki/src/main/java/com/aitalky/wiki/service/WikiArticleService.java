@@ -47,4 +47,10 @@ public interface WikiArticleService {
 
     /** 删除文章(连带 i18n / 历史 / 关联)。 */
     void delete(Long articleId);
+
+    /** 公开(对外阅读页):按外链码取已发布文章(只返回已发布语言的发布快照),无租户上下文。 */
+    WikiArticleDetailVO byShareCode(String shareCode);
+
+    /** 公开(信使首页):项目推荐文章(已发布+推荐,最多 maxCount 篇;title 取 lang 的发布快照,空回退默认语言)。 */
+    List<WikiArticleRowVO> recommended(Long projectId, String lang, int maxCount);
 }
