@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
+import { theme } from 'antd'
 import { createEditor, createToolbar, type IDomEditor } from '@wangeditor/editor'
 import '@wangeditor/editor/dist/css/style.css'
 import { uploadFile } from '../../api/file'
@@ -12,6 +13,7 @@ export default function RichEditor({ value, onChange, placeholder }: {
   onChange: (html: string) => void
   placeholder?: string
 }) {
+  const { token } = theme.useToken()
   const editorBoxRef = useRef<HTMLDivElement>(null)
   const toolbarBoxRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<IDomEditor | null>(null)
@@ -61,8 +63,21 @@ export default function RichEditor({ value, onChange, placeholder }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // wangEditor 用 CSS 变量控制配色——注入 AntD 主题 token,使编辑区/工具栏随白天黑夜主题切换
+  const editorVars = {
+    '--w-e-textarea-bg-color': token.colorBgContainer,
+    '--w-e-textarea-color': token.colorText,
+    '--w-e-textarea-slight-color': token.colorTextTertiary,
+    '--w-e-textarea-border-color': token.colorBorderSecondary,
+    '--w-e-toolbar-bg-color': token.colorBgElevated,
+    '--w-e-toolbar-color': token.colorText,
+    '--w-e-toolbar-active-color': token.colorPrimary,
+    '--w-e-toolbar-active-bg-color': token.colorFillSecondary,
+    '--w-e-toolbar-border-color': token.colorBorderSecondary,
+  } as CSSProperties
+
   return (
-    <div className="wiki-rich-editor">
+    <div className="wiki-rich-editor" style={editorVars}>
       {/* 无边框铺满(对齐参考);底部留白避免内容被浮动工具栏遮挡 */}
       <div ref={editorBoxRef} style={{ minHeight: '60vh', paddingBottom: 72 }} />
       {/* 工具栏固定悬浮在页面底部居中(对齐参考,不随内容滚动) */}

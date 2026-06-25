@@ -55,23 +55,27 @@ body {
 .wiki-article-html h2 { font-size: 20px; font-weight: 700; margin: 18px 0 10px; }
 .wiki-article-html h3 { font-size: 17px; font-weight: 600; margin: 14px 0 8px; }
 .wiki-article-html p { margin: 8px 0; }
-/* wangEditor 编辑区内表格/图片基本样式兜底 */
-/* wiki 编辑区固定白底黑字:wangEditor 为亮色,暗色主题下深色文字不可读,故强制浅色(文章本身亦白底) */
-.wiki-rich-editor,
+/* wiki 编辑区配色跟随主题:bg/文字色由 RichEditor 注入的 AntD token CSS 变量驱动,
+   不再锁死白底——背景透明继承容器,wangEditor 自身用 --w-e-textarea-* 变量上色 */
 .wiki-rich-editor .w-e-container,
-.wiki-rich-editor .w-e-text-container { background: #fff !important; }
-.wiki-rich-editor .w-e-text-container [data-slate-editor] { color: #1a1a1a !important; }
-/* wiki 富文本工具栏:固定悬浮页面底部居中(对齐参考,不随内容滚动) */
+.wiki-rich-editor .w-e-text-container { background: transparent !important; }
+/* wiki 富文本工具栏:固定悬浮页面底部居中(对齐参考,不随内容滚动);背景随主题 */
 .wiki-rich-toolbar-float {
   position: fixed;
   bottom: 28px;
   left: calc(50% + 130px);
   transform: translateX(-50%);
   z-index: 100;
-  background: #fff;
-  border: 1px solid #d0d3d9;
+  background: var(--w-e-toolbar-bg-color, #fff);
+  border: 1px solid var(--w-e-toolbar-border-color, #d0d3d9);
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
   padding: 2px 6px;
 }
 .wiki-rich-toolbar-float .w-e-toolbar { background: transparent !important; border: none !important; border-radius: 10px; }
+/* 工具栏悬浮在视口底部,其下拉面板(表格选格子)/弹框(链接)默认向下会被裁出视口——强制向上弹出 */
+.wiki-rich-toolbar-float .w-e-drop-panel,
+.wiki-rich-toolbar-float .w-e-modal {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+}
