@@ -29,8 +29,8 @@ export default function Home({ data, lastMessage, onEnter }: Props) {
             'Ai'
           )}
         </div>
-        {/* 品牌名 + 问候语(任一缺省时回退默认问候,避免空标题) */}
-        {brand && <h1>{brand}</h1>}
+        {/* 品牌名+「为您服务!」+ 问候语(对齐参考 img19;任一缺省时回退默认问候,避免空标题) */}
+        {brand && <h1>{brand}{t('heroServe')}</h1>}
         {(greeting || !brand) && <h1>{greeting || t('greetingTitle')}</h1>}
         <p>{t('greetingSub')}</p>
       </div>
