@@ -76,7 +76,7 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0) 70%, #fff 100%),
     linear-gradient(120deg, #93e3cb 0%, #9ccef2 48%, #cdb9f7 100%);
   color: #15182b;
-  padding: 40px 24px 120px;
+  padding: 22px 24px 120px;
 }
 .home-hero .logo {
   width: 44px;
@@ -88,7 +88,7 @@ body {
   justify-content: center;
   font-weight: 700;
   overflow: hidden;
-  margin-bottom: 100px;
+  margin-bottom: 52px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .home-hero .logo img {
