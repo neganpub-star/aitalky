@@ -372,7 +372,7 @@ export default {
     autoSaveNote: 'Note: clicking "Preview" or "Publish" auto-saves',
     preview: 'Preview',
     toc: 'Contents',
-    tocEmpty: 'Headings (# / ## / ###) in the body appear here',
+    tocEmpty: 'Set a paragraph as a heading via the toolbar to see it here',
     draftBox: 'Draft',
     publishedView: 'Published',
     noContent: 'This article has no content',

@@ -123,7 +123,7 @@ export default function WikiArticleEdit() {
           <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>{t('wiki.toc')}</div>
           {toc.length === 0
             ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
-            : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{it.text}</div>)}
+            : toc.map((it, idx) => <div key={idx} style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12 }}>{idx + 1}. {it.text}</div>)}
         </div>
 
         <div style={{ flex: 1, overflow: 'auto', padding: '24px 48px 24px' }}>

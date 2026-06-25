@@ -381,7 +381,7 @@ export default {
     autoSaveNote: '注:点击"实时预览"、"发布"会自动保存',
     preview: '实时预览',
     toc: '目录',
-    tocEmpty: '正文中的标题(# / ## / ###)会显示在此',
+    tocEmpty: '用工具栏「标题」把段落设为标题后,会显示在此',
     // 详情
     draftBox: '草稿箱',
     publishedView: '已发布',
