@@ -97,9 +97,17 @@ export default function Messenger() {
     }
   }
 
+  // 网站标题/图标:对齐参考为必填,两者都填才允许保存
+  const saveWeb = () => {
+    if (!cfg.webIcon || !cfg.webTitle?.trim()) { message.warning(t('mse.webRequired')); return }
+    save()
+  }
+
   // 网站图标上传 → MinIO → 回填 URL
   const beforeIconUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) { message.warning(t('profile.avatarTypeError')); return false }
+    // 仅支持 .ico(对齐参考);按扩展名 + MIME 双判
+    const isIco = file.name.toLowerCase().endsWith('.ico') || file.type === 'image/x-icon' || file.type === 'image/vnd.microsoft.icon'
+    if (!isIco) { message.warning(t('mse.webIconTip')); return false }
     if (file.size > 1024 * 1024) { message.warning(t('profile.avatarSizeError')); return false }
     setUploading(true)
     uploadFile(file).then((url) => patch({ webIcon: url })).finally(() => setUploading(false))
@@ -307,8 +315,8 @@ export default function Messenger() {
         {/* 自定义网站标题和图标 */}
         <SettingCard {...cardProps('web')} icon={<GlobalOutlined />} title={t('mse.webTitleTitle')} desc={t('mse.webTitleDesc')} body={
           <>
-            <div style={styles.fieldLabel}>{t('mse.webIcon')}</div>
-            <Upload showUploadList={false} accept=".ico,.png,image/x-icon,image/vnd.microsoft.icon,image/png" beforeUpload={beforeIconUpload} disabled={uploading}>
+            <div style={styles.fieldLabel}><span style={{ color: '#ff4d4f' }}>* </span>{t('mse.webIcon')}</div>
+            <Upload showUploadList={false} accept=".ico,image/x-icon,image/vnd.microsoft.icon" beforeUpload={beforeIconUpload} disabled={uploading}>
               <div style={{ width: 48, height: 48, borderRadius: 8, border: `1px dashed ${token.colorBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', background: token.colorFillTertiary }}>
                 {uploading ? <LoadingOutlined style={{ color: token.colorPrimary }} />
                   : cfg.webIcon ? <img src={cfg.webIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -316,10 +324,13 @@ export default function Messenger() {
               </div>
             </Upload>
             <div style={styles.tip}>{t('mse.webIconTip')}</div>
-            <div style={styles.fieldLabel}>{t('mse.webTitleLabel')}</div>
+            <div style={styles.fieldLabel}><span style={{ color: '#ff4d4f' }}>* </span>{t('mse.webTitleLabel')}</div>
             <Input maxLength={80} showCount value={cfg.webTitle ?? ''} placeholder={t('mse.webTitlePh')}
               onChange={(e) => patch({ webTitle: e.target.value })} />
-            {saveBtns}
+            <div style={styles.actions}>
+              <Button onClick={() => setOpenKey(null)}>{t('common.cancel')}</Button>
+              <Button type="primary" loading={saving} disabled={!canEdit} onClick={saveWeb}>{t('common.save')}</Button>
+            </div>
           </>
         } />
       </div>

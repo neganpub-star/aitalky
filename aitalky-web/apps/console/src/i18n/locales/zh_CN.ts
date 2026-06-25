@@ -457,7 +457,8 @@ export default {
     allowClose: '是否允许手动关闭',
     allowCloseDesc: '客户手动关闭通知后,只有重新启用通知功能,才能继续接收新消息通知。',
     webIcon: '网站图标',
-    webIconTip: '支持格式:ico、png;建议尺寸:32*32',
+    webIconTip: '支持格式:ico;建议尺寸:32*32;',
+    webRequired: '请上传网站图标并填写网站标题',
     webTitleLabel: '网站标题',
     webTitlePh: '浏览器标签页显示的标题',
     // 项目信息(欢迎卡)
