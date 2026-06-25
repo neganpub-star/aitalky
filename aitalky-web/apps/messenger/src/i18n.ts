@@ -5,7 +5,6 @@ const dict = {
   zh_CN: {
     greetingTitle: '您好!',
     greetingSub: '您可以询问任何问题,或分享您的建议。',
-    heroServe: '为您服务!',
     recent: '最近对话',
     startChat: '发起对话',
     noRecent: '还没有对话,发起一个吧',
@@ -41,7 +40,6 @@ const dict = {
   en_US: {
     greetingTitle: 'Hi there!',
     greetingSub: 'Ask us anything, or share your feedback.',
-    heroServe: ' is here for you!',
     recent: 'Recent',
     startChat: 'Start a conversation',
     noRecent: 'No conversation yet, start one',
