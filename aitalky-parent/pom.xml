@@ -93,6 +93,11 @@
                 <artifactId>aitalky-billing</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.aitalky</groupId>
+                <artifactId>aitalky-wiki</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- MyBatis-Plus (Spring Boot 3) -->
             <dependency>

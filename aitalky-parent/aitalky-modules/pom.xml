@@ -22,5 +22,6 @@
         <module>aitalky-conversation</module>
         <module>aitalky-message</module>
         <module>aitalky-billing</module>
+        <module>aitalky-wiki</module>
     </modules>
 </project>
