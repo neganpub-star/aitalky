@@ -143,7 +143,7 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
   }
 
   if (mode === 'popup') {
-    // 浏览器弹窗演示:浏览器外框 + 右下侧栏标签 + 新消息弹框(对齐 img_6)
+    // 浏览器弹窗演示:浏览器外框 + 左下侧栏启动器 + 紧挨其右的新消息弹框(对齐参考 img47:启动器靠左)
     const dot = (c: string) => <span style={{ width: 11, height: 11, borderRadius: '50%', background: c, display: 'inline-block' }} />
     return (
       <div style={{ borderRadius: 12, overflow: 'hidden', boxShadow: '0 10px 34px rgba(0,0,0,0.14)', background: '#fff', minHeight: 560, display: 'flex', flexDirection: 'column', border: '1px solid #eee' }}>
@@ -154,12 +154,12 @@ export default function MessengerPreview({ data, mode }: { data: PreviewData; mo
           <RightOutlined style={{ color: '#bbb', fontSize: 13 }} />
           <div style={{ flex: 1, background: '#f2f3f5', borderRadius: 16, padding: '6px 14px', fontSize: 12, color: '#bbb' }}>{t('mse.popupSearch')}</div>
         </div>
-        {/* 页面空白主体 + 右下弹框 */}
+        {/* 页面空白主体 + 左下侧栏 + 弹框 */}
         <div style={{ flex: 1, position: 'relative', background: '#fff' }}>
-          {/* 侧栏标签 */}
-          <div style={{ position: 'absolute', right: 232, bottom: 84, writingMode: 'vertical-rl', background: '#1677ff', color: '#fff', fontSize: 12, padding: '10px 5px', borderRadius: '6px 0 0 6px' }}>{t('mse.popupTab')}</div>
-          {/* 新消息弹框 */}
-          <div style={{ position: 'absolute', right: 18, bottom: 18, width: 200, background: '#fff', borderRadius: 10, boxShadow: '0 6px 24px rgba(0,0,0,0.16)', padding: '12px 14px' }}>
+          {/* 侧栏标签:贴左边缘(对齐参考靠左) */}
+          <div style={{ position: 'absolute', left: 0, bottom: 96, writingMode: 'vertical-rl', background: '#1677ff', color: '#fff', fontSize: 12, padding: '10px 5px', borderRadius: '0 6px 6px 0' }}>{t('mse.popupTab')}</div>
+          {/* 新消息弹框:紧挨侧栏右侧、左下 */}
+          <div style={{ position: 'absolute', left: 34, bottom: 18, width: 210, background: '#fff', borderRadius: 10, boxShadow: '0 6px 24px rgba(0,0,0,0.16)', padding: '12px 14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <span style={{ fontSize: 18 }}>🔔</span>
               <CloseOutlined style={{ fontSize: 12, color: '#bbb' }} />
