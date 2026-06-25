@@ -139,7 +139,7 @@ public class ConversationServiceImpl implements ConversationService {
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                     cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
-                    c.getLastMessagePreview(), c.getLastSenderAvatar(), c.getLastSenderName(),
+                    c.getLastMessagePreview(), c.getLastSysType(), c.getLastSenderAvatar(), c.getLastSenderName(),
                     c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
@@ -184,7 +184,7 @@ public class ConversationServiceImpl implements ConversationService {
                     cu == null ? null : cu.getName(), cu == null ? null : cu.getAvatar(),
                     cu == null ? null : cu.getExternalUserId(),
                     c.getAssigneeMemberId(), c.getStatus(),
-                    c.getLastMessagePreview(), c.getLastSenderAvatar(), c.getLastSenderName(),
+                    c.getLastMessagePreview(), c.getLastSysType(), c.getLastSenderAvatar(), c.getLastSenderName(),
                     c.getLastMessageAt(), c.getUnreadCount(), c.getLastSeq());
         }).toList();
         return PageResult.of(vos, page.getTotal(), page.getCurrent(), page.getSize());
@@ -360,7 +360,7 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     public void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time,
-                             String senderAvatar, String senderName, boolean fromCustomer, boolean reopen) {
+                             String senderAvatar, String senderName, boolean fromCustomer, boolean reopen, String sysType) {
         CnvConversation conv = conversationMapper.selectById(conversationId);
         if (conv == null) {
             return;
@@ -379,6 +379,10 @@ public class ConversationServiceImpl implements ConversationService {
             conv.setStatus(1);
         }
         conversationMapper.updateById(conv);
+        // last_sys_type 显式写(普通消息传 null,需覆盖上一条系统消息的语义码;updateById 默认不更新 null,故单独 set)
+        conversationMapper.update(null, Wrappers.<CnvConversation>lambdaUpdate()
+                .eq(CnvConversation::getId, conversationId)
+                .set(CnvConversation::getLastSysType, sysType));
     }
 
     private Map<Long, CusCustomer> batchCustomers(List<CnvConversation> convs) {

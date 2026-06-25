@@ -175,7 +175,7 @@ public class PublicMessengerController {
                 "customer", customer.getId(), customer.getName(), customer.getAvatar(),
                 req.type(), req.content(), req.payload(), false, null));
         conversationService.onNewMessage(conv.getId(), m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
-                m.getSenderAvatar(), m.getSenderName(), true, true);
+                m.getSenderAvatar(), m.getSenderName(), true, true, null);
         // A 客户消息自动翻译(会话开了 autoTranslate):异步翻成 translate_to,翻完按 seq 推坐席(前端覆盖更新译文)
         translationService.autoTranslateCustomerMsgAsync(conv, m.getMsgId(), req.type(), req.content());
         // 推送:坐席侧(assignee + 会话订阅者 + 项目频道,listener 内合并去重)+ 客户其他端

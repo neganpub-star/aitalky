@@ -49,6 +49,8 @@ public class CnvConversation extends BaseEntity {
     private Long agentReadSeq;
     /** 最后一条消息预览 */
     private String lastMessagePreview;
+    /** 最后消息系统语义码(assigned/unassigned/timeout;普通消息为 null),供列表预览按界面语言本地化 */
+    private String lastSysType;
     /** 最后一条消息发送者头像快照(列表项小头像:谁最后回复显示谁) */
     private String lastSenderAvatar;
     /** 最后一条消息发送者昵称快照(头像缺省时取首字母兜底) */

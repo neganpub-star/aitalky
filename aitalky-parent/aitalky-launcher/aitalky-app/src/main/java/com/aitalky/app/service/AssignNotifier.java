@@ -60,7 +60,7 @@ public class AssignNotifier {
         // 与正常消息一致:推进 lastSeq + 列表预览显示「会话超时结束」(对齐参考列表)
         conversationService.onNewMessage(conv.getId(), msg.getSeq(), "会话超时结束",
                 java.time.LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(msg.getTimestamp()), java.time.ZoneId.systemDefault()),
-                null, null, false, false); // reopen=false:超时系统消息不能把刚结束的会话又重开
+                null, null, false, false, "timeout"); // reopen=false:超时系统消息不能把刚结束的会话又重开;sysType=timeout 供列表预览本地化
         try {
             String payload = objectMapper.writeValueAsString(PublicMessengerController.toVO(msg));
             pushPublisher.publish(new MsgPushEvent(conv.getId(), conv.getProjectId(), conv.getAssigneeMemberId(), null, payload));

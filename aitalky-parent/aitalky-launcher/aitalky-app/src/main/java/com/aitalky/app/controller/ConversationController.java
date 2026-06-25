@@ -234,7 +234,7 @@ public class ConversationController {
             m = messageService.saveTranslation(id, m.getMsgId(), clientLang, translated);
         }
         conversationService.onNewMessage(id, m.getSeq(), preview(req.type(), req.content()), toLdt(m.getTimestamp()),
-                m.getSenderAvatar(), m.getSenderName(), false, true);
+                m.getSenderAvatar(), m.getSenderName(), false, true, null);
         Long targetAssignee = conv.getAssigneeMemberId();
         // 未分配 → 自动认领;已结束被坐席重新发起 → 重新分配给该坐席并发系统消息(即便原属他人/原属自己,
         // 语义=重新聊天即一次重新分配)。内部消息不触发。

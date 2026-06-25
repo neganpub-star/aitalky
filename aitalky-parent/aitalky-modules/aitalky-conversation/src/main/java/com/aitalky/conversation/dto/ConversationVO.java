@@ -9,6 +9,8 @@ public record ConversationVO(
         String customerUid,
         Long assigneeMemberId, Integer status,
         String lastMessagePreview,
+        // 最后消息系统语义码(assigned/unassigned/timeout;普通消息 null),前端据此本地化列表预览
+        String lastSysType,
         // 最后一条消息发送者快照(列表项小头像:谁最后回复显示谁;name 供头像缺省时取首字母兜底)
         String lastSenderAvatar, String lastSenderName,
         LocalDateTime lastMessageAt, Integer unreadCount, Long lastSeq) {

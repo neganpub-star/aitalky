@@ -9,7 +9,10 @@ import PageCard from '../components/PageCard'
 
 // 订单状态/类型 → 颜色映射(展示用)
 const STATUS_COLOR: Record<number, string> = { 0: 'gold', 1: 'green', 2: 'default' }
-const TYPE_COLOR: Record<string, string> = { new: 'blue', renew: 'cyan', upgrade: 'purple' }
+const TYPE_COLOR: Record<string, string> = {
+  new: 'blue', renew: 'cyan', upgrade: 'purple',
+  addon_seat: 'orange', addon_translate: 'geekblue', addon_tokens: 'gold', addon_customer: 'magenta',
+}
 
 export default function Orders() {
   const { t } = useTranslation()
@@ -43,12 +46,13 @@ export default function Orders() {
     { title: t('orders.orderNo'), dataIndex: 'orderNo', width: 200 },
     { title: t('orders.project'), dataIndex: 'projectName', render: (v, r) => v || r.projectId },
     {
-      title: t('orders.type'), dataIndex: 'type', width: 100,
+      title: t('orders.type'), dataIndex: 'type', width: 120,
       render: (v: string) => <Tag color={TYPE_COLOR[v] || 'default'}>{t(`orders.type_${v}`, v)}</Tag>,
     },
     { title: t('orders.plan'), dataIndex: 'planName' },
     { title: t('orders.months'), dataIndex: 'months', width: 80 },
-    { title: t('orders.seats'), dataIndex: 'seats', width: 80 },
+    // 表头不换行(加购席位等较长标题)
+    { title: t('orders.seats'), dataIndex: 'seats', width: 90, onHeaderCell: () => ({ style: { whiteSpace: 'nowrap' } }) },
     {
       title: t('orders.amount'), dataIndex: 'amount', width: 130,
       render: (v: number, r) => `${v} ${r.currency}`,
@@ -101,6 +105,10 @@ export default function Orders() {
             { value: 'new', label: t('orders.type_new') },
             { value: 'renew', label: t('orders.type_renew') },
             { value: 'upgrade', label: t('orders.type_upgrade') },
+            { value: 'addon_seat', label: t('orders.type_addon_seat') },
+            { value: 'addon_translate', label: t('orders.type_addon_translate') },
+            { value: 'addon_tokens', label: t('orders.type_addon_tokens') },
+            { value: 'addon_customer', label: t('orders.type_addon_customer') },
           ]}
         />
         <Button type="primary" onClick={() => load(1)}>{t('common.search')}</Button>

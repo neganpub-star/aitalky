@@ -98,9 +98,10 @@ public interface ConversationService {
      * @param fromCustomer 是否客户发来(是则坐席侧未读+1)
      * @param reopen       是否在会话已结束时自动重开(进行中)。真实消息(坐席/客户)传 true;
      *                     系统消息(如超时结束自身)传 false,避免刚结束又被自己的系统消息重开。
+     * @param sysType      系统消息语义码(assigned/unassigned/timeout);普通消息传 null(会清空 lastSysType)。
      */
     void onNewMessage(Long conversationId, long seq, String preview, LocalDateTime time,
-                      String senderAvatar, String senderName, boolean fromCustomer, boolean reopen);
+                      String senderAvatar, String senderName, boolean fromCustomer, boolean reopen, String sysType);
 
     /**
      * 客户上报已读位:customer_read_seq 单调前进(取 max)。
