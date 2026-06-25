@@ -73,9 +73,17 @@ body {
   padding: 2px 6px;
 }
 .wiki-rich-toolbar-float .w-e-toolbar { background: transparent !important; border: none !important; border-radius: 10px; }
-/* 工具栏悬浮在视口底部,其下拉面板(表格选格子)/弹框(链接)默认向下会被裁出视口——强制向上弹出 */
-.wiki-rich-toolbar-float .w-e-drop-panel,
-.wiki-rich-toolbar-float .w-e-modal {
+/* 链接弹框(.w-e-modal)默认按光标位置弹(挂在编辑区里,常跑到顶部)——工具栏悬浮在底部,
+   故把它钉在悬浮工具栏正上方居中,与表格下拉面板弹出位置一致 */
+.wiki-rich-editor .w-e-modal {
+  position: fixed !important;
   top: auto !important;
-  bottom: calc(100% + 6px) !important;
+  bottom: 80px !important;
+  left: calc(50% + 130px) !important;
+  right: auto !important;
+  transform: translateX(-50%);
 }
+/* 表格"选格子"面板:格子边框跟 toolbar 边框变量,浅色主题下太淡几乎不可见——单独加强;
+   选中格子用主题主色高亮(原 fill 色太淡) */
+.wiki-rich-editor .w-e-panel-content-table td { border-color: rgba(127, 127, 127, 0.5) !important; }
+.wiki-rich-editor .w-e-panel-content-table td.active { background-color: var(--w-e-toolbar-active-color) !important; }
