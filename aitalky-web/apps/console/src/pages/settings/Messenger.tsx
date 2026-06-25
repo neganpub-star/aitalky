@@ -347,7 +347,8 @@ export default function Messenger() {
           )}
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', marginTop: 48 }}>
-          <div style={{ width: 372 }}>
+          {/* 浏览器形态(偏好设置弹窗)用宽容器,手机形态(首页/会话演示)用 372 窄容器 */}
+          <div style={{ width: previewMode === 'popup' ? '100%' : 372, maxWidth: previewMode === 'popup' ? 680 : 372 }}>
             <MessengerPreview mode={previewMode} data={{
               brandName: cfg.brandName, logo: cfg.logo,
               greeting: i18nOf(previewLang).greeting,
