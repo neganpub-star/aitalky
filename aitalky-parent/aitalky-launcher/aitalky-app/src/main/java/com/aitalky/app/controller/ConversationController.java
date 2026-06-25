@@ -340,6 +340,7 @@ public class ConversationController {
             case "image" -> "[图片]";
             case "video" -> "[视频]";
             case "file" -> "[文件]";
+            case "article" -> "[文章]";
             default -> preview(content);
         };
     }

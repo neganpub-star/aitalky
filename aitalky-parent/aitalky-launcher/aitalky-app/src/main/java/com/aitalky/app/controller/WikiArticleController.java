@@ -58,6 +58,28 @@ public class WikiArticleController {
         return R.ok(d);
     }
 
+    /**
+     * 收件箱发送文章用:列出已发布文章(供坐席选择发给客户)。
+     * 不挂 @RequiresFunction——发文章是会话场景能力,坐席不一定有 wiki 管理权;仅需登录态(拦截器保证)。
+     */
+    @GetMapping("/sendable")
+    public R<List<WikiArticleRowVO>> sendable(@RequestParam(required = false) String lang) {
+        return R.ok(articleService.list(2, lang)); // status=2:已发布(含有变更)
+    }
+
+    /** 收件箱发送文章用:取已发布文章详情(预览/取快照)。同样仅需登录态。 */
+    @GetMapping("/sendable/{id}")
+    public R<WikiArticleDetailVO> sendableDetail(@PathVariable Long id) {
+        WikiArticleDetailVO d = articleService.detail(id);
+        if (d.editorId() != null) {
+            MemberBrief b = memberService.brief(d.editorId());
+            if (b != null) {
+                d = d.withEditor(b.nickname(), b.avatar());
+            }
+        }
+        return R.ok(d);
+    }
+
     @PostMapping
     @RequiresFunction("wiki.article.create")
     public R<Long> create() {
