@@ -61,73 +61,85 @@ body {
   }
 }
 
-/* ===== 首页问候 ===== */
+/* ===== 首页(对齐参考 img23):粉彩渐变 hero + 单入口 + 版本号 ===== */
+.home {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
 .home-hero {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
-  color: #fff;
-  padding: 28px 22px 56px;
+  /* 粉彩渐变:左下薄荷绿 → 中间天蓝 → 右上淡紫(对齐参考) */
+  background: linear-gradient(45deg, #bff0d8 0%, #a6d0f5 50%, #cabef9 100%);
+  color: #15182b;
+  padding: 30px 26px 64px;
 }
 .home-hero .logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.22);
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  background: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  margin-bottom: 16px;
+  overflow: hidden;
+  margin-bottom: 56px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.home-hero .logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 13px;
 }
 .home-hero h1 {
-  font-size: 26px;
-  margin: 0 0 6px;
-}
-.home-hero p {
-  font-size: 16px;
+  font-size: 29px;
+  line-height: 1.28;
+  font-weight: 700;
   margin: 0;
-  opacity: 0.92;
 }
-.home-cards {
-  padding: 0 16px;
-  margin-top: -34px;
+.home-hero h1.home-sub {
+  margin-top: 2px;
 }
-.card {
+/* 发起会话入口:浮于 hero 底部之上(对齐参考) */
+.home-start {
   background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-  padding: 14px 16px;
-  margin-bottom: 12px;
-  cursor: pointer;
-}
-.card .card-label {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-bottom: 8px;
-}
-.recent-row {
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  margin: -42px 18px 0;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
 }
-.recent-row .preview {
+.home-start-text {
   flex: 1;
   min-width: 0;
 }
-.recent-row .preview .name {
+.home-start-title {
   font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
 }
-.recent-row .preview .last {
+.home-start-sub {
   font-size: 13px;
   color: var(--text-2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 4px;
 }
-.start-row {
+.home-start-send {
+  color: var(--bubble-customer);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
+  flex-shrink: 0;
+}
+.home-version {
+  text-align: center;
+  color: var(--text-2);
+  font-size: 12px;
+  margin-top: auto;
+  padding: 40px 0 20px;
 }
 
 /* ===== 头像 ===== */

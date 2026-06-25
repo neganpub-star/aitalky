@@ -7,75 +7,42 @@ interface Props {
   onEnter: () => void
 }
 
-// 信使首页问候卡片(对齐 aitalky 20-url-zh / img-83):渐变头图 + 品牌欢迎语 + 紧急通知 + 最近对话 + 发起对话
-// 品牌名/LOGO/问候语/团队介绍/紧急通知/回复时间 来自后端信使配置(init 带出);缺省回退默认文案
-export default function Home({ data, lastMessage, onEnter }: Props) {
+// 信使端版本号(展示在首页底部,对齐参考 img23)
+const VERSION = 'V1.0.0'
+
+// 信使首页(对齐参考 img23):粉彩渐变 hero + 问候语 + 团队介绍 + 单个「在这里说点什么吧」入口 + 版本号
+// 问候语/团队介绍来自后端信使配置(品牌名由商户自行写入问候语);预计回复时间仅在有坐席在线时展示
+export default function Home({ data, onEnter }: Props) {
   const cfg = data.config
-  const initial = (data.customerName || 'U').charAt(0).toUpperCase()
   const greeting = cfg?.greeting?.trim()
-  const teamIntro = cfg?.teamIntro?.trim() // 首页 hero 副行展示(对齐参考 img19);聊天头部副标题也展示
-  // 回复时间走 agent(后端仅在「有坐席在线」时下发,离线/无人在线为 null)——对齐参考「平衡状态下才告知」
-  const agentList = data.agent?.agents ?? []
+  const teamIntro = cfg?.teamIntro?.trim()
   const replyTime = replyTimeText(data.agent?.replyTime)
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
+    <div className="home">
       <div className="home-hero">
         <div className="logo">
-          {cfg?.logo ? (
-            <img src={cfg.logo} alt="" style={{ width: '100%', height: '100%', borderRadius: 10, objectFit: 'cover' }} />
-          ) : (
-            'Ai'
-          )}
+          {cfg?.logo ? <img src={cfg.logo} alt="" /> : 'Ai'}
         </div>
-        {/* 问候语 + 团队介绍(对齐参考 img19:品牌名由商户自行写入问候语,不自动展示/拼接) */}
+        {/* 问候语 + 团队介绍(对齐参考 img19/img23:大号深色文字,品牌名由商户写入问候语) */}
         <h1>{greeting || t('greetingTitle')}</h1>
-        <p>{teamIntro || t('greetingSub')}</p>
+        <h1 className="home-sub">{teamIntro || t('greetingSub')}</h1>
       </div>
 
-      <div className="home-cards">
-        {/* 紧急通知不在首页展示,仅在聊天窗顶部红条提示(对齐参考系统) */}
-        <div className="card" onClick={onEnter}>
-          <div className="card-label">{t('recent')}</div>
-          <div className="recent-row">
-            {data.customerAvatar ? (
-              <img className="avatar" src={data.customerAvatar} alt="" />
-            ) : (
-              <div className="avatar">{initial}</div>
-            )}
-            <div className="preview">
-              <div className="name">{data.customerName}</div>
-              <div className="last">{lastMessage || t('noRecent')}</div>
-            </div>
-            <span style={{ color: 'var(--text-2)' }}>›</span>
-          </div>
+      {/* 单个发起会话入口(对齐参考 img23):标题 + 预计回复时间 + 蓝色发送箭头;点击进入会话 */}
+      <div className="home-start" onClick={onEnter}>
+        <div className="home-start-text">
+          <div className="home-start-title">{t('startInput')}</div>
+          {replyTime && <div className="home-start-sub">{replyTime}</div>}
         </div>
-
-        {/* 开启新的会话:有坐席在线时展示坐席头像 + 预计回复时间(对齐参考 img-64);否则只显示「发起对话」 */}
-        <div className="card" onClick={onEnter}>
-          {agentList.length > 0 && replyTime ? (
-            <div className="recent-row">
-              <div className="hc-avatars">
-                {agentList.slice(0, 3).map((a, i) => (
-                  <span className="hc-avatar" key={i} style={{ zIndex: 3 - i }}>
-                    {a.avatar ? <img src={a.avatar} alt="" /> : <span className="hc-avatar-fb" />}
-                  </span>
-                ))}
-              </div>
-              <div className="preview">
-                <div className="name">{t('startChat')}</div>
-                <div className="last">{t('agentReplyTime')} · 🕑 {replyTime}</div>
-              </div>
-              <span style={{ color: 'var(--brand)' }}>›</span>
-            </div>
-          ) : (
-            <div className="start-row">
-              <span>{t('startChat')}</span>
-              <span style={{ color: 'var(--brand)' }}>›</span>
-            </div>
-          )}
-        </div>
+        <span className="home-start-send" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </span>
       </div>
+
+      <div className="home-version">{VERSION}</div>
     </div>
   )
 }
