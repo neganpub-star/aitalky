@@ -38,7 +38,7 @@ public class MinioService {
 
     // 按"扩展名"白名单(比 content-type 可靠,且能挡住 exe/sh/js/html 等可执行/脚本)。
     // 分三类,各自大小上限不同:图片 10MB / 文档 50MB / 视频 100MB。
-    private static final Set<String> IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp");
+    private static final Set<String> IMAGE_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp", "bmp", "ico");
     private static final Set<String> VIDEO_EXT = Set.of("mp4", "webm", "mov");
     private static final Set<String> DOC_EXT = Set.of(
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "zip", "rar", "7z");
@@ -54,6 +54,7 @@ public class MinioService {
     private static final Map<String, String> CONTENT_TYPES = Map.ofEntries(
             Map.entry("jpg", "image/jpeg"), Map.entry("jpeg", "image/jpeg"), Map.entry("png", "image/png"),
             Map.entry("gif", "image/gif"), Map.entry("webp", "image/webp"), Map.entry("bmp", "image/bmp"),
+            Map.entry("ico", "image/x-icon"),
             Map.entry("mp4", "video/mp4"), Map.entry("webm", "video/webm"), Map.entry("mov", "video/quicktime"),
             Map.entry("pdf", "application/pdf"), Map.entry("txt", "text/plain"), Map.entry("csv", "text/csv"));
 
