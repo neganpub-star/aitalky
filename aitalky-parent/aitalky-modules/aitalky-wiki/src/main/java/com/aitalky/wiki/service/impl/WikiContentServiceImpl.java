@@ -250,7 +250,7 @@ public class WikiContentServiceImpl implements WikiContentService {
         }
         Map<Long, String> titleMap = articleTitles(candidates.stream().map(WikiArticle::getId).toList(), showLang);
         return candidates.stream().map(a -> new WikiArticleRowVO(
-                a.getId(), titleMap.get(a.getId()), a.getStatus(), null, a.getIsRecommend(),
+                a.getId(), a.getCode(), titleMap.get(a.getId()), a.getStatus(), null, a.getIsRecommend(),
                 null, null, null, a.getUpdateTime(), a.getShareCode())).toList();
     }
 

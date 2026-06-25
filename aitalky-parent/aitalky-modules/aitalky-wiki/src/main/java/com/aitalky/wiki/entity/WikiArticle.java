@@ -16,6 +16,9 @@ public class WikiArticle extends BaseEntity {
 
     private Long projectId;
 
+    /** 文章短码(对外展示的文章ID,base62 10位;创建时生成) */
+    private String code;
+
     /** 发布状态 1未发布 2已发布 3有变更 */
     private Integer status;
 

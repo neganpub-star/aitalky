@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
  */
 public record WikiArticleRowVO(
         Long id,
+        String code,
         String title,
         Integer status,
         Integer langCount,
@@ -23,6 +24,6 @@ public record WikiArticleRowVO(
 ) {
     /** 回填最近编辑人(昵称+头像) */
     public WikiArticleRowVO withEditor(String name, String avatar) {
-        return new WikiArticleRowVO(id, title, status, langCount, isRecommend, editorId, name, avatar, updateTime, shareCode);
+        return new WikiArticleRowVO(id, code, title, status, langCount, isRecommend, editorId, name, avatar, updateTime, shareCode);
     }
 }

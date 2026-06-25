@@ -79,7 +79,7 @@ public class WikiArticleServiceImpl implements WikiArticleService {
                     // 展示语言无标题时回退默认语言
                     .or(() -> rows.stream().filter(r -> DEFAULT_LANG.equals(r.getLang())).map(WikiArticleI18n::getTitle).filter(StringUtils::hasText).findFirst())
                     .orElse(null);
-            return new WikiArticleRowVO(a.getId(), title, a.getStatus(), (int) langCount, a.getIsRecommend(),
+            return new WikiArticleRowVO(a.getId(), a.getCode(), title, a.getStatus(), (int) langCount, a.getIsRecommend(),
                     a.getUpdateBy(), null, null, a.getUpdateTime(), a.getShareCode());
         }).toList();
     }
@@ -89,6 +89,7 @@ public class WikiArticleServiceImpl implements WikiArticleService {
     public Long create() {
         WikiArticle a = new WikiArticle();
         a.setId(idGenerator.nextId());
+        a.setCode(randomCode(10)); // 对外展示的文章ID短码
         a.setStatus(ST_UNPUBLISHED);
         a.setIsRecommend(0);
         articleMapper.insert(a);
@@ -159,7 +160,7 @@ public class WikiArticleServiceImpl implements WikiArticleService {
             throw new BizException(ResultCode.PARAM_INVALID); // 无任何内容,不可发布
         }
         if (!StringUtils.hasText(a.getShareCode())) {
-            a.setShareCode(randomCode());
+            a.setShareCode(randomCode(8));
         }
         a.setStatus(ST_PUBLISHED);
         articleMapper.updateById(a);
@@ -262,7 +263,7 @@ public class WikiArticleServiceImpl implements WikiArticleService {
                     .or(() -> rows.stream().filter(r -> DEFAULT_LANG.equals(r.getLang()) && StringUtils.hasText(r.getPubTitle())).findFirst())
                     .orElse(rows.stream().filter(r -> StringUtils.hasText(r.getPubTitle())).findFirst().orElse(null));
             String title = pick == null ? null : pick.getPubTitle();
-            return new WikiArticleRowVO(a.getId(), title, a.getStatus(), null, a.getIsRecommend(),
+            return new WikiArticleRowVO(a.getId(), a.getCode(), title, a.getStatus(), null, a.getIsRecommend(),
                     null, null, null, a.getUpdateTime(), a.getShareCode());
         }).toList();
     }
@@ -319,9 +320,9 @@ public class WikiArticleServiceImpl implements WikiArticleService {
         return a;
     }
 
-    private String randomCode() {
-        StringBuilder sb = new StringBuilder(8);
-        for (int i = 0; i < 8; i++) {
+    private String randomCode(int len) {
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
             sb.append(CODE[RND.nextInt(CODE.length)]);
         }
         return sb.toString();

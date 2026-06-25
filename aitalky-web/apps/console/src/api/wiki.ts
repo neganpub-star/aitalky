@@ -71,6 +71,7 @@ export function deleteSite(id: string) {
 // ============ 文章 ============
 export interface WikiArticleRowVO {
   id: string
+  code: string | null
   title: string | null
   status: number // 1未发布 2已发布 3有变更
   langCount: number

@@ -76,7 +76,7 @@ export default function WikiArticles() {
   }
 
   const columns: ColumnsType<WikiArticleRowVO> = [
-    { title: t('wiki.articleId'), dataIndex: 'id', width: 170, render: (v: string) => <span style={{ color: token.colorTextSecondary }}>{v}</span> },
+    { title: t('wiki.articleId'), dataIndex: 'code', width: 170, render: (v: string, r) => <span style={{ color: token.colorTextSecondary }}>{v || r.id}</span> },
     {
       title: t('wiki.articleName'), dataIndex: 'title',
       render: (v: string | null, r) => <a onClick={() => nav(`/wiki/articles/${r.id}`)} style={{ color: token.colorText }}>{v || t('wiki.untitled')}</a>,
@@ -101,11 +101,11 @@ export default function WikiArticles() {
       ) : '-',
     },
     {
-      title: t('common.action'), width: 180, fixed: 'right',
+      title: t('common.action'), width: 210, fixed: 'right',
       render: (_v, r) => {
         const published = r.status === 2 || r.status === 3
         return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, whiteSpace: 'nowrap' }}>
             {canEdit && <a onClick={() => nav(`/wiki/articles/${r.id}/edit`)}>{t('common.edit')}</a>}
             {canPublish && (published
               ? <a onClick={() => doUnpublish(r)}>{t('wiki.unpublish')}</a>

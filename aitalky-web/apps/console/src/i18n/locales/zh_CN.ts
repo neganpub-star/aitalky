@@ -16,6 +16,12 @@ export default {
     done: '完成',
     action: '操作',
     totalN: '共 {{n}} 条',
+    edit: '编辑',
+    delete: '删除',
+    deleted: '已删除',
+    close: '关闭',
+    empty: '暂无数据',
+    loading: '加载中',
   },
   auth: {
     welcomeLogin: '欢迎登录.',
@@ -370,10 +376,6 @@ export default {
     published: '已发布',
     unpublishConfirm: '确定取消发布该文章吗?',
     deleteArticleConfirm: '确定删除该文章吗?删除后不可恢复。',
-    setRecommend: '设为推荐',
-    cancelRecommend: '取消推荐',
-    copyShare: '复制外链',
-    shareNeedPublish: '文章发布后才有外链',
     // 编辑器
     editing: '正在编辑',
     autoSaveNote: '注:点击"实时预览"、"发布"会自动保存',
