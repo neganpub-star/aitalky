@@ -4,7 +4,7 @@ import { Avatar, Badge, Button, ConfigProvider, Dropdown, Empty, Image, Input, M
 import {
   SearchOutlined, UserOutlined, AppstoreOutlined,
   UsergroupDeleteOutlined, SmileOutlined, LogoutOutlined, EditOutlined, DownOutlined,
-  PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined,
+  PictureOutlined, PaperClipOutlined, LinkOutlined, BookOutlined, ThunderboltOutlined, LeftOutlined,
   ExclamationCircleFilled, RollbackOutlined, CopyOutlined, CloseOutlined, CheckOutlined,
   FileSearchOutlined, UpOutlined, TranslationOutlined, CheckCircleOutlined, GlobalOutlined, QuestionCircleOutlined,
 } from '@ant-design/icons'
@@ -25,6 +25,7 @@ import { pageMembers } from '../api/member'
 import { uploadFile } from '../api/file'
 import { blockCustomer, removeBlacklist } from '../api/blacklist'
 import { listQuickReplies, listCategories, type QuickReplyVO, type QuickReplyCategoryVO } from '../api/quickReply'
+import { sendableArticles, sendableArticleDetail, type WikiArticleRowVO, type WikiArticleDetailVO } from '../api/wiki'
 import { contentToPlaceholder, parseReplySegments } from '../utils/quickReply'
 import type { ConversationDetailVO, ConversationVO, MemberVO, MessageVO, PendingMsg } from '../types'
 
@@ -216,6 +217,12 @@ export default function Inbox() {
   const [quickCats, setQuickCats] = useState<QuickReplyCategoryVO[]>([])
   const [quickKw, setQuickKw] = useState('')           // 快捷回复面板搜索
   const [quickCat, setQuickCat] = useState<string>('__all__') // 快捷回复面板分类筛选
+  // 知识库发文章面板:open / 已发布文章列表 / 搜索 / 选中预览(文章详情) / 发送语言
+  const [kbOpen, setKbOpen] = useState(false)
+  const [kbList, setKbList] = useState<WikiArticleRowVO[]>([])
+  const [kbKw, setKbKw] = useState('')
+  const [kbSel, setKbSel] = useState<WikiArticleDetailVO | null>(null) // null=列表视图,非null=预览视图
+  const [kbLang, setKbLang] = useState('zh_CN')
   // 内部消息 @提及:打 @ 弹队友列表,选中插入「@昵称 」并记录成员;发送时带 mentions
   const [mentionOpen, setMentionOpen] = useState(false)
   const [mentionMembers, setMentionMembers] = useState<MemberVO[]>([]) // 本条已 @ 的成员(发送/清空重置)
@@ -804,6 +811,40 @@ export default function Inbox() {
     } catch { message.error(t('inbox.imageFailed')) }
   }, [selectedId, replyTab, applyIncoming, t])
 
+  // 知识库:加载已发布文章列表(按当前发送语言取标题)
+  const loadKbArticles = useCallback(() => {
+    setKbSel(null); setKbKw('')
+    sendableArticles(kbLang).then(setKbList).catch(() => {})
+  }, [kbLang])
+
+  // 知识库:选中文章 → 拉详情进入预览;默认预览语言取 zh_CN(无则首个)
+  const openKbArticle = useCallback((articleId: string) => {
+    sendableArticleDetail(articleId).then((d) => {
+      setKbSel(d)
+      const first = d.i18ns.find((x) => x.lang === 'zh_CN' && x.published === 1) || d.i18ns.find((x) => x.published === 1) || d.i18ns[0]
+      if (first) setKbLang(first.lang)
+    }).catch(() => {})
+  }, [])
+
+  // 知识库:把选中文章(指定语言)以 article 卡片消息发给客户
+  const sendArticle = useCallback(async () => {
+    if (!selectedId || !kbSel) return
+    const i = kbSel.i18ns.find((x) => x.lang === kbLang)
+    const title = i?.pubTitle || i?.title || ''
+    const summary = i?.pubSummary || i?.summary || ''
+    try {
+      const vo = await replyConversation(selectedId, {
+        content: title, type: 'article',
+        payload: { articleId: kbSel.id, lang: kbLang, title, summary, shareCode: kbSel.shareCode || undefined },
+      })
+      applyIncoming([vo])
+      setList((p) => p.map((c) => (c.id === selectedId
+        ? { ...c, lastMessagePreview: t('inbox.articleTag'), lastSysType: null, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+        : c)))
+      setKbOpen(false); setKbSel(null)
+    } catch { message.error(t('inbox.imageFailed')) }
+  }, [selectedId, kbSel, kbLang, applyIncoming, t])
+
   // 快捷回复面板过滤(搜索 + 分类)
   const filteredQuickReplies = useMemo(() => {
     const kw = quickKw.trim().toLowerCase()
@@ -1229,6 +1270,23 @@ export default function Inbox() {
                   ? <div key={i} style={{ fontSize: 15, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{mine ? renderRichText(seg.text || '', linkColor) : (seg.text || '')}</div>
                   : <Image key={i} src={seg.url} style={{ display: 'block', maxWidth: 256, maxHeight: 300, borderRadius: 6 }} />))}
               </div>
+            ) : m.type === 'article' ? (
+              // 知识库文章卡片:📖 标题 + 摘要 + 查看文章;点击打开已发布文章外链
+              <div
+                onClick={() => m.payload?.shareCode && window.open(`${location.origin}/wiki-article/${m.payload.shareCode}`, '_blank')}
+                style={{ width: 280, borderRadius: 10, overflow: 'hidden', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, cursor: m.payload?.shareCode ? 'pointer' : 'default' }}
+              >
+                <div style={{ padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <BookOutlined style={{ color: token.colorPrimary, fontSize: 16 }} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: token.colorText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.payload?.title || m.content}</span>
+                  </div>
+                  {m.payload?.summary && (
+                    <div style={{ fontSize: 13, color: token.colorTextSecondary, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.payload.summary}</div>
+                  )}
+                </div>
+                <div style={{ borderTop: `1px solid ${token.colorSplit}`, padding: '8px 14px', fontSize: 12, color: token.colorTextTertiary }}>{t('inbox.viewArticle')}</div>
+              </div>
             ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
               // 富消息:媒体 +(可选)文字说明在「同一个气泡」里(媒体在上、文字在下)
               <div style={{ width: 'fit-content', maxWidth: 260, borderRadius: 10, overflow: 'hidden', background: m.payload?.caption ? bubbleBg : 'transparent' }}>
@@ -1622,12 +1680,69 @@ export default function Inbox() {
                     { icon: <PictureOutlined />, k: 'inbox.toolImage', onClick: () => imageInputRef.current?.click() },
                     { icon: <PaperClipOutlined />, k: 'inbox.toolFile', onClick: () => attachInputRef.current?.click() },
                     { icon: <LinkOutlined />, k: 'inbox.toolLink', onClick: () => { setLinkText(''); setLinkUrl(''); setLinkModal(true) } },
-                    { icon: <BookOutlined />, k: 'inbox.toolKb', onClick: () => message.info(t('settings.wip')) },
                   ] as const).map(({ icon, k, onClick }) => (
                     <Tooltip key={k} title={t(k)}>
                       <span style={{ cursor: 'pointer' }} onClick={onClick}>{icon}</span>
                     </Tooltip>
                   ))}
+                  {/* 知识库:点击弹出已发布文章列表 → 选中预览 → 选语言 → 发送文章卡片 */}
+                  <Popover
+                    trigger="click"
+                    placement="topLeft"
+                    open={kbOpen}
+                    onOpenChange={(o) => { setKbOpen(o); if (o) loadKbArticles() }}
+                    content={
+                      <div style={{ width: 380 }}>
+                        {kbSel === null ? (
+                          // 列表视图
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                              <span style={{ fontSize: 16, fontWeight: 600, flex: 1 }}>{t('inbox.kbTitle')}</span>
+                              <CloseOutlined style={{ cursor: 'pointer', color: token.colorTextTertiary }} onClick={() => setKbOpen(false)} />
+                            </div>
+                            <Input allowClear prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />} placeholder={t('wiki.searchPlaceholder')} value={kbKw} onChange={(e) => setKbKw(e.target.value)} style={{ marginBottom: 12 }} />
+                            <div style={{ maxHeight: 320, overflow: 'auto' }}>
+                              {kbList.filter((a) => !kbKw.trim() || (a.title || '').toLowerCase().includes(kbKw.trim().toLowerCase())).length === 0 ? (
+                                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('inbox.kbEmpty')} style={{ padding: '24px 0' }} />
+                              ) : kbList.filter((a) => !kbKw.trim() || (a.title || '').toLowerCase().includes(kbKw.trim().toLowerCase())).map((a) => (
+                                <div key={a.id} className="at-row" onClick={() => openKbArticle(a.id)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 8px', cursor: 'pointer', borderRadius: 6 }}>
+                                  <BookOutlined style={{ color: token.colorPrimary }} />
+                                  <span style={{ flex: 1, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title || t('wiki.untitled')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        ) : (
+                          // 预览视图
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+                              <LeftOutlined style={{ cursor: 'pointer', marginRight: 8 }} onClick={() => setKbSel(null)} />
+                              <span style={{ fontSize: 16, fontWeight: 600, flex: 1 }}>{t('inbox.kbAddDoc')}</span>
+                            </div>
+                            <div style={{ maxHeight: 300, overflow: 'auto', border: `1px solid ${token.colorBorderSecondary}`, borderRadius: 8, padding: 14, marginBottom: 12 }}>
+                              {(() => {
+                                const i = kbSel.i18ns.find((x) => x.lang === kbLang)
+                                return <>
+                                  <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6 }}>{i?.pubTitle || i?.title || t('wiki.untitled')}</div>
+                                  {(i?.pubSummary || i?.summary) && <div style={{ fontSize: 13, color: token.colorTextSecondary, marginBottom: 10 }}>{i?.pubSummary || i?.summary}</div>}
+                                  <div style={{ fontSize: 13, color: token.colorText, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{i?.pubContent || i?.content || ''}</div>
+                                </>
+                              })()}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <Select size="small" value={kbLang} onChange={setKbLang} style={{ width: 120 }}
+                                options={kbSel.i18ns.filter((x) => x.published === 1).map((x) => ({ value: x.lang, label: langLabel(x.lang, transLang) }))} />
+                              <span style={{ flex: 1, fontSize: 12, color: token.colorTextTertiary }}>{t('inbox.kbPickLang')}</span>
+                              <Button type="primary" size="small" onClick={sendArticle}>{t('inbox.kbSend')}</Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    }
+                  >
+                    <Tooltip title={t('inbox.toolKb')}><span style={{ cursor: 'pointer' }}><BookOutlined /></span></Tooltip>
+                  </Popover>
                   {/* 快捷回复:点击弹出列表,选中插入输入框 */}
                   <Popover
                     trigger="click"

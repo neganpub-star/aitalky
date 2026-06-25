@@ -221,10 +221,13 @@ export interface MessageVO {
   senderId: string
   senderName: string | null
   senderAvatar: string | null
-  type: string          // text / image / video / file / rich
-  content: string       // 文本内容,或 图片/视频/文件 的 URL;rich 时为占位预览文本
-  // 文件名/大小 + 图片/视频/文件的附带文字说明;rich(图文混排)时 segments 存有序片段
-  payload?: { name?: string; size?: number; caption?: string; segments?: RichSegment[]; sysType?: string } | null
+  type: string          // text / image / video / file / rich / article
+  content: string       // 文本内容,或 图片/视频/文件 的 URL;rich 时为占位预览文本;article 时为文章标题
+  // 文件名/大小 + 附带文字说明;rich 时 segments 有序片段;article 时存文章卡片快照(articleId/lang/title/summary/shareCode)
+  payload?: {
+    name?: string; size?: number; caption?: string; segments?: RichSegment[]; sysType?: string
+    articleId?: string; lang?: string; title?: string; summary?: string; shareCode?: string
+  } | null
   internal: boolean | null
   isVisible: boolean | null
   timestamp: number

@@ -142,6 +142,14 @@ export function deleteArticle(id: string) {
   return client.delete<unknown, void>(`/wiki/articles/${id}`)
 }
 
+// 收件箱发送文章:可发送(已发布)文章列表 + 详情(取快照),仅需登录态
+export function sendableArticles(lang?: string) {
+  return client.get<unknown, WikiArticleRowVO[]>('/wiki/articles/sendable', { params: { lang } })
+}
+export function sendableArticleDetail(id: string) {
+  return client.get<unknown, WikiArticleDetailVO>(`/wiki/articles/sendable/${id}`)
+}
+
 // ============ 内容配置(类别/分组/关联) ============
 export interface WikiI18nText { lang: string; name?: string | null; description?: string | null }
 export interface CategoryVO {

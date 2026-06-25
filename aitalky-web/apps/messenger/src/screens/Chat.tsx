@@ -299,6 +299,14 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
                         ? <div key={i} className="rich-text">{mine ? (seg.text || '') : renderRichText(seg.text || '', setWebview)}</div>
                         : <img key={i} className="rich-img" src={seg.url} alt="" onLoad={onMediaLoad} onClick={() => seg.url && setPreview(seg.url)} />))}
                     </div>
+                  ) : m.type === 'article' ? (
+                    // 知识库文章卡片:标题 + 摘要 + 查看文章;点击在 webview 打开外链
+                    <div className={`article-card ${mine ? 'mine' : 'agent'}`}
+                      onClick={() => m.payload?.shareCode && setWebview(`${location.origin}/wiki-article/${m.payload.shareCode}`)}>
+                      <div className="article-card-title">📖 {m.payload?.title || m.content}</div>
+                      {m.payload?.summary && <div className="article-card-summary">{m.payload.summary}</div>}
+                      <div className="article-card-foot">{t('viewArticle')}</div>
+                    </div>
                   ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
                     // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
                     <div className={`media-bubble ${mine ? 'mine' : 'agent'} ${m.payload?.caption ? 'has-cap' : ''}`}>

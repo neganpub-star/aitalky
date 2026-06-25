@@ -78,7 +78,7 @@ export async function searchMessagesInConversation(id: string, keyword: string) 
 /** 坐席回复。internal=true 为内部消息(客户不可见) */
 export async function replyConversation(
   id: string,
-  body: { content: string; type?: string; payload?: { name?: string; size?: number; caption?: string; segments?: { type: string; text?: string; url?: string }[] }; internal?: boolean; mentions?: string[] },
+  body: { content: string; type?: string; payload?: { name?: string; size?: number; caption?: string; segments?: { type: string; text?: string; url?: string }[]; articleId?: string; lang?: string; title?: string; summary?: string; shareCode?: string }; internal?: boolean; mentions?: string[] },
 ) {
   return normMessage(await client.post<unknown, MessageVO>(`/conversations/${id}/messages`, body))
 }
