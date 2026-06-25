@@ -44,3 +44,16 @@ body {
 .sub-stepper-num .ant-input-number-input {
   text-align: center;
 }
+
+/* wiki 文章正文(富文本 HTML)渲染样式:详情/阅读页共用 */
+.wiki-article-html img { max-width: 100%; height: auto; border-radius: 4px; }
+.wiki-article-html table { border-collapse: collapse; margin: 12px 0; }
+.wiki-article-html table td, .wiki-article-html table th { border: 1px solid #dcdfe6; padding: 6px 10px; }
+.wiki-article-html table th { background: #f5f7fa; font-weight: 600; }
+.wiki-article-html a { color: #2f6bff; }
+.wiki-article-html h1 { font-size: 24px; font-weight: 700; margin: 20px 0 12px; }
+.wiki-article-html h2 { font-size: 20px; font-weight: 700; margin: 18px 0 10px; }
+.wiki-article-html h3 { font-size: 17px; font-weight: 600; margin: 14px 0 8px; }
+.wiki-article-html p { margin: 8px 0; }
+/* wangEditor 编辑区内表格/图片基本样式兜底 */
+.wiki-rich-editor .w-e-text-container { background: transparent; }

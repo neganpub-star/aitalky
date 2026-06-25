@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { hasFunction } from '../../auth/perm'
 import { langLabel } from '../../constants/languages'
+import { sanitizeHtml } from '../../utils/sanitize'
 import {
   getArticle, publishArticle, unpublishArticle, recommendArticle, deleteArticle,
   articleHistory, articleHistorySnapshot,
@@ -130,7 +131,7 @@ export default function WikiArticleDetail() {
               <div style={{ fontSize: 12, color: token.colorTextTertiary }}>{d.updateTime ? d.updateTime.replace('T', ' ').slice(0, 19) : ''}</div>
             </div>
           </div>
-          <div style={{ fontSize: 15, lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>{showContent || ''}</div>
+          <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(showContent) }} />
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 120, color: token.colorTextTertiary }}>

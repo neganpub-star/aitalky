@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import DOMPurify from 'dompurify'
 import { t } from '../i18n'
 import { publicArticle } from '../api'
 import type { WikiArticleDetail } from '../types'
@@ -39,7 +40,8 @@ export default function ArticleView({ shareCode, onClose }: { shareCode: string;
           <>
             <h1 className="article-view-h1">{i?.pubTitle || ''}</h1>
             {i?.pubSummary && <div className="article-view-summary">{i.pubSummary}</div>}
-            <div className="article-view-content">{i?.pubContent || ''}</div>
+            <div className="article-view-content wiki-article-html"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(i?.pubContent || '') }} />
           </>
         )}
       </div>

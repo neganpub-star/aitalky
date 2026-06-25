@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { langLabel } from '../../constants/languages'
 import { publicArticle, type WikiArticleDetailVO } from '../../api/wiki'
+import { sanitizeHtml } from '../../utils/sanitize'
 
 // 对外文章阅读页(免登录,/wiki-article/:shareCode)。发文章卡片/推荐文章点击打开此页。
 // E(完整对外站点)本期未做,此为其最小子集:单篇已发布文章阅读 + 语言切换。
@@ -47,7 +48,7 @@ export default function WikiArticleRead() {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '40px 24px', background: token.colorBgContainer, minHeight: 'calc(100vh - 57px)' }}>
         <div style={{ fontSize: 30, fontWeight: 700, marginBottom: 12 }}>{i?.pubTitle || t('wiki.untitled')}</div>
         {i?.pubSummary && <div style={{ fontSize: 16, color: token.colorTextSecondary, marginBottom: 24 }}>{i.pubSummary}</div>}
-        <div style={{ fontSize: 15, lineHeight: 1.9, whiteSpace: 'pre-wrap', color: token.colorText }}>{i?.pubContent || ''}</div>
+        <div className="wiki-article-html" style={{ fontSize: 15, lineHeight: 1.9, color: token.colorText }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(i?.pubContent) }} />
         <div style={{ marginTop: 48, paddingTop: 16, borderTop: `1px solid ${token.colorSplit}`, textAlign: 'center', fontSize: 13, color: token.colorTextTertiary }}>
           {t('wiki.readFooter')}
         </div>

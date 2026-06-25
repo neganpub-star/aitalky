@@ -875,3 +875,14 @@ img.avatar,
 .article-view-h1 { font-size: 24px; font-weight: 700; margin: 0 0 12px; color: var(--text); }
 .article-view-summary { font-size: 15px; color: #666; margin-bottom: 20px; }
 .article-view-content { font-size: 15px; line-height: 1.9; white-space: pre-wrap; color: var(--text); }
+
+/* 信使端文章正文(富文本 HTML)渲染 */
+.wiki-article-html img { max-width: 100%; height: auto; border-radius: 4px; }
+.wiki-article-html table { border-collapse: collapse; margin: 12px 0; width: 100%; }
+.wiki-article-html td, .wiki-article-html th { border: 1px solid #dcdfe6; padding: 6px 10px; }
+.wiki-article-html th { background: #f5f7fa; font-weight: 600; }
+.wiki-article-html a { color: #2f6bff; }
+.wiki-article-html h1 { font-size: 22px; font-weight: 700; margin: 18px 0 10px; }
+.wiki-article-html h2 { font-size: 19px; font-weight: 700; margin: 16px 0 8px; }
+.wiki-article-html h3 { font-size: 16px; font-weight: 600; margin: 12px 0 6px; }
+.wiki-article-html p { margin: 8px 0; }
