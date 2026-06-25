@@ -22,27 +22,24 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WikiSiteController {
 
-    /** 读接口:拥有任一 wiki.app 管理功能即可查看 */
-    private static final String[] WIKI_APP_ANY = {
-            "wiki.app.create", "wiki.app.site", "wiki.app.style", "wiki.app.content", "wiki.app.delete"};
-
+    // 读接口:拥有任一 wiki.app 管理功能即可查看(注解值须内联数组字面量,不能引用常量)
     private final WikiSiteService siteService;
 
     @GetMapping
-    @RequiresFunction(WIKI_APP_ANY)
+    @RequiresFunction({"wiki.app.create", "wiki.app.site", "wiki.app.style", "wiki.app.content", "wiki.app.delete"})
     public R<List<WikiSiteVO>> list() {
         return R.ok(siteService.listSites());
     }
 
     @GetMapping("/{id}")
-    @RequiresFunction(WIKI_APP_ANY)
+    @RequiresFunction({"wiki.app.create", "wiki.app.site", "wiki.app.style", "wiki.app.content", "wiki.app.delete"})
     public R<WikiSiteDetailVO> detail(@PathVariable Long id) {
         return R.ok(siteService.detail(id));
     }
 
     /** 子域可用性校验(创建/编辑时实时校验)。 */
     @GetMapping("/subdomain-available")
-    @RequiresFunction(WIKI_APP_ANY)
+    @RequiresFunction({"wiki.app.create", "wiki.app.site", "wiki.app.style", "wiki.app.content", "wiki.app.delete"})
     public R<Boolean> subdomainAvailable(@RequestParam String subdomain, @RequestParam(required = false) Long excludeSiteId) {
         return R.ok(siteService.subdomainAvailable(subdomain, excludeSiteId));
     }

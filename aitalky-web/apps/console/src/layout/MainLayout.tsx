@@ -3,13 +3,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Avatar, Badge, Tooltip, Popover, Divider, Switch, Tag, theme } from 'antd'
 import {
   InboxOutlined, SettingOutlined, PoweroffOutlined, GlobalOutlined, UserOutlined,
-  PlusCircleOutlined, CheckOutlined, UsergroupAddOutlined, BulbOutlined,
+  PlusCircleOutlined, CheckOutlined, UsergroupAddOutlined, BulbOutlined, ReadOutlined,
 } from '@ant-design/icons'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { enterProject } from '../api/auth'
 import { getCtx, logout, saveEnter } from '../auth/session'
-import { canAccessSettings, hasFunction } from '../auth/perm'
+import { canAccessSettings, canAccessWiki, hasFunction } from '../auth/perm'
 import { roleLabel } from '../auth/roleLabel'
 import { useAppStore } from '../store/useAppStore'
 import { changeLang } from '../i18n'
@@ -120,6 +120,7 @@ export default function MainLayout() {
   // 菜单按权限显示:设置仅对有相关功能权限的成员可见
   const navItems = [
     { key: '/inbox', icon: <InboxOutlined />, label: t('nav.inbox'), visible: true },
+    { key: '/wiki', icon: <ReadOutlined />, label: t('nav.wiki'), visible: canAccessWiki() },
     { key: '/settings', icon: <SettingOutlined />, label: t('nav.settings'), visible: canAccessSettings() },
   ].filter((n) => n.visible)
 
