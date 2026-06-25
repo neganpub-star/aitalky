@@ -388,6 +388,7 @@ export default function Inbox() {
             assigneeMemberId: null,
             status: 1,
             lastMessagePreview: msg.content,
+            lastSysType: null, // 客户消息,非系统消息
             lastSenderAvatar: msg.senderAvatar,
             lastSenderName: msg.senderName || '',
             lastMessageAt: new Date(Number(msg.timestamp)).toISOString(),
@@ -409,6 +410,8 @@ export default function Inbox() {
         const updated = {
           ...prev[idx],
           lastMessagePreview: msg.content,
+          // 系统消息取语义码本地化,普通消息清 null(否则旧的 timeout 语义码会残留误翻)
+          lastSysType: msg.senderType === 'system' ? (msg.payload?.sysType ?? null) : null,
           // 同步最近发送者头像/昵称,列表小头像即时更新(否则要等下次 loadList 才刷)
           lastSenderAvatar: msg.senderAvatar,
           lastSenderName: msg.senderName || '',
@@ -717,7 +720,7 @@ export default function Inbox() {
         setList((prev) =>
           prev.map((c) =>
             c.id === cid
-              ? { ...c, lastMessagePreview: content, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+              ? { ...c, lastMessagePreview: content, lastSysType: null, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
               : c,
           ),
         )
@@ -769,7 +772,7 @@ export default function Inbox() {
       applyIncoming([vo])
       const prev = kind === 'image' ? t('inbox.imageTag') : kind === 'video' ? t('inbox.videoTag') : t('inbox.fileTag')
       setList((p) => p.map((c) => (c.id === selectedId
-        ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+        ? { ...c, lastMessagePreview: prev, lastSysType: null, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
         : c)))
     } catch { message.error(t('inbox.imageFailed')) } finally { hide() }
   }, [selectedId, replyTab, applyIncoming, t])
@@ -796,7 +799,7 @@ export default function Inbox() {
       applyIncoming([vo])
       const prev = hasImg ? contentToPlaceholder(q.content) : q.content.trim()
       setList((p) => p.map((c) => (c.id === selectedId
-        ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+        ? { ...c, lastMessagePreview: prev, lastSysType: null, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
         : c)))
     } catch { message.error(t('inbox.imageFailed')) }
   }, [selectedId, replyTab, applyIncoming, t])
@@ -840,7 +843,7 @@ export default function Inbox() {
         applyIncoming([vo])
         const prev = att.kind === 'image' ? t('inbox.imageTag') : att.kind === 'video' ? t('inbox.videoTag') : t('inbox.fileTag')
         setList((p) => p.map((c) => (c.id === selectedId
-          ? { ...c, lastMessagePreview: prev, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
+          ? { ...c, lastMessagePreview: prev, lastSysType: null, lastSenderAvatar: vo.senderAvatar, lastSenderName: vo.senderName || '', lastMessageAt: new Date(Number(vo.timestamp)).toISOString() }
           : c)))
       } catch { message.error(t('inbox.imageFailed')) }
       clearStaged()
@@ -1080,6 +1083,17 @@ export default function Inbox() {
     )
   }
 
+  // 列表预览文案:系统消息(lastSysType)按界面语言本地化,普通消息用预览快照(中文 content 仅兜底)
+  const convPreview = (c: ConversationVO): string => {
+    if (c.lastSysType) {
+      const key = c.lastSysType === 'assigned' ? 'inbox.sys.assigned'
+        : c.lastSysType === 'unassigned' ? 'inbox.sys.unassigned'
+          : c.lastSysType === 'timeout' ? 'inbox.sys.timeout' : ''
+      if (key) return t(key, { name: '' })
+    }
+    return c.lastMessagePreview || ''
+  }
+
   // ===== 会话列表项 =====
   const renderConvItem = (c: ConversationVO) => {
     const on = c.id === selectedId
@@ -1106,7 +1120,7 @@ export default function Inbox() {
             {c.customerUid || c.customerName || c.customerId}
           </div>
           <div style={{ marginTop: 4, fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {c.lastMessagePreview || ''}
+            {convPreview(c)}
           </div>
         </div>
         {/* 右列:时间(上)+ 最近消息发送者小头像(下),分列避免与未读数挤在一起 */}
@@ -1900,7 +1914,7 @@ export default function Inbox() {
                       )}
                       <span style={{ fontSize: 12, color: token.colorTextTertiary, marginLeft: 'auto', paddingLeft: 8, flexShrink: 0 }}>{fmtListTime(c.lastMessageAt)}</span>
                     </div>
-                    <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>{c.lastMessagePreview || ''}</div>
+                    <div style={{ fontSize: 13, color: token.colorTextSecondary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>{convPreview(c)}</div>
                   </div>
                 </div>
               ))
