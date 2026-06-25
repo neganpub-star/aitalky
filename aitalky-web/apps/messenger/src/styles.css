@@ -70,10 +70,13 @@ body {
   flex-direction: column;
 }
 .home-hero {
-  /* 粉彩渐变:左下薄荷绿 → 中间天蓝 → 右上淡紫(对齐参考) */
-  background: linear-gradient(45deg, #bff0d8 0%, #a6d0f5 50%, #cabef9 100%);
+  /* 多层粉彩渐变(对齐参考 img28):对角 青绿→天蓝→淡紫 + 左下黄绿光晕 + 底部渐隐成白 */
+  background:
+    radial-gradient(85% 55% at 2% 72%, rgba(222, 240, 150, 0.6) 0%, rgba(222, 240, 150, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0) 70%, #fff 100%),
+    linear-gradient(120deg, #93e3cb 0%, #9ccef2 48%, #cdb9f7 100%);
   color: #15182b;
-  padding: 38px 24px 96px;
+  padding: 40px 24px 120px;
 }
 .home-hero .logo {
   width: 44px;
@@ -85,7 +88,7 @@ body {
   justify-content: center;
   font-weight: 700;
   overflow: hidden;
-  margin-bottom: 104px;
+  margin-bottom: 100px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 .home-hero .logo img {
