@@ -48,4 +48,7 @@ public interface BillingOrderService {
      * 余额不足(分批转/对不上)则不动,留余额兜底防丢钱。供 {@code BillingWalletService} 回调触发。
      */
     void autoSettlePendingOrder(Long projectId);
+
+    /** 作废所有已超时(expire_time<now)的待支付订单(跨项目,定时任务用);返回处理条数。 */
+    int expireOverduePendingOrders();
 }

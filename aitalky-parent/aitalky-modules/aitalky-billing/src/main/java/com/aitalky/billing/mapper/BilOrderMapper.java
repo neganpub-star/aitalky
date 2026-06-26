@@ -27,4 +27,14 @@ public interface BilOrderMapper extends BaseMapper<BilOrder> {
     @Update("UPDATE bil_order SET status = 2, update_time = NOW() " +
             "WHERE id = #{orderId} AND project_id = #{projectId} AND status = 0 AND del_flag = 0")
     int cancelOne(@Param("orderId") Long orderId, @Param("projectId") Long projectId);
+
+    /** 作废项目内已超时的待支付订单(expire_time<now);读取待支付前懒过期,避免返回死单/挡新单。返回条数 */
+    @Update("UPDATE bil_order SET status = 2, update_time = NOW() " +
+            "WHERE project_id = #{projectId} AND status = 0 AND expire_time IS NOT NULL AND expire_time < NOW() AND del_flag = 0")
+    int expireStalePending(@Param("projectId") Long projectId);
+
+    /** 作废所有已超时的待支付订单(跨项目,定时任务用);返回条数 */
+    @Update("UPDATE bil_order SET status = 2, update_time = NOW() " +
+            "WHERE status = 0 AND expire_time IS NOT NULL AND expire_time < NOW() AND del_flag = 0")
+    int expireOverduePending();
 }

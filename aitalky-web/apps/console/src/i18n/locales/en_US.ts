@@ -789,6 +789,8 @@ export default {
     // Pending payment
     payPending: 'Pending payment',
     paySuccess: 'Activated',
+    orderExpired: 'Order expired',
+    orderExpiredDesc: 'This order exceeded the payment window and was auto-cancelled. Please place a new order.',
     payAmount: 'Amount due',
     remainTime: 'Time left',
     receiveAddr: 'Address',

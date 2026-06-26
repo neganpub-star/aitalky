@@ -100,17 +100,23 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
 
   const startWatch = (o: OrderVO) => {
     stopAll()
+    const isExpired = () => !!o.expireTime && new Date(o.expireTime).getTime() - Date.now() <= 0
+    const onExpire = () => { stopAll(); message.warning(t('bill.orderExpired')); onSuccess(); onClose() }
     const calc = () => {
       if (!o.expireTime) { setRemain(0); return }
       const left = Math.floor((new Date(o.expireTime).getTime() - Date.now()) / 1000)
       setRemain(left > 0 ? left : 0)
+      if (left <= 0) onExpire() // 超时:提示并关闭刷新(后端已作废)
     }
     calc()
     tickRef.current = setInterval(calc, 1000)
     pollRef.current = setInterval(async () => {
       try {
         const pending = await getPendingOrder()
-        if (!pending || pending.id !== o.id) { stopAll(); setPaid(true); onSuccess() }
+        // 待支付单消失:过期=超时作废(提示),否则=支付成功
+        if (!pending || pending.id !== o.id) {
+          if (isExpired()) onExpire(); else { stopAll(); setPaid(true); onSuccess() }
+        }
       } catch { /* 抖动忽略 */ }
     }, 5000)
   }

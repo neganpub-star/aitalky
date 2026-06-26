@@ -811,6 +811,8 @@ export default {
     // 待支付/收款
     payPending: '待支付',
     paySuccess: '开通成功',
+    orderExpired: '订单已超时',
+    orderExpiredDesc: '该订单已超过支付时间,已自动取消,请重新下单',
     payAmount: '支付金额',
     remainTime: '剩余支付时间',
     receiveAddr: '收款地址',

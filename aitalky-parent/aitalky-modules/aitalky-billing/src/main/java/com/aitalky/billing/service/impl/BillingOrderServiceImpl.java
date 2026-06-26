@@ -235,12 +235,19 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     @Override
     public OrderVO pendingOrder(Long projectId) {
+        // 懒过期:先作废已超时的待支付单,避免返回倒计时已归零的死单
+        orderMapper.expireStalePending(projectId);
         BilOrder order = orderMapper.selectOne(Wrappers.<BilOrder>lambdaQuery()
                 .eq(BilOrder::getProjectId, projectId)
                 .eq(BilOrder::getStatus, 0)
                 .orderByDesc(BilOrder::getCreateTime)
                 .last("limit 1"));
         return order == null ? null : toVO(order);
+    }
+
+    @Override
+    public int expireOverduePendingOrders() {
+        return orderMapper.expireOverduePending();
     }
 
     @Override
@@ -553,6 +560,8 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     /** 已有待支付订单则拒绝(同项目同时仅允许一个待支付;在 lock:bil:order 内调用) */
     private void ensureNoPending(Long projectId) {
+        // 先作废已超时的待支付单,避免过期死单永久挡住新下单
+        orderMapper.expireStalePending(projectId);
         Long count = orderMapper.selectCount(Wrappers.<BilOrder>lambdaQuery()
                 .eq(BilOrder::getProjectId, projectId)
                 .eq(BilOrder::getStatus, 0));

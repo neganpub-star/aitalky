@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Modal, Button, QRCode, Spin, message, theme } from 'antd'
-import { CheckCircleFilled, CopyOutlined } from '@ant-design/icons'
+import { CheckCircleFilled, CloseCircleFilled, CopyOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import {
   listCoins, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
@@ -32,7 +32,10 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
   const [addr, setAddr] = useState<RechargeAddressVO | null>(null)
   const [balance, setBalance] = useState(0)
   const [paid, setPaid] = useState(false)
+  const [expired, setExpired] = useState(false)
   const [remain, setRemain] = useState(0)
+  // 倒计时用 ref 实时持有,供轮询判断"返回 null 是支付成功还是已超时"
+  const remainRef = useRef(0)
   const [submitting, setSubmitting] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -45,16 +48,19 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
 
   useEffect(() => {
     if (!open || !order) return
-    setAddr(null); setPaid(false)
+    setAddr(null); setPaid(false); setExpired(false)
     // 收款网络固定为下单所选;旧单无 payCurrency 时回退首个可用币种
     if (order.payCurrency) setCurrency(order.payCurrency)
     else listCoins().then((cs) => setCurrency(cs[0]?.currency || '')).catch(() => undefined)
     getWallet().then((w) => setBalance(Number(w.balance))).catch(() => undefined)
     // 倒计时 + 轮询到账
     const calc = () => {
-      if (!order.expireTime) { setRemain(0); return }
+      if (!order.expireTime) { setRemain(0); remainRef.current = 0; return }
       const left = Math.floor((new Date(order.expireTime).getTime() - Date.now()) / 1000)
-      setRemain(left > 0 ? left : 0)
+      const v = left > 0 ? left : 0
+      setRemain(v); remainRef.current = v
+      // 倒计时归零:订单已超时(后端会作废),前端置超时态并刷新列表
+      if (v <= 0) { stopAll(); setExpired(true); onDone() }
     }
     calc()
     stopAll()
@@ -62,7 +68,12 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
     pollRef.current = setInterval(async () => {
       try {
         const p = await getPendingOrder()
-        if (!p || p.id !== order.id) { stopAll(); setPaid(true); onDone() }
+        // 待支付单消失:仍在支付窗口内=支付成功;已过期=超时作废(避免误报成功)
+        if (!p || p.id !== order.id) {
+          stopAll()
+          if (remainRef.current > 0) setPaid(true); else setExpired(true)
+          onDone()
+        }
       } catch { /* ignore */ }
     }, 5000)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -92,11 +103,18 @@ export default function PendingPayModal({ open, order, onClose, onDone }: Props)
 
   return (
     <Modal open={open} onCancel={close} footer={null} width={560} destroyOnClose
-      title={paid ? t('bill.paySuccess') : t('bill.payPending')}>
+      title={paid ? t('bill.paySuccess') : expired ? t('bill.orderExpired') : t('bill.payPending')}>
       {paid ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <CheckCircleFilled style={{ fontSize: 56, color: token.colorSuccess }} />
           <div style={{ fontSize: 18, fontWeight: 700, marginTop: 16 }}>{t('bill.paySuccess')}</div>
+          <Button type="primary" style={{ marginTop: 24 }} onClick={close}>{t('bill.ok')}</Button>
+        </div>
+      ) : expired ? (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <CloseCircleFilled style={{ fontSize: 56, color: token.colorTextQuaternary }} />
+          <div style={{ fontSize: 18, fontWeight: 700, marginTop: 16 }}>{t('bill.orderExpired')}</div>
+          <div style={{ fontSize: 13, color: token.colorTextSecondary, marginTop: 8, maxWidth: 360, marginInline: 'auto' }}>{t('bill.orderExpiredDesc')}</div>
           <Button type="primary" style={{ marginTop: 24 }} onClick={close}>{t('bill.ok')}</Button>
         </div>
       ) : (
