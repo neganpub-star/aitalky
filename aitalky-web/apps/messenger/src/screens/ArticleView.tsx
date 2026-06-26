@@ -20,8 +20,8 @@ function parseToc(html: string): TocItem[] {
 // 信使端文章阅读 overlay(自包含,免跨 app URL):点推荐文章/文章卡片 → 拉公开文章 → 全屏覆盖渲染。
 // 头部对齐参考:左上 ✕ 关闭 + 右上 ⋮ 菜单(复制链接/刷新/默认浏览器打开);下方品牌行 + 语言下拉。
 // 右下悬浮「目录」按钮 → 底部弹层列目录 → 点击滚动到对应章节。
-export default function ArticleView({ shareCode, brandName, logo, onClose }: {
-  shareCode: string; brandName?: string; logo?: string | null; onClose: () => void
+export default function ArticleView({ shareCode, brandName, logo, articleBaseUrl, onClose }: {
+  shareCode: string; brandName?: string; logo?: string | null; articleBaseUrl?: string | null; onClose: () => void
 }) {
   const [d, setD] = useState<WikiArticleDetail | null>(null)
   const [lang, setLang] = useState('zh_CN')
@@ -30,8 +30,10 @@ export default function ArticleView({ shareCode, brandName, logo, onClose }: {
   const [menuOpen, setMenuOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  // 文章对外链接(复制/外部打开用):与坐席端/聊天卡片一致
-  const articleUrl = `${location.origin}/wiki-article/${shareCode}`
+  // 文章对外链接(复制/外部打开用):基地址由后端配置下发(信使端与 console 多为不同 origin,不能拼自身 origin);
+  // 未配置时退回当前 origin(单端部署兜底)
+  const base = (articleBaseUrl || `${location.origin}/wiki-article`).replace(/\/+$/, '')
+  const articleUrl = `${base}/${shareCode}`
 
   const fetchArticle = () => {
     setErr(false)

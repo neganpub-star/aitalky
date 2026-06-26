@@ -214,7 +214,8 @@ public class MessengerConfigServiceImpl implements MessengerConfigService {
                 onByDefault(m.getPopupEnabled()),
                 onByDefault(m.getPopupAllowClose()),
                 onByDefault(m.getCustomerRetractEnabled()),
-                useLang); // 最终生效语言,信使端据此选系统提示文案语言
+                useLang, // 最终生效语言,信使端据此选系统提示文案语言
+                null);   // articleBaseUrl 由 app 层(PublicMessengerController)从配置注入
     }
 
     @Override

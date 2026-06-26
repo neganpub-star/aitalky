@@ -57,6 +57,11 @@ public class PublicMessengerController {
     private final com.aitalky.framework.geo.GeoIpService geoIpService;
     private final com.aitalky.app.service.TranslationService translationService;
 
+    /** wiki 文章对外阅读页基地址(信使端复制链接/默认浏览器打开拼 /{shareCode});本地=console 地址,上线改域名。
+     *  非 final:由 @Value 在构造后注入(@RequiredArgsConstructor 只纳入 final 字段)。 */
+    @org.springframework.beans.factory.annotation.Value("${aitalky.wiki.article-base-url:}")
+    private String wikiArticleBaseUrl;
+
     /** 头部最多展示的坐席头像数(对齐参考:成员多时只叠 3 个) */
     private static final int AGENT_AVATAR_MAX = 3;
 
@@ -80,7 +85,7 @@ public class PublicMessengerController {
                     config.greeting(), config.teamIntro(), config.urgentNotice(), config.urgentEnabled(),
                     config.sysMsgUnread(), config.sysMsgTyping(), config.sysMsgMemberRetract(),
                     config.popupEnabled(), config.popupAllowClose(), config.customerRetractEnabled(),
-                    config.lang());
+                    config.lang(), wikiArticleBaseUrl);
         }
         // 生效语言:URL ?lang= 指定优先,否则用信使默认语言(config.lang)。避免落库空串导致详情"语言"为空。
         String effectiveLang = StringUtils.hasText(req.lang()) ? req.lang()

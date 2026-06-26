@@ -20,6 +20,8 @@ export interface MessengerConfig {
   customerRetractEnabled: boolean // 客户可撤回自己消息
   // 信使端最终生效语言(URL ?lang= 优先,否则信使设置默认语言);前端据此选系统提示文案语言
   lang: string | null
+  // wiki 文章对外阅读页基地址(复制链接/默认浏览器打开 = 此值 + /{shareCode});后端按配置下发
+  articleBaseUrl: string | null
 }
 
 // 本地待发/失败消息(乐观渲染,未落库,不参与 seq 体系)。发送成功后移除并以服务端 MessageVO 入列

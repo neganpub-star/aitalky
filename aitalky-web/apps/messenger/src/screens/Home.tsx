@@ -69,7 +69,7 @@ export default function Home({ data, appId, onEnter }: Props) {
 
       <div className="home-version">{VERSION}</div>
 
-      {readCode && <ArticleView shareCode={readCode} brandName={cfg?.brandName || data.customerName || ''} logo={cfg?.logo} onClose={() => setReadCode(null)} />}
+      {readCode && <ArticleView shareCode={readCode} brandName={cfg?.brandName || data.customerName || ''} logo={cfg?.logo} articleBaseUrl={cfg?.articleBaseUrl} onClose={() => setReadCode(null)} />}
     </div>
   )
 }

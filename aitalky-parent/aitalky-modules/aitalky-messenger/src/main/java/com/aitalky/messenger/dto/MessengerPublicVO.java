@@ -22,5 +22,7 @@ public record MessengerPublicVO(
         boolean popupAllowClose,     // 允许客户手动关闭弹窗
         boolean customerRetractEnabled, // 客户可撤回自己消息
         // 信使端最终生效语言(URL ?lang= 优先,否则信使设置默认语言);信使端据此显示系统提示文案
-        String lang) {
+        String lang,
+        // wiki 文章对外阅读页基地址(复制链接/默认浏览器打开用):由 app 层从配置注入,Service 置 null
+        String articleBaseUrl) {
 }

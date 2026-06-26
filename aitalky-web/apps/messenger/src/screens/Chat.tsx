@@ -436,7 +436,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
       )}
 
       {/* 点文章卡片:overlay 内阅读已发布文章 */}
-      {articleCode && <ArticleView shareCode={articleCode} brandName={brandName} logo={data.config?.logo} onClose={() => setArticleCode(null)} />}
+      {articleCode && <ArticleView shareCode={articleCode} brandName={brandName} logo={data.config?.logo} articleBaseUrl={data.config?.articleBaseUrl} onClose={() => setArticleCode(null)} />}
     </>
   )
 }

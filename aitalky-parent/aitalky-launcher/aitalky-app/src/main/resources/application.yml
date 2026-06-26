@@ -86,6 +86,10 @@ aitalky:
   invite:
     # 团队邀请落地页基址(邀请邮件链接 = 此值 + /#/join?token=xxx);上线改环境变量
     console-base-url: http://localhost:5173
+  wiki:
+    # wiki 文章对外阅读页基地址(信使端复制链接/默认浏览器打开 = 此值 + /{shareCode});
+    # 本地=console 的对外阅读路由;上线改为独立文章域名(如 https://article.example.com/wiki-article)
+    article-base-url: http://localhost:5173/wiki-article
   verify-code:
     master-enabled: true          # 开发期开启万能验证码;上线置 false
     master-code: "888888"         # 万能验证码:可直接用它注册/登录
