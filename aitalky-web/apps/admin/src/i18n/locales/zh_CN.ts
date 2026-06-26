@@ -183,6 +183,12 @@ export default {
     key: '键',
     value: '值',
     remark: '说明',
+    add: '新增参数',
+    edit: '编辑参数',
+    keyTip: '业务代码按此键读取,创建后请勿随意改动',
+    keyRequired: '请输入参数键',
+    keyDuplicated: '参数键已存在',
+    deleteConfirm: '确认删除参数「{{name}}」?删除后业务读取将走默认值',
   },
   sub: {
     title: '订阅',

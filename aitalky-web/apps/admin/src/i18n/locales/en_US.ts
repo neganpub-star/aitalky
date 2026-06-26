@@ -183,6 +183,12 @@ export default {
     key: 'Key',
     value: 'Value',
     remark: 'Remark',
+    add: 'Add parameter',
+    edit: 'Edit parameter',
+    keyTip: 'Business code reads by this key; avoid changing it after creation',
+    keyRequired: 'Please enter the key',
+    keyDuplicated: 'Key already exists',
+    deleteConfirm: 'Delete parameter "{{name}}"? Business reads will fall back to default',
   },
   sub: {
     title: 'Subscription',

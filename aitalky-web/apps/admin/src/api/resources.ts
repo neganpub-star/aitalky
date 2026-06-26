@@ -154,11 +154,18 @@ export function getSubscriptionLogs(projectId: string) {
 }
 
 // ===== 参数管理 =====
+export interface ConfigSaveCmd { configKey: string; configValue: string; name: string; remark: string }
 export function listConfigs() {
   return client.get<unknown, ConfigVO[]>('/admin/configs')
 }
-export function updateConfig(id: string, value: string) {
-  return client.put<unknown, void>(`/admin/configs/${id}`, null, { params: { value } })
+export function createConfig(cmd: ConfigSaveCmd) {
+  return client.post<unknown, string>('/admin/configs', cmd)
+}
+export function updateConfig(id: string, cmd: ConfigSaveCmd) {
+  return client.put<unknown, void>(`/admin/configs/${id}`, cmd)
+}
+export function deleteConfig(id: string) {
+  return client.delete<unknown, void>(`/admin/configs/${id}`)
 }
 
 // ===== 后管角色 =====

@@ -2,6 +2,7 @@ package com.aitalky.platform.service.impl;
 
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
+import com.aitalky.platform.dto.ConfigSaveCmd;
 import com.aitalky.platform.dto.ConfigVO;
 import com.aitalky.platform.entity.PfConfig;
 import com.aitalky.platform.mapper.PfConfigMapper;
@@ -49,16 +50,65 @@ public class ConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public void updateValue(Long id, String value) {
+    public Long create(ConfigSaveCmd cmd) {
+        String key = cmd.configKey() == null ? "" : cmd.configKey().trim();
+        if (key.isEmpty()) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        if (existsKey(key, null)) {
+            throw new BizException(ResultCode.DATA_DUPLICATED);
+        }
+        PfConfig c = new PfConfig();
+        c.setConfigKey(key);
+        c.setConfigValue(cmd.configValue());
+        c.setName(cmd.name());
+        c.setRemark(cmd.remark());
+        c.setConfigGroup("custom"); // 后管新增统一归入 custom 分组
+        c.setSort(0);
+        c.setStatus(1);
+        configMapper.insert(c); // id 由 BaseEntity insertFill 注入雪花
+        log.info("平台参数新增 id={}, key={}", c.getId(), key);
+        return c.getId();
+    }
+
+    @Override
+    public void update(Long id, ConfigSaveCmd cmd) {
         PfConfig c = configMapper.selectById(id);
         if (c == null) {
             throw new BizException(ResultCode.NOT_FOUND);
         }
+        String key = cmd.configKey() == null ? "" : cmd.configKey().trim();
+        if (key.isEmpty()) {
+            throw new BizException(ResultCode.PARAM_INVALID);
+        }
+        if (existsKey(key, id)) {
+            throw new BizException(ResultCode.DATA_DUPLICATED);
+        }
         PfConfig update = new PfConfig();
         update.setId(id);
-        update.setConfigValue(value);
+        update.setConfigKey(key);
+        update.setConfigValue(cmd.configValue());
+        update.setName(cmd.name());
+        update.setRemark(cmd.remark());
         configMapper.updateById(update);
-        log.info("平台参数更新 id={}, key={}", id, c.getConfigKey());
+        log.info("平台参数编辑 id={}, key={}", id, key);
+    }
+
+    @Override
+    public void delete(Long id) {
+        if (configMapper.selectById(id) == null) {
+            throw new BizException(ResultCode.NOT_FOUND);
+        }
+        configMapper.deleteById(id);
+        log.info("平台参数删除 id={}", id);
+    }
+
+    /** configKey 是否已存在(excludeId 用于编辑时排除自身) */
+    private boolean existsKey(String key, Long excludeId) {
+        Long cnt = configMapper.selectCount(Wrappers.<PfConfig>lambdaQuery()
+                .eq(PfConfig::getConfigKey, key)
+                .ne(excludeId != null, PfConfig::getId, excludeId));
+        return cnt != null && cnt > 0;
     }
 
     private ConfigVO toVO(PfConfig c) {
