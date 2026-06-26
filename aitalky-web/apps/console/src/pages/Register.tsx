@@ -92,9 +92,9 @@ export default function Register() {
       </Form>
       {/* 协议(对齐参考:注册按钮下方居中) */}
       <div style={{ textAlign: 'center', marginTop: 28, fontSize: 13, color: token.colorTextSecondary }}>
-        {t('auth.agreePrefix')} <a onClick={() => setAgreement('terms')}>{t('auth.termsLink')}</a>
+        {t('auth.agreePrefix')} <a style={{ color: token.colorPrimary, fontWeight: 600, cursor: 'pointer' }} onClick={() => setAgreement('terms')}>{t('auth.termsLink')}</a>
         {' '}{t('auth.agreeAnd')}{' '}
-        <a onClick={() => setAgreement('privacy')}>{t('auth.privacyLink')}</a>
+        <a style={{ color: token.colorPrimary, fontWeight: 600, cursor: 'pointer' }} onClick={() => setAgreement('privacy')}>{t('auth.privacyLink')}</a>
       </div>
       <AgreementModal type={agreement || 'terms'} open={!!agreement} onClose={() => setAgreement(null)} />
     </AuthShell>
