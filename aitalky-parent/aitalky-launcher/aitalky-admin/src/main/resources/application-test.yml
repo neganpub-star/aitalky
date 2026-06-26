@@ -1,0 +1,25 @@
+# 测试环境配置(profile=test)。激活:--spring.profiles.active=test
+# 只覆盖环境相关项,其余继承 application.yml。优先级:环境变量 > ${VAR:默认}。
+# 本地开发不要激活 test —— 不带 profile 即用 application.yml(本机配置)。
+spring:
+  datasource:
+    url: ${AITALKY_DB_URL:jdbc:mysql://localhost:3306/aitalky?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8}
+    username: ${AITALKY_DB_USER:root}
+    password: ${AITALKY_DB_PASSWORD:}
+  data:
+    redis:
+      host: ${AITALKY_REDIS_HOST:localhost}
+      port: ${AITALKY_REDIS_PORT:6379}
+      database: ${AITALKY_REDIS_DB:0}
+      password: ${AITALKY_REDIS_PASSWORD:}
+
+aitalky:
+  jwt:
+    secret: ${AITALKY_JWT_SECRET:}
+  id:
+    # admin 与 app/ws 必须用不同 datacenter-id(雪花ID防冲突)
+    datacenter-id: ${AITALKY_ADMIN_DC_ID:1}
+    worker-id: ${AITALKY_ADMIN_WORKER_ID:0}
+  rsa:
+    public-key: ${AITALKY_RSA_PUBLIC_KEY:}
+    private-key: ${AITALKY_RSA_PRIVATE_KEY:}

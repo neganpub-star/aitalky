@@ -312,7 +312,6 @@ export default {
     subdomainInvalid: 'Subdomain allows letters and numbers only',
     subdomainTaken: 'This subdomain is already taken',
     previewSite: 'Preview site',
-    previewWip: 'Public site is under development',
     deleteApp: 'Delete app',
     deleteAppConfirm: 'Delete this app?',
     deleteAppDesc: 'This cannot be undone.',

@@ -318,7 +318,6 @@ export default {
     subdomainTaken: '该子域已被占用',
     // 编辑 hub
     previewSite: '预览站点',
-    previewWip: '对外站点功能开发中',
     deleteApp: '删除应用',
     deleteAppConfirm: '确定删除该应用吗?',
     deleteAppDesc: '删除后不可恢复。',
