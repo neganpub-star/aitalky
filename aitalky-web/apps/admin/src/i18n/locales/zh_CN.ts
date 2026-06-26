@@ -33,6 +33,9 @@ export default {
     confirmTitle: '提示',
     on: '上架',
     off: '下架',
+    reqFailed: '操作失败,请稍后重试',
+    netError: '网络异常,请检查网络连接后重试',
+    timeout: '请求超时,请稍后重试',
   },
   roleNames: {
     超级管理员: '超级管理员',

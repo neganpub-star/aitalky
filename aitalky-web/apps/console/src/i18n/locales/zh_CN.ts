@@ -22,6 +22,9 @@ export default {
     close: '关闭',
     empty: '暂无数据',
     loading: '加载中',
+    reqFailed: '操作失败,请稍后重试',
+    netError: '网络异常,请检查网络连接后重试',
+    timeout: '请求超时,请稍后重试',
   },
   auth: {
     welcomeLogin: '欢迎登录.',
@@ -42,7 +45,7 @@ export default {
     registerTitle: '注册账号.',
     haveAccount: '已有账号?',
     loginNow: '立即登录',
-    codeSent: '验证码已发送(开发期可直接用 888888)',
+    codeSent: '验证码已发送,请查收邮箱',
     loginOk: '登录成功',
     registerOk: '注册成功,请登录',
     code: '验证码',

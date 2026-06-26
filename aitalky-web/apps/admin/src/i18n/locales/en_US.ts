@@ -33,6 +33,9 @@ export default {
     confirmTitle: 'Confirm',
     on: 'List',
     off: 'Unlist',
+    reqFailed: 'Something went wrong. Please try again.',
+    netError: 'Network error. Please check your connection and try again.',
+    timeout: 'Request timed out. Please try again.',
   },
   roleNames: {
     超级管理员: 'Super Admin',

@@ -2,6 +2,14 @@ import axios from 'axios'
 import { message } from 'antd'
 import { getToken, logout } from '../auth/session'
 import { useAppStore } from '../store/useAppStore'
+import i18n from '../i18n'
+
+// 网络/超时类错误的友好兜底文案(后端有返回 message 时优先用后端的本地化文案)
+function networkErrMsg(err: { code?: string; message?: string; response?: unknown }): string {
+  if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) return i18n.t('common.timeout')
+  if (err.code === 'ERR_NETWORK' || !err.response) return i18n.t('common.netError')
+  return i18n.t('common.reqFailed')
+}
 
 // 统一请求客户端:注入 token/语言,拆解后端统一响应 R(成功返回 data,失败弹错并 reject)
 const client = axios.create({ baseURL: '/api', timeout: 15000 })
@@ -31,7 +39,7 @@ client.interceptors.response.use(
       if (r.code === 1004) {
         return Promise.reject(new Error(r.message || 'no subscription'))
       }
-      message.error(r.message || '请求失败')
+      message.error(r.message || i18n.t('common.reqFailed'))
       return Promise.reject(new Error(r.message || 'fail'))
     }
     return r
@@ -41,7 +49,8 @@ client.interceptors.response.use(
       logout()
       location.hash = '#/login'
     }
-    message.error(err.response?.data?.message || err.message || '网络错误')
+    // 后端有本地化 message 用后端的;否则按错误类型给友好兜底(超时/网络/通用)
+    message.error(err.response?.data?.message || networkErrMsg(err))
     return Promise.reject(err)
   },
 )

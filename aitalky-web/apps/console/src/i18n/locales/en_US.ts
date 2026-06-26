@@ -22,6 +22,9 @@ export default {
     close: 'Close',
     empty: 'No data',
     loading: 'Loading',
+    reqFailed: 'Something went wrong. Please try again.',
+    netError: 'Network error. Please check your connection and try again.',
+    timeout: 'Request timed out. Please try again.',
   },
   auth: {
     welcomeLogin: 'Welcome back.',
@@ -42,7 +45,7 @@ export default {
     registerTitle: 'Sign up.',
     haveAccount: 'Already have an account?',
     loginNow: 'Sign in',
-    codeSent: 'Code sent (dev: use 888888)',
+    codeSent: 'Code sent, please check your email',
     loginOk: 'Signed in',
     registerOk: 'Registered, please sign in',
     code: 'Verification code',
