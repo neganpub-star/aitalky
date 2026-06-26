@@ -82,7 +82,7 @@ export default function WikiArticles() {
       render: (v: string | null, r) => <a onClick={() => nav(`/wiki/articles/${r.id}`)} style={{ color: token.colorText }}>{v || t('wiki.untitled')}</a>,
     },
     { title: t('wiki.publishStatus'), dataIndex: 'status', width: 120, render: statusDot },
-    { title: t('wiki.langCount'), dataIndex: 'langCount', width: 100 },
+    { title: t('wiki.langCount'), dataIndex: 'langCount', width: 130 },
     // 关联应用:文章被关联到哪些站点;关联在「内容配置」(D)维护,暂显示 --
     { title: t('wiki.relatedApp'), width: 120, render: () => <span style={{ color: token.colorTextTertiary }}>--</span> },
     { title: t('wiki.isRecommend'), dataIndex: 'isRecommend', width: 100, render: (v: number) => v === 1 ? t('common.yes') : t('common.no') },
