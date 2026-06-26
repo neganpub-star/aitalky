@@ -227,8 +227,8 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public void claim(Long conversationId, Long memberId) {
         CnvConversation conv = getById(conversationId);
-        // 认领=分配给自己;条件更新(assignee IS NULL)防并发双认领,失败抛 CONVERSATION_ALREADY_CLAIMED
-        assignEngine.claim(conv, memberId);
+        // 认领=分配给自己:写分配流水(applyAssign 内置 status→1);协作模型,不限制多坐席介入
+        assignEngine.applyAssign(conv, memberId, AssignEngine.LOG_CLAIM, memberId);
     }
 
     @Override

@@ -1,7 +1,5 @@
 package com.aitalky.conversation.service;
 
-import com.aitalky.common.api.ResultCode;
-import com.aitalky.common.exception.BizException;
 import com.aitalky.conversation.dto.AssignConfigVO;
 import com.aitalky.conversation.entity.CnvAssignLog;
 import com.aitalky.conversation.entity.CnvConversation;
@@ -117,34 +115,10 @@ public class AssignEngine {
         } else {
             conversationMapper.updateById(conv);
         }
-        writeAssignLog(conv, from, toMemberId, type, operatorMemberId);
-    }
-
-    /**
-     * 认领(并发安全):仅当会话仍未分配(assignee IS NULL)时认领成功,防两坐席同时认领同一会话的
-     * last-write-wins 双认领。条件更新 0 行=已被他人抢先认领,抛 {@link ResultCode#CONVERSATION_ALREADY_CLAIMED}。
-     */
-    public void claim(CnvConversation conv, Long memberId) {
-        int rows = conversationMapper.update(null, Wrappers.<CnvConversation>lambdaUpdate()
-                .set(CnvConversation::getAssigneeMemberId, memberId)
-                .set(CnvConversation::getStatus, 1)
-                .eq(CnvConversation::getId, conv.getId())
-                .isNull(CnvConversation::getAssigneeMemberId));
-        if (rows == 0) {
-            throw new BizException(ResultCode.CONVERSATION_ALREADY_CLAIMED);
-        }
-        // 同步内存态(调用方/通知用)+ 写认领流水(from 必为 null,认领前未分配)
-        conv.setAssigneeMemberId(memberId);
-        conv.setStatus(1);
-        writeAssignLog(conv, null, memberId, LOG_CLAIM, memberId);
-    }
-
-    /** 写分配流水。type:1认领 2指派 3自动 4转移 */
-    private void writeAssignLog(CnvConversation conv, Long fromMemberId, Long toMemberId, int type, Long operatorMemberId) {
         CnvAssignLog log = new CnvAssignLog();
         log.setProjectId(conv.getProjectId());
         log.setConversationId(conv.getId());
-        log.setFromMemberId(fromMemberId);
+        log.setFromMemberId(from);
         log.setToMemberId(toMemberId);
         log.setType(type);
         log.setOperatorMemberId(operatorMemberId);

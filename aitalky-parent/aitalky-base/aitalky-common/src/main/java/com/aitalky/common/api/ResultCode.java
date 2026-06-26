@@ -72,8 +72,6 @@ public enum ResultCode {
     RETRACT_EXPIRED(1026, "retract.expired"),
     /** 无权撤回该消息(非本人发送 / 客户撤回权限未开启) */
     RETRACT_FORBIDDEN(1027, "retract.forbidden"),
-    /** 会话已被他人认领(并发认领竞争失败者) */
-    CONVERSATION_ALREADY_CLAIMED(1028, "conversation.already.claimed"),
 
     // ===== 订阅计费 105x =====
     /** 不支持的币种/链(bil_coin 未配置或已停用) */
