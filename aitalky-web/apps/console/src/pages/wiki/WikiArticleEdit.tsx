@@ -118,7 +118,7 @@ export default function WikiArticleEdit() {
           {toc.length === 0
             ? <div style={{ color: token.colorTextTertiary, fontSize: 13 }}>{t('wiki.tocEmpty')}</div>
             : toc.map((it, idx) => <div key={idx} onClick={() => scrollToHeading(document.querySelector('.wiki-rich-editor [data-slate-editor]'), idx)}
-                style={{ fontSize: 13, color: token.colorTextSecondary, padding: '4px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
+                style={{ fontSize: 15, fontWeight: 500, color: token.colorText, padding: '7px 0', paddingLeft: (it.level - 1) * 12, cursor: 'pointer' }}
                 className="at-row">{it.text}</div>)}
         </div>
 
