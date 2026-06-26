@@ -18,21 +18,30 @@ function parseToc(html: string): TocItem[] {
 }
 
 // 信使端文章阅读 overlay(自包含,免跨 app URL):点推荐文章/文章卡片 → 拉公开文章 → 全屏覆盖渲染。
-// 右下悬浮「目录」按钮 → 底部弹层列目录 → 点击滚动到对应章节(对齐参考 H5)。
-export default function ArticleView({ shareCode, onClose }: { shareCode: string; onClose: () => void }) {
+// 头部对齐参考:左上 ✕ 关闭 + 右上 ⋮ 菜单(复制链接/刷新/默认浏览器打开);下方品牌行 + 语言下拉。
+// 右下悬浮「目录」按钮 → 底部弹层列目录 → 点击滚动到对应章节。
+export default function ArticleView({ shareCode, brandName, logo, onClose }: {
+  shareCode: string; brandName?: string; logo?: string | null; onClose: () => void
+}) {
   const [d, setD] = useState<WikiArticleDetail | null>(null)
   const [lang, setLang] = useState('zh_CN')
   const [err, setErr] = useState(false)
   const [tocOpen, setTocOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  // 文章对外链接(复制/外部打开用):与坐席端/聊天卡片一致
+  const articleUrl = `${location.origin}/wiki-article/${shareCode}`
+
+  const fetchArticle = () => {
+    setErr(false)
     publicArticle(shareCode).then((r) => {
       setD(r)
       const first = r.i18ns.find((x) => x.lang === 'zh_CN') || r.i18ns[0]
       if (first) setLang(first.lang)
     }).catch(() => setErr(true))
-  }, [shareCode])
+  }
+  useEffect(fetchArticle, [shareCode])
 
   const i = d?.i18ns.find((x) => x.lang === lang) || d?.i18ns[0]
   const toc = useMemo(() => parseToc(i?.pubContent || ''), [i?.pubContent])
@@ -45,17 +54,41 @@ export default function ArticleView({ shareCode, onClose }: { shareCode: string;
     setTocOpen(false)
   }
 
+  // ⋮ 菜单动作
+  const onCopyLink = () => { navigator.clipboard?.writeText(articleUrl); setMenuOpen(false) }
+  const onRefresh = () => { setD(null); fetchArticle(); setMenuOpen(false) }
+  const onOpenBrowser = () => { window.open(articleUrl, '_blank', 'noopener'); setMenuOpen(false) }
+
   return (
     <div className="article-view">
-      <div className="article-view-head">
-        <span className="article-view-back" onClick={onClose}>‹</span>
-        <span className="article-view-title">{t('viewArticle')}</span>
+      {/* 顶部工具条:左 ✕ 关闭,右 ⋮ 菜单 */}
+      <div className="article-view-toolbar">
+        <span className="article-view-x" onClick={onClose}>✕</span>
+        <div className="article-view-more-wrap">
+          <span className="article-view-more" onClick={() => setMenuOpen((v) => !v)}>⋮</span>
+          {menuOpen && (
+            <>
+              <div className="article-view-menu-mask" onClick={() => setMenuOpen(false)} />
+              <div className="article-view-menu">
+                <div className="article-view-menu-item" onClick={onCopyLink}><span className="amenu-ico">🔗</span>{t('copyLink')}</div>
+                <div className="article-view-menu-item" onClick={onRefresh}><span className="amenu-ico">↻</span>{t('refresh')}</div>
+                <div className="article-view-menu-item" onClick={onOpenBrowser}><span className="amenu-ico">🌐</span>{t('openInBrowser')}</div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {/* 品牌行 + 语言下拉 */}
+      <div className="article-view-brand">
+        <span className="article-view-brand-logo">{logo ? <img src={logo} alt="" /> : 'Ai'}</span>
+        <span className="article-view-brand-name">{brandName || 'aitalky'}</span>
         {d && d.i18ns.length > 1 && (
           <select className="article-view-lang" value={lang} onChange={(e) => setLang(e.target.value)}>
-            {d.i18ns.map((x) => <option key={x.lang} value={x.lang}>{x.lang === 'zh_CN' ? '中文' : x.lang === 'en_US' ? 'EN' : x.lang}</option>)}
+            {d.i18ns.map((x) => <option key={x.lang} value={x.lang}>{x.lang === 'zh_CN' ? '简体中文' : x.lang === 'en_US' ? 'English' : x.lang}</option>)}
           </select>
         )}
       </div>
+
       <div className="article-view-body">
         {err ? (
           <div className="article-view-empty">{t('articleNotFound')}</div>

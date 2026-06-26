@@ -302,12 +302,11 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
                         : <img key={i} className="rich-img" src={seg.url} alt="" onLoad={onMediaLoad} onClick={() => seg.url && setPreview(seg.url)} />))}
                     </div>
                   ) : m.type === 'article' ? (
-                    // 知识库文章卡片:标题 + 摘要 + 查看文章;点击在 webview 打开外链
+                    // 知识库文章卡片(对齐参考):蓝色顶边框 + 标题 + 内容预览框;点击打开原生 ArticleView 阅读
                     <div className={`article-card ${mine ? 'mine' : 'agent'}`}
-                      onClick={() => m.payload?.shareCode && setWebview(`${location.origin}/wiki-article/${m.payload.shareCode}`)}>
-                      <div className="article-card-title">📖 {m.payload?.title || m.content}</div>
-                      {m.payload?.summary && <div className="article-card-summary">{m.payload.summary}</div>}
-                      <div className="article-card-foot">{t('viewArticle')}</div>
+                      onClick={() => m.payload?.shareCode && setArticleCode(m.payload.shareCode)}>
+                      <div className="article-card-title">{m.payload?.title || m.content}</div>
+                      <div className="article-card-box">{m.payload?.summary || ''}</div>
                     </div>
                   ) : m.type === 'image' || m.type === 'video' || m.type === 'file' ? (
                     // 富消息:媒体 +(可选)文字说明在「同一个气泡」里
@@ -437,7 +436,7 @@ export default function Chat({ data, agent, messages, pending, unreadAfterSeq, a
       )}
 
       {/* 点文章卡片:overlay 内阅读已发布文章 */}
-      {articleCode && <ArticleView shareCode={articleCode} onClose={() => setArticleCode(null)} />}
+      {articleCode && <ArticleView shareCode={articleCode} brandName={brandName} logo={data.config?.logo} onClose={() => setArticleCode(null)} />}
     </>
   )
 }
