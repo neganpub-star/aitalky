@@ -1273,7 +1273,7 @@ export default function Inbox() {
             ) : m.type === 'article' ? (
               // 知识库文章卡片:📖 标题 + 摘要 + 查看文章;点击打开已发布文章外链
               <div
-                onClick={() => m.payload?.shareCode && window.open(`${location.origin}/wiki-article/${m.payload.shareCode}`, '_blank')}
+                onClick={() => m.payload?.shareCode && window.open(`${location.origin}/#/wiki-article/${m.payload.shareCode}`, '_blank')}
                 style={{ width: 280, borderRadius: 10, overflow: 'hidden', background: token.colorBgElevated, border: `1px solid ${token.colorBorderSecondary}`, cursor: m.payload?.shareCode ? 'pointer' : 'default' }}
               >
                 <div style={{ padding: '12px 14px' }}>

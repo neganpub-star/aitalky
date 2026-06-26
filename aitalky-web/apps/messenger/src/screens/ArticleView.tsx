@@ -32,7 +32,7 @@ export default function ArticleView({ shareCode, brandName, logo, articleBaseUrl
 
   // 文章对外链接(复制/外部打开用):基地址由后端配置下发(信使端与 console 多为不同 origin,不能拼自身 origin);
   // 未配置时退回当前 origin(单端部署兜底)
-  const base = (articleBaseUrl || `${location.origin}/wiki-article`).replace(/\/+$/, '')
+  const base = (articleBaseUrl || `${location.origin}/#/wiki-article`).replace(/\/+$/, '')
   const articleUrl = `${base}/${shareCode}`
 
   const fetchArticle = () => {
