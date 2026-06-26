@@ -96,5 +96,9 @@ body {
    选中格子用主题主色高亮(原 fill 色太淡) */
 .wiki-rich-editor .w-e-panel-content-table td { border-color: rgba(127, 127, 127, 0.5) !important; }
 .wiki-rich-editor .w-e-panel-content-table td.active { background-color: var(--w-e-toolbar-active-color) !important; }
+/* 编辑区正文里的真实表格:单元格/容器边框默认用很浅的 border 变量,白天几乎不可见——加强为中性灰(明暗通用) */
+.wiki-rich-editor .w-e-text-container table td,
+.wiki-rich-editor .w-e-text-container table th { border-color: rgba(127, 127, 127, 0.45) !important; }
+.wiki-rich-editor .w-e-text-container .table-container { border-color: rgba(127, 127, 127, 0.3) !important; }
 /* 正文链接颜色:wangEditor 无专用变量,默认走浏览器紫色,暗色下刺眼——统一用主题主色 */
 .wiki-rich-editor .w-e-text-container a { color: var(--w-e-textarea-handler-bg-color, #2f6bff) !important; }
