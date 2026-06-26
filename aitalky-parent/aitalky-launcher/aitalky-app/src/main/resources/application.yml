@@ -19,7 +19,8 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    baseline-version: 0
+    # 已压缩基线:V1(全量表结构)+V2(平台种子)即为基线;旧库已重基线到 2,Flyway 对 ≤2 的迁移不执行/不校验
+    baseline-version: 2
   data:
     mongodb:
       # 启动时按实体 @CompoundIndex/@Indexed 声明幂等地确保索引存在(已存在跳过)
