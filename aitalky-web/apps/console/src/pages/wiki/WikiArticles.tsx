@@ -149,8 +149,9 @@ export default function WikiArticles() {
         </div>
         <Select value={langFilter} onChange={setLangFilter} style={{ width: 180 }} showSearch optionFilterProp="label"
           options={allLanguages().map((l) => ({ value: l.code, label: `🌐 ${langLabel(l.code, i18n.language)}` }))} />
-        <Select value={recFilter} onChange={setRecFilter} style={{ width: 140 }}
-          options={[{ value: -1, label: t('wiki.isRecommend') }, { value: 1, label: t('common.yes') }, { value: 0, label: t('common.no') }]} />
+        <Select value={recFilter < 0 ? undefined : recFilter} onChange={(v) => setRecFilter(v ?? -1)}
+          style={{ width: 140 }} allowClear placeholder={t('wiki.isRecommend')}
+          options={[{ value: 1, label: t('common.yes') }, { value: 0, label: t('common.no') }]} />
       </div>
 
       <Table rowKey="id" loading={loading} columns={columns} dataSource={shown} scroll={{ x: 1100 }}
