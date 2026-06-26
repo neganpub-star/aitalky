@@ -8,8 +8,10 @@ import com.aitalky.message.dto.SendMessageCmd;
 import com.aitalky.message.repository.MessageRepository;
 import com.aitalky.message.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -38,7 +40,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public Message send(SendMessageCmd cmd) {
-        long seq = redisson.getAtomicLong("conv:seq:" + cmd.conversationId()).incrementAndGet();
+        long seq = nextSeq(cmd.conversationId());
         Message m = new Message();
         m.setMsgId(idGenerator.nextId());
         m.setSeq(seq);
@@ -58,6 +60,28 @@ public class MessageServiceImpl implements MessageService {
         m.setMentions(cmd.mentions());
         m.setTimestamp(System.currentTimeMillis());
         return messageRepository.save(m);
+    }
+
+    /**
+     * 分配会话内下一个 seq(单调、跨实例不重复)。
+     * <p><b>可靠性兜底</b>:Redis 计数器一旦丢失(重启无持久化 / key 被驱逐 / 换新环境),直接自增会从 0 起
+     * 与已落库消息 seq 碰撞,击穿「seq=真相」。故计数器不存在时,先用 Mongo 已落库 max(seq) 用 CAS 播种再自增。
+     * CAS(0→dbMax) 在并发下仅首个成功、其余 no-op,保证不重复播种。
+     */
+    private long nextSeq(Long conversationId) {
+        RAtomicLong counter = redisson.getAtomicLong("conv:seq:" + conversationId);
+        if (!counter.isExists()) {
+            counter.compareAndSet(0, maxPersistedSeq(conversationId));
+        }
+        return counter.incrementAndGet();
+    }
+
+    /** 该会话已落库消息的最大 seq(无则 0);用于计数器丢失后的兜底播种。 */
+    private long maxPersistedSeq(Long conversationId) {
+        Query q = new Query(Criteria.where("conversationId").is(conversationId))
+                .with(Sort.by(Sort.Direction.DESC, "seq")).limit(1);
+        Message top = mongoTemplate.findOne(q, Message.class);
+        return top == null || top.getSeq() == null ? 0L : top.getSeq();
     }
 
     @Override
