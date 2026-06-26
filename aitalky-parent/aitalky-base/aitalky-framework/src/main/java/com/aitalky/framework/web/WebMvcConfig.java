@@ -41,6 +41,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/api/auth/public-key",
                         "/api/auth/captcha",
                         "/api/auth/invite/*",   // 邀请落地页(仅 GET 查邀请信息;/accept 多一段不被命中,仍需账号级令牌)
+                        "/api/config/agreement", // 注册/登录页《服务条款》《隐私政策》查看(匿名可读已发布协议)
                         "/api/admin/auth/login",       // 平台后管登录
                         "/api/admin/auth/public-key",  // 平台后管 RSA 公钥
                         "/api/admin/auth/captcha",     // 平台后管图形验证码
