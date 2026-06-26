@@ -75,6 +75,13 @@ body {
   padding: 2px 6px;
 }
 .wiki-rich-toolbar-float .w-e-toolbar { background: transparent !important; border: none !important; border-radius: 10px; }
+/* 工具栏悬浮在视口底部:其下拉面板(表格选格子)/菜单容器默认向下弹会被裁出视口——强制钉在按钮正上方 */
+.wiki-rich-toolbar-float .w-e-drop-panel,
+.wiki-rich-toolbar-float .w-e-bar-item-menus-container {
+  top: auto !important;
+  bottom: calc(100% + 6px) !important;
+  margin: 0 !important;
+}
 /* 链接弹框(.w-e-modal)默认按光标位置弹(挂在编辑区里,常跑到顶部)——工具栏悬浮在底部,
    故把它钉在悬浮工具栏正上方居中,与表格下拉面板弹出位置一致 */
 .wiki-rich-editor .w-e-modal {
