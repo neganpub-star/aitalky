@@ -18,6 +18,11 @@
             <groupId>com.aitalky</groupId>
             <artifactId>aitalky-framework</artifactId>
         </dependency>
+        <!-- 公网文章/应用站点配额校验(只调 QuotaService 接口) -->
+        <dependency>
+            <groupId>com.aitalky</groupId>
+            <artifactId>aitalky-billing</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

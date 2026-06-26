@@ -34,4 +34,7 @@ public interface WikiSiteService {
 
     /** 子域在项目内是否可用(excludeSiteId 为编辑时排除自身)。 */
     boolean subdomainAvailable(String subdomain, Long excludeSiteId);
+
+    /** 当前项目站点数(含默认应用);供「应用站点」配额计量与用量展示。 */
+    long countSites();
 }

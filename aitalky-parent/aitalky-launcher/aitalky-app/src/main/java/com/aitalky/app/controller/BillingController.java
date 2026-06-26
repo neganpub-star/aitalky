@@ -26,6 +26,8 @@ import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.identity.service.MemberService;
 import com.aitalky.platform.dto.PlanVO;
 import com.aitalky.platform.service.PlanService;
+import com.aitalky.wiki.service.WikiArticleService;
+import com.aitalky.wiki.service.WikiSiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +58,8 @@ public class BillingController {
     private final MemberService memberService;
     private final CustomerService customerService;
     private final QuotaService quotaService;
+    private final WikiArticleService wikiArticleService;
+    private final WikiSiteService wikiSiteService;
 
     /** 上架套餐列表(含配额/功能;对齐套餐订阅页卡片) */
     @GetMapping("/plans")
@@ -176,6 +180,9 @@ public class BillingController {
         Long projectId = TenantContext.getProjectId();
         List<UsageVO> list = new ArrayList<>();
         list.add(usageOf(projectId, "seat", memberService.countActiveMembers(projectId)));
+        // 公网文章=已发布 wiki 文章数;应用站点=wiki 站点数(含默认应用)。真实计量,与发布/建站配额拦截同口径
+        list.add(usageOf(projectId, "article", wikiArticleService.countPublished()));
+        list.add(usageOf(projectId, "site", wikiSiteService.countSites()));
         // 客户配额=主动营销/客户洞察资源(消费端=洞察采集「渠道×客户」,尚未做),客服会话不消费它,
         // 故 used=0(原 countByProject 是客服客户数,语义错;等客户洞察模块再接真实采集量)
         list.add(usageOf(projectId, "customer", 0));

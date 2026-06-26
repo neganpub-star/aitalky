@@ -1,8 +1,10 @@
 package com.aitalky.wiki.service.impl;
 
+import com.aitalky.billing.service.QuotaService;
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.common.id.SnowflakeIdGenerator;
+import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.wiki.dto.ArticleReq;
 import com.aitalky.wiki.dto.WikiArticleDetailVO;
 import com.aitalky.wiki.dto.WikiArticleHistoryVO;
@@ -50,6 +52,7 @@ public class WikiArticleServiceImpl implements WikiArticleService {
     private final WikiCategoryArticleMapper categoryArticleMapper;
     private final SnowflakeIdGenerator idGenerator;
     private final ObjectMapper objectMapper;
+    private final QuotaService quotaService;
 
     @Override
     public List<WikiArticleRowVO> list(Integer status, String lang) {
@@ -141,6 +144,10 @@ public class WikiArticleServiceImpl implements WikiArticleService {
     @Transactional(rollbackFor = Exception.class)
     public void publish(Long articleId) {
         WikiArticle a = getOwned(articleId);
+        // 「公网文章」配额按已发布数计:仅未发布→发布会新增占用,需校验;有变更(3)再发布已占用过,不重复校验
+        if (a.getStatus() != null && a.getStatus() == ST_UNPUBLISHED) {
+            quotaService.ensure(TenantContext.getProjectId(), "article", countPublished(), 1);
+        }
         List<WikiArticleI18n> rows = i18nMapper.selectList(Wrappers.<WikiArticleI18n>lambdaQuery()
                 .eq(WikiArticleI18n::getArticleId, articleId));
         boolean any = false;
@@ -266,6 +273,14 @@ public class WikiArticleServiceImpl implements WikiArticleService {
             return new WikiArticleRowVO(a.getId(), a.getCode(), title, a.getStatus(), null, a.getIsRecommend(),
                     null, null, null, a.getUpdateTime(), a.getShareCode());
         }).toList();
+    }
+
+    @Override
+    public long countPublished() {
+        // 已发布(含有变更)即「公网文章」;项目维度由租户拦截器自动注入 project_id 过滤
+        Long cnt = articleMapper.selectCount(Wrappers.<WikiArticle>lambdaQuery()
+                .in(WikiArticle::getStatus, ST_PUBLISHED, ST_CHANGED));
+        return cnt == null ? 0 : cnt;
     }
 
     /** 重算状态:无已发布语言→未发布;有已发布且草稿==发布→已发布;有差异→有变更。 */

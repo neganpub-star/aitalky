@@ -1,8 +1,10 @@
 package com.aitalky.wiki.service.impl;
 
+import com.aitalky.billing.service.QuotaService;
 import com.aitalky.common.api.ResultCode;
 import com.aitalky.common.exception.BizException;
 import com.aitalky.common.id.SnowflakeIdGenerator;
+import com.aitalky.framework.tenant.TenantContext;
 import com.aitalky.wiki.dto.SiteReq;
 import com.aitalky.wiki.dto.WikiSiteDetailVO;
 import com.aitalky.wiki.dto.WikiSiteVO;
@@ -39,6 +41,7 @@ public class WikiSiteServiceImpl implements WikiSiteService {
     private final WikiSiteMapper siteMapper;
     private final WikiSiteI18nMapper i18nMapper;
     private final SnowflakeIdGenerator idGenerator;
+    private final QuotaService quotaService;
 
     @Override
     public List<WikiSiteVO> listSites() {
@@ -67,6 +70,9 @@ public class WikiSiteServiceImpl implements WikiSiteService {
     @Transactional(rollbackFor = Exception.class)
     public Long createCustomSite(SiteReq.Create req) {
         String lang = StringUtils.hasText(req.defaultLang()) ? req.defaultLang() : DEFAULT_LANG;
+        // 「应用站点」配额校验:先确保默认应用已建(计入总量口径),再按现有站点数判断是否还够建新站
+        ensureDefaultSite();
+        quotaService.ensure(TenantContext.getProjectId(), "site", countSites(), 1);
         if (StringUtils.hasText(req.subdomain()) && !subdomainAvailable(req.subdomain(), null)) {
             throw new BizException(ResultCode.DATA_DUPLICATED);
         }
@@ -168,6 +174,13 @@ public class WikiSiteServiceImpl implements WikiSiteService {
                 .eq(WikiSite::getSubdomain, subdomain)
                 .ne(excludeSiteId != null, WikiSite::getId, excludeSiteId));
         return cnt == null || cnt == 0;
+    }
+
+    @Override
+    public long countSites() {
+        // 含默认应用;项目维度由租户拦截器自动注入 project_id 过滤
+        Long cnt = siteMapper.selectCount(Wrappers.<WikiSite>lambdaQuery());
+        return cnt == null ? 0 : cnt;
     }
 
     /** 项目无默认应用时初始化"帮助中心"(禁用态)。 */

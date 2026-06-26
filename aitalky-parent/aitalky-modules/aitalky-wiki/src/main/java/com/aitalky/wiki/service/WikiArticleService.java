@@ -53,4 +53,7 @@ public interface WikiArticleService {
 
     /** 公开(信使首页):项目推荐文章(已发布+推荐,最多 maxCount 篇;title 取 lang 的发布快照,空回退默认语言)。 */
     List<WikiArticleRowVO> recommended(Long projectId, String lang, int maxCount);
+
+    /** 当前项目已发布文章数(状态 2已发布/3有变更);供「公网文章」配额计量与用量展示。 */
+    long countPublished();
 }
