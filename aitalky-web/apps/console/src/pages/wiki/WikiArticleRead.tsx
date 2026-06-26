@@ -64,7 +64,7 @@ export default function WikiArticleRead() {
             <div style={{ fontWeight: 700, fontSize: 20, marginBottom: 18 }}>{t('wiki.toc')}</div>
             {toc.map((it, idx) => (
               <div key={idx} onClick={() => scrollToHeading(contentRef.current, idx)} className="at-row"
-                style={{ cursor: 'pointer', fontSize: 14, padding: '8px 0', paddingLeft: (it.level - 1) * 12, color: idx === active ? token.colorPrimary : token.colorTextSecondary, fontWeight: idx === active ? 600 : 400 }}>{it.text}</div>
+                style={{ cursor: 'pointer', fontSize: 16, padding: '9px 0', paddingLeft: (it.level - 1) * 12, color: idx === active ? token.colorPrimary : token.colorText, fontWeight: idx === active ? 700 : 500 }}>{it.text}</div>
             ))}
           </div>
         )}
