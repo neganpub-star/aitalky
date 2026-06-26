@@ -33,6 +33,7 @@ import java.time.Duration;
 public class RateLimitAspect {
 
     private final RedissonClient redisson;
+    private final RateLimitProperties props;
 
     @Around("@annotation(rateLimit)")
     public Object around(ProceedingJoinPoint pjp, RateLimit rateLimit) throws Throwable {
@@ -64,13 +65,21 @@ public class RateLimitAspect {
         return sb.toString();
     }
 
-    /** 取客户端 IP:优先 X-Forwarded-For 首个地址(经反向代理时),否则 remoteAddr */
+    /**
+     * 取客户端 IP。
+     * <p><b>安全默认</b>:取 TCP 连接的 {@code remoteAddr},应用层不可伪造,杜绝攻击者用伪造
+     * {@code X-Forwarded-For} 让每次请求算作不同 IP 从而绕过限流。
+     * <p>仅当 {@code aitalky.rate-limit.trust-forward-headers=true}(部署在会覆盖 XFF 的可信反代之后)
+     * 时,才采信 XFF 首个地址作为真实客户端 IP。
+     */
     private String clientIp() {
         if (RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attrs) {
             HttpServletRequest req = attrs.getRequest();
-            String xff = req.getHeader("X-Forwarded-For");
-            if (xff != null && !xff.isBlank()) {
-                return xff.split(",")[0].trim();
+            if (props.trustForwardHeaders()) {
+                String xff = req.getHeader("X-Forwarded-For");
+                if (xff != null && !xff.isBlank()) {
+                    return xff.split(",")[0].trim();
+                }
             }
             return req.getRemoteAddr();
         }

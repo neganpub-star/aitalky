@@ -68,6 +68,12 @@ aitalky:
     code-length: 6
     max-attempts: 5               # 连续输错上限,达到即临时锁定(防暴力枚举)
     lock-minutes: 10              # 触发锁定后的锁定时长(分钟)
+    max-per-email-per-day: 10     # 单邮箱每日发信上限(滚动24h),防对单邮箱长期轰炸;≤0 不限
+    global-daily-limit: 5000      # 全局每日发信总量熔断(滚动24h),防 SMTP 配额被刷爆;≤0 不限
+  rate-limit:
+    # 取客户端 IP 是否信任 X-Forwarded-For。安全默认 false(用 remoteAddr,应用层不可伪造);
+    # 仅当部署在「会用 $remote_addr 覆盖 XFF 的可信反代」之后时才置 true(见 prod 覆盖)
+    trust-forward-headers: false
   geoip:
     # IP 归属地解析(详情面板「所在地」);走 ip-api.com 免费接口(各环境同一公网 API)
     enabled: true

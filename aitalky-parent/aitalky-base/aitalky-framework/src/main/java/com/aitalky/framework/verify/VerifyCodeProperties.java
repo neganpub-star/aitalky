@@ -13,6 +13,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @param from                 发件邮箱(展示用)
  * @param maxAttempts          同一邮箱+场景连续输错的最大次数,达到即临时锁定(防暴力枚举)
  * @param lockMinutes          触发锁定后的锁定时长(分钟)
+ * @param maxPerEmailPerDay    同一邮箱每日(滚动24h)最大发信数,防对单邮箱长期轰炸;≤0 视为不限
+ * @param globalDailyLimit     全局每日(滚动24h)最大发信总量,超出即熔断停发,防 SMTP 配额被刷爆;≤0 视为不限
  */
 @ConfigurationProperties(prefix = "aitalky.verify-code")
 public record VerifyCodeProperties(
@@ -23,7 +25,9 @@ public record VerifyCodeProperties(
         int codeLength,
         String from,
         int maxAttempts,
-        int lockMinutes
+        int lockMinutes,
+        int maxPerEmailPerDay,
+        int globalDailyLimit
 ) {
     public VerifyCodeProperties {
         if (ttlMinutes <= 0) {
@@ -41,5 +45,6 @@ public record VerifyCodeProperties(
         if (lockMinutes <= 0) {
             lockMinutes = 10;
         }
+        // maxPerEmailPerDay / globalDailyLimit 不兜底默认值:≤0 表示显式关闭该层防护(由 yml 决定)
     }
 }

@@ -49,9 +49,41 @@ public class VerifyCodeService {
         if (!limit.setIfAbsent("1", Duration.ofSeconds(props.sendIntervalSeconds()))) {
             throw new BizException(ResultCode.VERIFY_CODE_TOO_FREQUENT);
         }
+        // 单邮箱每日上限:防对同一邮箱长期低频轰炸(绕过 60s 间隔后仍能累计刷信)
+        ensureUnderDailyCaps(email);
         String code = randomCode(props.codeLength());
         redisson.getBucket(codeKey(scene, email)).set(code, props.ttlMinutes(), TimeUnit.MINUTES);
         sendMail(email, scene, code);
+    }
+
+    /**
+     * 日上限双闸:① 单邮箱每日发信数 ② 全局每日发信总量(熔断)。
+     * <p>滚动 24h 固定窗口(INCR + 首次 EXPIRE);任一超限即拒绝,在真正发信前拦下,保护 SMTP 配额。
+     * <p>注意:本方法在 60s 间隔闸之后调用——超限抛出时该 60s 槽位已占用,属可接受(本就该被拒)。
+     */
+    private void ensureUnderDailyCaps(String email) {
+        // ① 单邮箱每日上限(不跨场景区分,按邮箱总量计,口径更严)
+        if (props.maxPerEmailPerDay() > 0) {
+            var emailDay = redisson.getAtomicLong(emailDailyKey(email));
+            if (emailDay.incrementAndGet() == 1L) {
+                emailDay.expire(Duration.ofDays(1));
+            }
+            if (emailDay.get() > props.maxPerEmailPerDay()) {
+                log.warn("邮箱当日发信达上限 email={}, limit={}/天", email, props.maxPerEmailPerDay());
+                throw new BizException(ResultCode.VERIFY_CODE_TOO_FREQUENT);
+            }
+        }
+        // ② 全局每日总量熔断(防被海量不同邮箱刷爆 SMTP 配额)
+        if (props.globalDailyLimit() > 0) {
+            var global = redisson.getAtomicLong(globalDailyKey());
+            if (global.incrementAndGet() == 1L) {
+                global.expire(Duration.ofDays(1));
+            }
+            if (global.get() > props.globalDailyLimit()) {
+                log.error("全局当日发信量触发熔断, limit={}/天,暂停发信", props.globalDailyLimit());
+                throw new BizException(ResultCode.RATE_LIMITED);
+            }
+        }
     }
 
     /**
@@ -144,5 +176,15 @@ public class VerifyCodeService {
     /** 锁定标记 key(存在即处于锁定期) */
     private String lockKey(VerifyScene scene, String email) {
         return "verify:lock:" + scene.name().toLowerCase() + ":" + email;
+    }
+
+    /** 单邮箱当日发信计数 key(不分场景,按邮箱总量) */
+    private String emailDailyKey(String email) {
+        return "verify:daily:email:" + email;
+    }
+
+    /** 全局当日发信总量计数 key */
+    private String globalDailyKey() {
+        return "verify:daily:global";
     }
 }

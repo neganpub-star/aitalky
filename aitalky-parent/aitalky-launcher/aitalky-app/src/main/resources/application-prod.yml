@@ -42,6 +42,12 @@ aitalky:
   verify-code:
     master-enabled: false         # 生产关闭万能验证码
     from: ${AITALKY_MAIL_USER}
+    max-per-email-per-day: ${AITALKY_VERIFY_MAX_PER_EMAIL:10}
+    global-daily-limit: ${AITALKY_VERIFY_GLOBAL_DAILY:5000}
+  rate-limit:
+    # 生产若在 nginx 之后且已用 proxy_set_header X-Forwarded-For $remote_addr「覆盖」真实IP,
+    # 才设 AITALKY_TRUST_XFF=true;否则保持 false(取 remoteAddr),避免伪造 XFF 绕过限流
+    trust-forward-headers: ${AITALKY_TRUST_XFF:false}
   translate:
     ali-gateway-url: ${AITALKY_TRANSLATE_GATEWAY_URL}
   minio:
