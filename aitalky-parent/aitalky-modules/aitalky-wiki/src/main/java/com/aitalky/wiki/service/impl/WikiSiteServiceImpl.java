@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,6 +33,8 @@ import java.util.stream.Collectors;
 public class WikiSiteServiceImpl implements WikiSiteService {
 
     private static final String DEFAULT_LANG = "zh_CN";
+    private static final char[] BASE62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+    private static final SecureRandom RND = new SecureRandom();
 
     private final WikiSiteMapper siteMapper;
     private final WikiSiteI18nMapper i18nMapper;
@@ -53,7 +56,7 @@ public class WikiSiteServiceImpl implements WikiSiteService {
                 .stream().collect(Collectors.toMap(x -> x.getSiteId() + "#" + x.getLang(), Function.identity(), (a, b) -> a));
         return sites.stream().map(s -> {
             WikiSiteI18n i18n = i18nByKey.get(s.getId() + "#" + s.getDefaultLang());
-            return new WikiSiteVO(s.getId(), s.getIcon(),
+            return new WikiSiteVO(s.getId(), s.getShareCode(), s.getIcon(),
                     i18n == null ? null : i18n.getAppName(),
                     i18n == null ? null : i18n.getDescription(),
                     s.getDefaultLang(), s.getMultiLang(), s.getSubdomain(), s.getEnabled(), s.getIsDefault());
@@ -69,6 +72,7 @@ public class WikiSiteServiceImpl implements WikiSiteService {
         }
         WikiSite s = new WikiSite();
         s.setId(idGenerator.nextId());
+        s.setShareCode(randomShareCode());
         s.setIcon(req.icon());
         s.setDefaultLang(lang);
         s.setMultiLang(0);
@@ -90,7 +94,7 @@ public class WikiSiteServiceImpl implements WikiSiteService {
                         .eq(WikiSiteI18n::getSiteId, siteId))
                 .stream().map(x -> new WikiSiteDetailVO.I18n(x.getLang(), x.getAppName(), x.getTitle(), x.getDescription()))
                 .toList();
-        return new WikiSiteDetailVO(s.getId(), s.getIcon(), s.getLogo(), s.getBrandShort(), s.getDefaultLang(),
+        return new WikiSiteDetailVO(s.getId(), s.getShareCode(), s.getIcon(), s.getLogo(), s.getBrandShort(), s.getDefaultLang(),
                 s.getMultiLang(), s.getThemeColor(), s.getLayout(), s.getSubdomain(), s.getCustomDomain(),
                 s.getFavicon(), s.getEnabled(), s.getIsDefault(), i18ns);
     }
@@ -174,6 +178,7 @@ public class WikiSiteServiceImpl implements WikiSiteService {
         }
         WikiSite s = new WikiSite();
         s.setId(idGenerator.nextId());
+        s.setShareCode(randomShareCode());
         s.setDefaultLang(DEFAULT_LANG);
         s.setMultiLang(0);
         s.setLayout(1);
@@ -213,5 +218,14 @@ public class WikiSiteServiceImpl implements WikiSiteService {
             throw new BizException(ResultCode.NOT_FOUND);
         }
         return s;
+    }
+
+    /** 生成站点对外公开标识(base62, 10位);对外站点路由/预览/分享用。 */
+    private String randomShareCode() {
+        StringBuilder sb = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            sb.append(BASE62[RND.nextInt(BASE62.length)]);
+        }
+        return sb.toString();
     }
 }

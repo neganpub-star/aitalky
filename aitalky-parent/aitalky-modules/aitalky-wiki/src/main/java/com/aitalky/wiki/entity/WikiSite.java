@@ -17,6 +17,9 @@ public class WikiSite extends BaseEntity {
     /** 项目id */
     private Long projectId;
 
+    /** 站点对外公开标识(base62);对外站点首页/分类页公开访问、预览/分享均以此定位 */
+    private String shareCode;
+
     /** 应用图标(图标库key) */
     private String icon;
 

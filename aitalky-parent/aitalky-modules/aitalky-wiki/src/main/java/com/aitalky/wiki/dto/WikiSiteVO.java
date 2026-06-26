@@ -10,6 +10,7 @@ package com.aitalky.wiki.dto;
  */
 public record WikiSiteVO(
         Long id,
+        String shareCode,
         String icon,
         String name,
         String description,

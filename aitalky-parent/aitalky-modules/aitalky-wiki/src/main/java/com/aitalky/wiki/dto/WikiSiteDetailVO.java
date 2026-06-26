@@ -7,6 +7,7 @@ import java.util.List;
  */
 public record WikiSiteDetailVO(
         Long id,
+        String shareCode,
         String icon,
         String logo,
         String brandShort,
