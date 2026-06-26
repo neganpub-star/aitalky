@@ -66,7 +66,8 @@ export default function WikiSiteEdit() {
       <div style={{ display: 'flex', alignItems: 'center', padding: '14px 24px', background: token.colorBgContainer, borderBottom: `1px solid ${token.colorSplit}` }}>
         <LeftOutlined style={{ fontSize: 16, cursor: 'pointer', marginRight: 12 }} onClick={() => nav('/wiki/sites')} />
         <div style={{ fontWeight: 700, fontSize: 18, flex: 1 }}>{siteName}</div>
-        <Button type="primary" style={{ marginRight: 12 }} onClick={() => message.info(t('wiki.previewWip'))}>{t('wiki.previewSite')}</Button>
+        <Button type="primary" style={{ marginRight: 12 }} disabled={!site.shareCode}
+          onClick={() => site.shareCode && window.open(`${location.origin}/#/wiki-site/${site.shareCode}`, '_blank')}>{t('wiki.previewSite')}</Button>
         <Button danger disabled={!canDelete || site.isDefault === 1} onClick={doDelete}>{t('wiki.deleteApp')}</Button>
       </div>
 

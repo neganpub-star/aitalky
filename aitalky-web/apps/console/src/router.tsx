@@ -35,6 +35,8 @@ import WikiArticleDetail from './pages/wiki/WikiArticleDetail'
 import WikiArticleEdit from './pages/wiki/WikiArticleEdit'
 import WikiCategoryDetail from './pages/wiki/WikiCategoryDetail'
 import WikiArticleRead from './pages/wiki/WikiArticleRead'
+import WikiSiteHome from './pages/wiki/WikiSiteHome'
+import WikiSiteCategory from './pages/wiki/WikiSiteCategory'
 import { getCtx, getToken } from './auth/session'
 import { canAccessSettings, canAccessWiki } from './auth/perm'
 
@@ -65,6 +67,9 @@ export const router = createHashRouter([
   { path: '/register', element: <Register /> },
   // 对外文章阅读页(免登录):发文章卡片/推荐文章点击打开
   { path: '/wiki-article/:shareCode', element: <WikiArticleRead /> },
+  // 对外站点(E,免登录):站点首页 + 分类页,按站点 shareCode 访问
+  { path: '/wiki-site/:key', element: <WikiSiteHome /> },
+  { path: '/wiki-site/:key/category/:catId', element: <WikiSiteCategory /> },
   { path: '/join', element: <Join /> },
   { path: '/projects', element: <RequireAuth><Projects /></RequireAuth> },
   { path: '/projects/new', element: <RequireAuth><CreateProject /></RequireAuth> },

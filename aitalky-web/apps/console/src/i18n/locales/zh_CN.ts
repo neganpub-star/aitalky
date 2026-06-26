@@ -333,6 +333,16 @@ export default {
     domain: '域名',
     customDomain: '自定义域名',
     customDomainHint: '您可以在这里为您的 wiki 应用配置自定义域名。自定义域名需要指明是 https:// 或者 http:// 作为前缀。',
+    // 对外站点(E)
+    siteNotFound: '站点不存在或未开启',
+    siteEmpty: '该站点暂无内容',
+    categoryEmpty: '该分类暂无已发布文章',
+    categoryMore: '共 {{count}} 篇,查看更多>>',
+    totalArticles: '共 {{count}} 篇',
+    searchResultCount: '找到 {{count}} 篇相关文章',
+    searchEmpty: '没有找到相关文章',
+    backToHome: '返回首页',
+    home: '首页',
     // 样式配置
     homeStyle: '首页样式',
     homeSearchPh: '搜您想问,快速解答',

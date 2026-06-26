@@ -3,6 +3,7 @@ import client from './client'
 // wiki 站点(应用)列表行(对应后端 WikiSiteVO)
 export interface WikiSiteVO {
   id: string
+  shareCode: string | null // 对外站点公开标识(预览/分享/对外路由用)
   icon: string | null
   name: string | null
   description: string | null
@@ -22,6 +23,7 @@ export interface WikiSiteI18n {
 }
 export interface WikiSiteDetailVO {
   id: string
+  shareCode: string | null
   icon: string | null
   logo: string | null
   brandShort: string | null
@@ -154,6 +156,59 @@ export function sendableArticleDetail(id: string) {
 // 对外公开:按外链码取已发布文章(阅读页,免登录)
 export function publicArticle(shareCode: string) {
   return client.get<unknown, WikiArticleDetailVO>(`/public/wiki/article/${shareCode}`)
+}
+
+// ============ 对外站点(E)公开接口(免登录) ============
+export interface WikiSiteHeaderVO {
+  shareCode: string
+  logo: string | null
+  brandShort: string | null
+  themeColor: string | null
+  favicon: string | null
+  layout: number
+  lang: string
+  appName: string | null
+  title: string | null
+  description: string | null
+  langs: string[]
+}
+export interface WikiSitePublicCategory {
+  id: string
+  icon: string | null
+  name: string | null
+  description: string | null
+  articleCount: number
+  topArticles: { shareCode: string | null; title: string | null }[]
+}
+export interface WikiSitePublicVO {
+  header: WikiSiteHeaderVO
+  categories: WikiSitePublicCategory[]
+}
+export interface WikiPublicArticleCard {
+  shareCode: string | null
+  title: string | null
+  summary: string | null
+  updateTime: string | null
+}
+export interface WikiCategoryPublicVO {
+  header: WikiSiteHeaderVO
+  id: string
+  icon: string | null
+  name: string | null
+  description: string | null
+  articleCount: number
+  directArticles: WikiPublicArticleCard[]
+  groups: { name: string | null; articles: WikiPublicArticleCard[] }[]
+}
+
+export function publicSite(shareCode: string, lang?: string) {
+  return client.get<unknown, WikiSitePublicVO>(`/public/wiki/site/${shareCode}`, { params: { lang } })
+}
+export function publicSiteCategory(shareCode: string, categoryId: string, lang?: string) {
+  return client.get<unknown, WikiCategoryPublicVO>(`/public/wiki/site/${shareCode}/category/${categoryId}`, { params: { lang } })
+}
+export function publicSiteSearch(shareCode: string, q: string, lang?: string) {
+  return client.get<unknown, WikiPublicArticleCard[]>(`/public/wiki/site/${shareCode}/search`, { params: { q, lang } })
 }
 
 // ============ 内容配置(类别/分组/关联) ============

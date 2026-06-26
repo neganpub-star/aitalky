@@ -64,9 +64,9 @@ export default function WikiSites() {
     }
   }
 
-  // 分享:复制站点链接(对外公开站点本期未做,先复制占位链接)
+  // 分享:复制对外站点链接(按站点 shareCode,对应 HashRouter 公开路由)
   const share = (s: WikiSiteVO) => {
-    const url = `${location.origin}/wiki-site/${s.subdomain || s.id}`
+    const url = `${location.origin}/#/wiki-site/${s.shareCode || s.id}`
     navigator.clipboard?.writeText(url).catch(() => {})
     message.success(t('wiki.shareCopied'))
   }

@@ -45,6 +45,18 @@ body {
   text-align: center;
 }
 
+/* wiki 对外站点卡片(首页分类区块/分类页文章卡):白底圆角,hover 轻微抬升 */
+.wiki-site-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.wiki-site-card:hover { box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
+.wiki-site-link:hover { color: #2f6bff !important; }
+
 /* wiki 文章正文(富文本 HTML)渲染样式:详情/阅读页共用 */
 .wiki-article-html img { max-width: 100%; height: auto; border-radius: 4px; }
 .wiki-article-html table { border-collapse: collapse; margin: 12px 0; }
