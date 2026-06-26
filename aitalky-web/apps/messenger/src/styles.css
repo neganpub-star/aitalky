@@ -339,7 +339,7 @@ img.avatar,
 }
 /* 点链接:页内弹窗内嵌网页 */
 .webview-mask {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.45);
@@ -660,9 +660,9 @@ img.avatar,
   max-height: 280px;
   cursor: pointer;
 }
-/* 图片全屏预览(lightbox) */
+/* 图片全屏预览(lightbox)——约束在手机框内 */
 .image-viewer {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.85);
@@ -852,7 +852,7 @@ img.avatar,
 
 /* 信使端文章阅读 overlay */
 .article-view {
-  position: fixed;
+  position: absolute; /* 约束在手机框(.phone)内,而非铺满浏览器视口——与会话内打开一致 */
   inset: 0;
   z-index: 50;
   background: var(--bg, #f5f6f8);
@@ -867,7 +867,7 @@ img.avatar,
 .article-view-x { font-size: 20px; line-height: 1; cursor: pointer; color: var(--text); }
 .article-view-more-wrap { position: relative; }
 .article-view-more { font-size: 22px; line-height: 1; cursor: pointer; color: var(--text); padding: 0 4px; }
-.article-view-menu-mask { position: fixed; inset: 0; z-index: 40; }
+.article-view-menu-mask { position: absolute; inset: 0; z-index: 40; }
 .article-view-menu {
   position: absolute; right: 0; top: 30px; z-index: 41; min-width: 168px;
   background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
