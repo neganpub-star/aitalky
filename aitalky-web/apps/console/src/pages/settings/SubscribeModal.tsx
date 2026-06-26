@@ -8,6 +8,7 @@ import {
   listCoins, getPricing, createOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder, getUsage, getAddonQuote,
   type PlanVO, type CoinVO, type OrderVO, type RechargeAddressVO,
 } from '../../api/billing'
+import AgreementModal from './AgreementModal'
 
 // 订阅单可搭售的永久加量包(对齐参考弹窗:翻译包/AI Tokens包/客户扩展包)
 // perKey=单价提示里「每包规格」描述(对齐参考:百万字符/百万Tokens/1000客户配额);unitKey=下拉数量单位
@@ -54,6 +55,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
   const [seatFloor, setSeatFloor] = useState(0)
   const [currency, setCurrency] = useState('')
   const [agreed, setAgreed] = useState(false)
+  const [protocolOpen, setProtocolOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   // 搭售加量包:单价/规格(来自报价)+ 已选份数
   const [packMeta, setPackMeta] = useState<Record<string, { price: number; spec: number }>>({})
@@ -263,7 +265,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
               {t('bill.submitOrder')}
             </Button>
             <Checkbox checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 14, fontSize: 13 }}>
-              {t('bill.agree')} <Typography.Link>{t('bill.protocol')}</Typography.Link>
+              {t('bill.agree')} <Typography.Link onClick={(e) => { e.preventDefault(); setProtocolOpen(true) }}>{t('bill.protocol')}</Typography.Link>
             </Checkbox>
           </div>
         </div>
@@ -304,6 +306,7 @@ export default function SubscribeModal({ open, plan, onClose, onSuccess }: Props
           </div>
         </div>
       )}
+      <AgreementModal type="subscription" open={protocolOpen} onClose={() => setProtocolOpen(false)} />
     </Modal>
   )
 }

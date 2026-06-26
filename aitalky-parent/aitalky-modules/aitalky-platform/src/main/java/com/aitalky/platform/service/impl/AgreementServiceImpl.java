@@ -66,6 +66,24 @@ public class AgreementServiceImpl implements AgreementService {
         agreementMapper.deleteById(id);
     }
 
+    @Override
+    public AgreementVO getPublished(String type, String language) {
+        String lang = (language == null || language.isBlank()) ? "zh_CN" : language;
+        PfAgreement a = findPublished(type, lang);
+        if (a == null && !"zh_CN".equals(lang)) {
+            a = findPublished(type, "zh_CN"); // 缺该语言回退默认语言
+        }
+        return a == null ? null : toVO(a);
+    }
+
+    private PfAgreement findPublished(String type, String lang) {
+        return agreementMapper.selectOne(Wrappers.<PfAgreement>lambdaQuery()
+                .eq(PfAgreement::getType, type)
+                .eq(PfAgreement::getLanguage, lang)
+                .eq(PfAgreement::getStatus, 1)
+                .last("limit 1"));
+    }
+
     private AgreementVO toVO(PfAgreement a) {
         return new AgreementVO(a.getId(), a.getType(), a.getLanguage(), a.getTitle(),
                 a.getContent(), a.getVersion(), a.getStatus());

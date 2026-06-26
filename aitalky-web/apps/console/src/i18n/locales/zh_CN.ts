@@ -808,6 +808,8 @@ export default {
     submitOrder: '提交订单',
     agree: '我已阅读并同意',
     protocol: '《套餐订阅服务协议》',
+    protocolTitle: '套餐订阅服务协议',
+    protocolEmpty: '协议暂未配置',
     mustAgree: '请先阅读并同意服务协议',
     subscribing: '订阅中',
     // 待支付/收款

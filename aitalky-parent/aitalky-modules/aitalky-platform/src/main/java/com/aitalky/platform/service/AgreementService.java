@@ -17,4 +17,7 @@ public interface AgreementService {
     Long save(SaveAgreementCmd cmd);
 
     void delete(Long id);
+
+    /** 对外取已发布协议(status=1)按 type+language;缺该语言回退默认语言 zh_CN;无则返回 null */
+    AgreementVO getPublished(String type, String language);
 }

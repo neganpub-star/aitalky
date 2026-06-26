@@ -8,6 +8,7 @@ import {
   listCoins, getAddonQuote, createAddonOrder, getAddress, getPendingOrder, getWallet, payOrder, cancelOrder,
   type CoinVO, type OrderVO, type RechargeAddressVO, type AddonQuoteVO,
 } from '../../api/billing'
+import AgreementModal from './AgreementModal'
 
 // 永久加量包档位倍数(对齐参考下拉:×1/2/5/10/50)+ 各类型单位
 const PACK_MULTIPLES = [1, 2, 5, 10, 50]
@@ -59,6 +60,7 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
   const [qty, setQty] = useState(1)
   const [currency, setCurrency] = useState('')
   const [agreed, setAgreed] = useState(false)
+  const [protocolOpen, setProtocolOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // 待支付态
@@ -219,7 +221,7 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
             {t('bill.submitOrder')}
           </Button>
           <Checkbox checked={agreed} onChange={(e) => setAgreed(e.target.checked)} style={{ marginTop: 14, fontSize: 13 }}>
-            {t('bill.agree')} <Typography.Link>{t('bill.protocol')}</Typography.Link>
+            {t('bill.agree')} <Typography.Link onClick={(e) => { e.preventDefault(); setProtocolOpen(true) }}>{t('bill.protocol')}</Typography.Link>
           </Checkbox>
         </div>
       ) : (
@@ -256,6 +258,7 @@ export default function AddonModal({ open, resourceType, onClose, onSuccess }: P
           </div>
         </div>
       )}
+      <AgreementModal type="subscription" open={protocolOpen} onClose={() => setProtocolOpen(false)} />
     </Modal>
   )
 }

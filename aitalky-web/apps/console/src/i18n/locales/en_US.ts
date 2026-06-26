@@ -786,6 +786,8 @@ export default {
     submitOrder: 'Submit order',
     agree: 'I have read and agree to',
     protocol: 'the Subscription Service Agreement',
+    protocolTitle: 'Subscription Service Agreement',
+    protocolEmpty: 'Agreement not configured yet',
     mustAgree: 'Please read and agree to the agreement first',
     subscribing: 'Active',
     // Pending payment

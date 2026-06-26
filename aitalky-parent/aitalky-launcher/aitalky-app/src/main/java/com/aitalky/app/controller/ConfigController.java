@@ -2,10 +2,13 @@ package com.aitalky.app.controller;
 
 import com.aitalky.app.dto.PublicConfigVO;
 import com.aitalky.common.api.R;
+import com.aitalky.platform.dto.AgreementVO;
+import com.aitalky.platform.service.AgreementService;
 import com.aitalky.platform.service.ConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -18,6 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class ConfigController {
 
     private final ConfigService configService;
+    private final AgreementService agreementService;
+
+    /** 取已发布协议(type:privacy/subscription/terms;lang 缺该语言回退 zh_CN)。订阅弹窗「套餐订阅服务协议」查看用。 */
+    @GetMapping("/agreement")
+    public R<AgreementVO> agreement(@RequestParam String type, @RequestParam(required = false) String lang) {
+        return R.ok(agreementService.getPublished(type, lang));
+    }
 
     @GetMapping("/public")
     public R<PublicConfigVO> publicConfig() {
