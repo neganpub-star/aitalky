@@ -4,6 +4,15 @@ import { t } from '../i18n'
 import { publicArticle } from '../api'
 import type { WikiArticleDetail } from '../types'
 
+// 文章正文里的链接强制新标签打开:信使端是全屏 SPA 覆盖层,链接默认会把整个 app 顶掉导致回不来。
+// 钩子全局只需注册一次(模块加载时)。
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    node.setAttribute('target', '_blank')
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 interface TocItem { level: number; text: string }
 // 从正文 HTML 解析标题(h1/h2/h3)生成目录(过滤空标题,保证下标与正文标题对齐)
 function parseToc(html: string): TocItem[] {
