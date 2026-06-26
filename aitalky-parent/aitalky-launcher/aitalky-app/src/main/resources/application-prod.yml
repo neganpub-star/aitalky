@@ -1,0 +1,58 @@
+# ============================================================
+# 生产环境(profile=prod)。激活:--spring.profiles.active=prod
+# 全部用环境变量注入,严禁在本文件写明文密钥。仅含环境相关项;公共配置见 application.yml。
+# 与 test 区别:万能验证码默认关闭。
+# ============================================================
+spring:
+  datasource:
+    url: ${AITALKY_DB_URL}
+    username: ${AITALKY_DB_USER}
+    password: ${AITALKY_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${AITALKY_REDIS_HOST}
+      port: ${AITALKY_REDIS_PORT:6379}
+      database: ${AITALKY_REDIS_DB:0}
+      password: ${AITALKY_REDIS_PASSWORD:}
+    mongodb:
+      uri: ${AITALKY_MONGO_URI}
+  mail:
+    host: ${AITALKY_MAIL_HOST}
+    port: ${AITALKY_MAIL_PORT:587}
+    username: ${AITALKY_MAIL_USER}
+    password: ${AITALKY_MAIL_PASSWORD}
+
+rocketmq:
+  name-server: ${AITALKY_ROCKETMQ_NAMESERVER}
+
+aitalky:
+  jwt:
+    secret: ${AITALKY_JWT_SECRET}
+  id:
+    datacenter-id: ${AITALKY_DC_ID:0}
+    worker-id: ${AITALKY_WORKER_ID:0}
+  rsa:
+    public-key: ${AITALKY_RSA_PUBLIC_KEY}
+    private-key: ${AITALKY_RSA_PRIVATE_KEY}
+  invite:
+    console-base-url: ${AITALKY_CONSOLE_BASE_URL}
+  wiki:
+    article-base-url: ${AITALKY_WIKI_ARTICLE_BASE_URL}
+  verify-code:
+    master-enabled: false         # 生产关闭万能验证码
+    from: ${AITALKY_MAIL_USER}
+  translate:
+    ali-gateway-url: ${AITALKY_TRANSLATE_GATEWAY_URL}
+  minio:
+    endpoint: ${AITALKY_MINIO_ENDPOINT}
+    access-key: ${AITALKY_MINIO_ACCESS_KEY}
+    secret-key: ${AITALKY_MINIO_SECRET_KEY}
+  billing:
+    sign-key: ${AITALKY_BILLING_SIGN_KEY}
+    address-key: ${AITALKY_BILLING_ADDRESS_KEY}
+    coinly:
+      base-url: ${AITALKY_COINLY_BASE_URL}
+      pid: ${AITALKY_COINLY_PID}
+      api-key: ${AITALKY_COINLY_API_KEY}
+      callback-url: ${AITALKY_COINLY_CALLBACK_URL}

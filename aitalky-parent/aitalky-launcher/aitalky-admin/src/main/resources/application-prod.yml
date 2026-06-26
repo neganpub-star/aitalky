@@ -1,0 +1,23 @@
+# 生产环境(profile=prod)。激活:--spring.profiles.active=prod。全部环境变量注入,严禁明文密钥。仅含环境相关项。
+spring:
+  datasource:
+    url: ${AITALKY_DB_URL}
+    username: ${AITALKY_DB_USER}
+    password: ${AITALKY_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${AITALKY_REDIS_HOST}
+      port: ${AITALKY_REDIS_PORT:6379}
+      database: ${AITALKY_REDIS_DB:0}
+      password: ${AITALKY_REDIS_PASSWORD:}
+
+aitalky:
+  jwt:
+    secret: ${AITALKY_JWT_SECRET}
+  id:
+    datacenter-id: ${AITALKY_ADMIN_DC_ID:1}
+    worker-id: ${AITALKY_ADMIN_WORKER_ID:0}
+  rsa:
+    public-key: ${AITALKY_RSA_PUBLIC_KEY}
+    private-key: ${AITALKY_RSA_PRIVATE_KEY}

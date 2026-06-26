@@ -1,15 +1,14 @@
 # ============================================================
-# 测试环境配置(profile=test)。激活方式:启动加 SPRING_PROFILES_ACTIVE=test
-#   java -jar aitalky-app.jar --spring.profiles.active=test
-# 本文件只覆盖"环境相关"项(连接/密钥/域名/回调);其余通用配置继承 application.yml。
-# 取值优先级:环境变量 > 本文件 ${VAR:默认}。默认值仅为能跑起来,生产/正式务必用环境变量注入真实值。
-# 注意:本地开发不要激活 test —— 不带 profile 即用 application.yml(本机配置)。
+# 测试环境(profile=test)。激活:--spring.profiles.active=test
+# 用环境变量注入;未设则用 ${VAR:默认} 回退(便于快速联调)。仅含环境相关项;公共配置见 application.yml。
+# 与 prod 区别:万能验证码默认开启,便于联调。
 # ============================================================
 spring:
   datasource:
     url: ${AITALKY_DB_URL:jdbc:mysql://localhost:3306/aitalky?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8}
     username: ${AITALKY_DB_USER:root}
     password: ${AITALKY_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
       host: ${AITALKY_REDIS_HOST:localhost}
@@ -29,10 +28,8 @@ rocketmq:
 
 aitalky:
   jwt:
-    # 测试/生产务必用独立强密钥(勿沿用 dev)
     secret: ${AITALKY_JWT_SECRET:}
   id:
-    # 多实例横向扩展:每实例必须唯一
     datacenter-id: ${AITALKY_DC_ID:0}
     worker-id: ${AITALKY_WORKER_ID:0}
   rsa:
@@ -43,24 +40,18 @@ aitalky:
   wiki:
     article-base-url: ${AITALKY_WIKI_ARTICLE_BASE_URL:}
   verify-code:
-    # 测试环境默认仍开万能验证码便于联调;正式环境务必置 false
     master-enabled: ${AITALKY_VERIFY_MASTER_ENABLED:true}
     master-code: ${AITALKY_VERIFY_MASTER_CODE:888888}
     from: ${AITALKY_MAIL_USER:noreply@devnew.top}
-  geoip:
-    enabled: ${AITALKY_GEOIP_ENABLED:true}
   translate:
-    enabled: ${AITALKY_TRANSLATE_ENABLED:true}
     ali-gateway-url: ${AITALKY_TRANSLATE_GATEWAY_URL:http://47.242.9.154:8080/api/translate/auto}
   minio:
     endpoint: ${AITALKY_MINIO_ENDPOINT:http://localhost:9000}
     access-key: ${AITALKY_MINIO_ACCESS_KEY:}
     secret-key: ${AITALKY_MINIO_SECRET_KEY:}
-    bucket: ${AITALKY_MINIO_BUCKET:aitalky}
   billing:
     sign-key: ${AITALKY_BILLING_SIGN_KEY:}
     address-key: ${AITALKY_BILLING_ADDRESS_KEY:}
-    channel: ${AITALKY_BILLING_CHANNEL:coinly}
     coinly:
       base-url: ${AITALKY_COINLY_BASE_URL:https://gateway.hhnumilala.xyz/api/}
       pid: ${AITALKY_COINLY_PID:}

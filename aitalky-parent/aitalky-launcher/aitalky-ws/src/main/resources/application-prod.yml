@@ -1,18 +1,18 @@
-# 测试环境(profile=test)。激活:--spring.profiles.active=test。仅含环境相关项;公共见 application.yml。
+# 生产环境(profile=prod)。激活:--spring.profiles.active=prod。全部环境变量注入,严禁明文密钥。仅含环境相关项。
 spring:
   data:
     redis:
-      host: ${AITALKY_REDIS_HOST:localhost}
+      host: ${AITALKY_REDIS_HOST}
       port: ${AITALKY_REDIS_PORT:6379}
       database: ${AITALKY_REDIS_DB:0}
       password: ${AITALKY_REDIS_PASSWORD:}
 
 rocketmq:
-  name-server: ${AITALKY_ROCKETMQ_NAMESERVER:localhost:9876}
+  name-server: ${AITALKY_ROCKETMQ_NAMESERVER}
 
 aitalky:
   jwt:
-    secret: ${AITALKY_JWT_SECRET:}
+    secret: ${AITALKY_JWT_SECRET}
   id:
     datacenter-id: ${AITALKY_WS_DC_ID:2}
     worker-id: ${AITALKY_WS_WORKER_ID:0}

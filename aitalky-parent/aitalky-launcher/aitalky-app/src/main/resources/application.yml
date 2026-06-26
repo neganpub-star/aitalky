@@ -1,19 +1,19 @@
-# ⚠ 本地开发配置:连接信息/密钥均为明文,仅供本地;上线前改为环境变量/配置中心注入
+# ============================================================
+# 公共配置(不区分环境)。环境相关项见 application-{dev,test,prod}.yml。
+# 默认激活 dev(本地);测试/生产启动加 --spring.profiles.active=test|prod 覆盖。
+# ============================================================
 server:
   port: 8080
 
 spring:
   application:
     name: aitalky-app
+  profiles:
+    active: dev
   # 虚拟线程（Java 21）：高并发 IO 场景吞吐更好
   threads:
     virtual:
       enabled: true
-  datasource:
-    url: jdbc:mysql://localhost:3306/aitalky?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
-    username: root
-    password: negan123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
   # 数据库迁移:启动时按 db/migration 下 V{n}__xxx.sql 版本顺序执行
   flyway:
     enabled: true
@@ -21,26 +21,16 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
   data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 0
     mongodb:
-      uri: mongodb://localhost:27017/aitalky
-      # 启动时按实体 @CompoundIndex/@Indexed 声明幂等地确保索引存在(已存在跳过);
-      # 不开则注解形同虚设(Spring Data 3.0+ 默认关闭),dev/正式环境都不会自动建索引。
+      # 启动时按实体 @CompoundIndex/@Indexed 声明幂等地确保索引存在(已存在跳过)
       auto-index-creation: true
-  # 文件上传大小限制(SpringBoot 自带 multipart;与 MinIO 单文件上限相互独立,取更严的一方)
+  # 文件上传大小限制(与 MinIO 单文件上限相互独立,取更严的一方)
   servlet:
     multipart:
-      max-file-size: 25MB      # 单文件上限取最大类(视频/文档 20MB)+ 编码余量;分类细限在 MinioService
+      max-file-size: 25MB
       max-request-size: 25MB
-  # 邮件(验证码发送;复用 cicada SMTP,明文仅本地)
+  # 邮件公共项(host/账号/密码按环境配)
   mail:
-    host: mail.devnew.top
-    port: 587
-    username: noreply@devnew.top
-    password: x6FCrRjpGeh0Yvyp
     default-encoding: UTF-8
     properties:
       mail.smtp.auth: true
@@ -48,9 +38,8 @@ spring:
       mail.smtp.connectiontimeout: 5000
       mail.smtp.timeout: 5000
 
-# RocketMQ（异步 + 顺序消息）
+# RocketMQ 生产者(name-server 按环境配)
 rocketmq:
-  name-server: localhost:9876
   producer:
     group: aitalky-app-producer
     send-message-timeout: 3000
@@ -59,7 +48,6 @@ rocketmq:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    # 枚举统一处理:实体可用 @EnumValue 枚举字段(数据规范:状态优先用语义化枚举)
     default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   global-config:
     db-config:
@@ -68,75 +56,40 @@ mybatis-plus:
       logic-not-delete-value: 0
       id-type: input   # 用雪花ID手动注入，不用数据库自增
 
-# 自定义
+# 自定义(公共部分;密钥/连接/域名等环境相关项见 application-{env}.yml)
 aitalky:
   jwt:
-    secret: aitalky_dev_secret_key_please_change_in_prod_0123456789abcdef
     expire-hours: 12
     header: Authorization
     prefix: "Bearer "
-  id:
-    # ★ 横向扩展：每个实例必须不同(上线多实例时改这里)
-    datacenter-id: 0
-    worker-id: 0
-  rsa:
-    # 密码传输加密:前端公钥加密、后端私钥解密(复用 cicada 同款密钥;上线务必更换并用环境变量)
-    public-key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsHI4+Xws7Vxkp3LBfnKCqKQMqDj1dkLcV+uHUzQcZChhWhixF89E6LjCkHYmVQvdYXzYSIVH1j6sT2RDhyA2oB1ct/jeNMXSIn9iXNP3soMKbsoBVZ7gmS/Z3ypkllEqlZnf1vC04v8sh/GMLDY164eICD3jK+/H1/sAz33VQNE0tIWLHopR/WN/5u0r1E6EcYzGQ11kIbD2r5I1A9ub1WZq7b6NLeEtspCm6X6hyMhAUxOykUxD0bh1A0Tgue+a1qCaRghDnw5rvhreQuweby8lXz5qYWKXW/Wl2wRUPWDJBhr9NCrWlaUBZSHtcbNWyApa/5IFsxWG1ft3ElOV2QIDAQAB
-    private-key: MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCwcjj5fCztXGSncsF+coKopAyoOPV2QtxX64dTNBxkKGFaGLEXz0TouMKQdiZVC91hfNhIhUfWPqxPZEOHIDagHVy3+N40xdIif2Jc0/eygwpuygFVnuCZL9nfKmSWUSqVmd/W8LTi/yyH8YwsNjXrh4gIPeMr78fX+wDPfdVA0TS0hYseilH9Y3/m7SvUToRxjMZDXWQhsPavkjUD25vVZmrtvo0t4S2ykKbpfqHIyEBTE7KRTEPRuHUDROC575rWoJpGCEOfDmu+Gt5C7B5vLyVfPmphYpdb9aXbBFQ9YMkGGv00KtaVpQFlIe1xs1bIClr/kgWzFYbV+3cSU5XZAgMBAAECggEBAIRg3fAHwuk+JWIfzZ3hqbd+hOR8/2P/m7L2ySuacCaQySFAXzU+0zNK0uZxTicGZMxsTxRxskjB8qMJ1UP+3hzYiqSYOZYcSKCLM6/zc+XhPKWMNt4W+ejUJsCw3JCOSsW8kVyAcSXRToabqY/OCDwyDdQpIlPnbObUsXH6tVEPpCzrxR2Ry0K7twsrVIwTsJnoDwE3KdRW0EYzVWuvRFuwFu/AyG9cWIDfg58iCrz79EfAn3CSQSQunFrVEgExsOX4MCTMAqYoixF+fHUMsN/Zq4AWY7jAmgek0FfuXqjO0DcWE1lwd3mFSumChp+1g+6+IpZDgcuNbLyag+p58IECgYEA6GioKDHRiV6TPRpMmvyRrOVxq7yFB+eVA/eguJ4vTLMmC8n5ryInIsref2CEgTP7Y0dtBI4MvbBXDwe0YX30Vb3bA/I/Idlqe3aYeHFTnPRpDa2dVv32bRfJFbzXf79eQc08kWXzp4nsuKsH2Pi88r6FNrDVrThtzm/H9OazK8kCgYEAwltUFwhSdegZzeshXdELyPyZmMdNGH9vnn4Md9i332LfYuT6zQUK7UIHd1JiE4yWADeYQF4H5MXAgi3PezVRmVRu2zBgD9BWvCVorX6I/vRGm9jrE8HeCc64gRPYyyVEbAYT3SjTZ/6xv2UxA5jPYqKiKUxtwgaQX2oK1RRMAZECgYEA2Os98G43RcD5KnHOiGYuzbJF+2X0wKD86/wHjelO+obHfv9gRX9aCdZR/4+lfTZ4b3xuG28+Ixpg1414Zfp6wEB5GGDVXhGgmmXh/6C+yuMw3mxqS5S0mbQ2okxk0z5Zio819fuzhG9ufBpeM7xOFz+N9LLubUQa8TBR8JoXJ0kCgYAIiDPX0wCztl2zoXfUg4HN7/DaOR2UTrvarFPlyvi/cLq3v6+W4nrJUZW8UjyF+Sz4k3g2kyori9bYoCQ0l3GelotLSgNdjlrQZaADxcND1ftnig0/z8nsikulNvbUbC1lxJqIoest7ItnCI0vSD0KanNN9tH2q40Y8zHIityPUQKBgEAHlDsEeWDxsjijlsyqyyGBj8qcbAO/qLv7rYuD5HDRVRoNfUdv0s2WqWbIPCbawsVOyirI5sn/G4JCwDHoCueDZ5WQaxSX8nJCWPWV9m/0IsucNNlvCF8+1ZacAh22ySU1QtCMh2RekXxAIBy36xbhjC8iRFg9rHLn1D1k0oM8
-  invite:
-    # 团队邀请落地页基址(邀请邮件链接 = 此值 + /#/join?token=xxx);上线改环境变量
-    console-base-url: http://localhost:5173
-  wiki:
-    # wiki 文章对外阅读页基地址(信使端复制链接/默认浏览器打开 = 此值 + /{shareCode});
-    # console 用 HashRouter,公开路由在 # 之后,故本地须带 /#;上线改为独立文章域名(如 https://article.example.com/#/wiki-article)
-    article-base-url: http://localhost:5173/#/wiki-article
   verify-code:
-    master-enabled: true          # 开发期开启万能验证码;上线置 false
-    master-code: "888888"         # 万能验证码:可直接用它注册/登录
     ttl-minutes: 5
     send-interval-seconds: 60
     code-length: 6
-    from: noreply@devnew.top
     max-attempts: 5               # 连续输错上限,达到即临时锁定(防暴力枚举)
     lock-minutes: 10              # 触发锁定后的锁定时长(分钟)
   geoip:
-    # IP 归属地解析(详情面板「所在地」);当前走 ip-api.com 免费接口(城市级,异步不阻塞接入)
-    # 后续可换离线 MaxMind GeoLite2-City。注:免费版限速 45 次/分钟、仅 http、商用需付费;客户 IP 会外发第三方
+    # IP 归属地解析(详情面板「所在地」);走 ip-api.com 免费接口(各环境同一公网 API)
     enabled: true
     provider: ipapi
     api-base-url: http://ip-api.com/json/
-    lang: en                      # 统一存英文地名(国际通用,中英坐席都可读);改 zh-CN 则按中文风格拼接
+    lang: en                      # 统一存英文地名(国际通用,中英坐席都可读)
     timeout-ms: 2000
     cache-days: 7
   translate:
-    # 消息翻译引擎(可配可扩);当前复用 cicada 阿里云机翻网关,后续可加 claude 等 LLM
+    # 消息翻译引擎(网关地址按环境配)
     enabled: true
     provider: ali-gateway
-    ali-gateway-url: http://47.242.9.154:8080/api/translate/auto
     timeout-ms: 8000
   minio:
-    # 对象存储(头像/图片消息);本地开发明文,上线改环境变量/配置中心
-    endpoint: http://localhost:9000
-    access-key: minioadmin
-    secret-key: minioadmin
+    # 对象存储(endpoint/密钥按环境配)
     bucket: aitalky
     max-size: 10485760            # 单文件上限 10MB(字节)
   job:
     close-idle:
       cron: "0 * * * * ?"
-  # 订阅计费支付渠道(本地明文,上线改环境变量/配置中心)
   billing:
-    # 行级防篡改 HMAC 密钥(订单/余额/流水签名);与数据库分离存放,勿入库
-    sign-key: "at9Qk3mVxP7aZ8sD2hJ6fK1nR4cL0bX9y"
-    # 地址 AES-256-GCM 加密密钥(32字节 base64 或原文取32字节)
-    address-key: "A7mK9xP2vL8sD4qW6eR1tY3uI5oP0zX8"
-    channel: coinly                # 当前启用渠道
-    coinly:
-      base-url: "https://gateway.hhnumilala.xyz/api/"
-      pid: "2067074671589957634"
-      api-key: "ExDW1GnTccSWzCYOtMBS7TPZMwvF6dlw"
-      # 回调地址(Coinly 收到充值后回调);本机开发用内网穿透/占位
-      callback-url: "https://aitalky.example.top/api/public/billing/coinly/callback"
+    channel: coinly                # 当前启用渠道(密钥/pid/回调按环境配)
 
 logging:
   level:
